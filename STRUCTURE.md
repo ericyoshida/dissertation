@@ -60,8 +60,9 @@ Legend: 🟢 tracker content — **written here** · 🔵 detection content — 
 ---
 
 ## Status
-- **Ch. 5 (FUSION) fully drafted and compiling** — derivations, the **equivalence Proposition + proof**, the divergence regimes, and CRLB, with 3 figures (from the faithful Python port `/tmp/ch5_experiments.py` + `/tmp/fig53_pcrb.py`, saved in `Cap5/`). 41-pg PDF builds with 0 errors / 0 undefined refs.
-- Ch. 6, Ch. 7, and the shared chapters are section-level skeletons (`% TODO`).
+- **Written and compiling:** Ch.~1 (Introduction), Ch.~2 (Theoretical Background), Ch.~3 (Related Work \& Gap / SLR), and Ch.~5 (FUSION — EKF global/local, with the **equivalence Proposition + proof**, the divergence regimes, CRLB, and 3 figures in `Cap5/`). ~57-page PDF, 0 errors / 0 undefined refs.
+- **Section-level skeletons (`% TODO`):** Ch.~4 (pipeline hub), Ch.~6 (TU Berlin), Ch.~7 (AirSim), Ch.~8 (conclusions), and the appendices.
+- Ch.~5 figures were generated from the faithful Python ports (`/tmp/ch5_experiments.py`, `/tmp/fig53_pcrb.py`); regenerate from the real MATLAB if an "official" version is wanted.
 
 ## Key finding to carry through (Ch. 5)
 The global and local EKF are **mathematically equivalent** under known platform pose + isotropic process noise (proven + verified to 1e-13). The published FUSION "global wins" (Global 0.181 / Local 0.297 m) was an artifact of a local filter that **omitted state reorientation**; the correct local filter equals global. The chapter presents this as an **equivalence theorem** + the regimes where they genuinely diverge (anisotropic noise; uncertain pose → Ch. 6). Affects the published paper — discuss framing with the advisor; confirm on MATLAB.
