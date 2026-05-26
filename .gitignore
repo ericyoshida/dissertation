@@ -1,0 +1,58 @@
+# ---------- LaTeX build artifacts (regenerate with `make`) ----------
+*.aux
+*.log
+*.bbl
+*.blg
+*.brf
+*.out
+*.toc
+*.lof
+*.lot
+*.glo
+*.gls
+*.glg
+*.los
+*.nav
+*.snm
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+latex.out/
+# Built PDF (build locally). NOTE: only the root tese.pdf — figure PDFs in Cap*/ ARE tracked.
+/tese.pdf
+
+# ---------- OS / editor ----------
+.DS_Store
+*~
+.vscode/
+
+# ---------- Python helper scripts ----------
+__pycache__/
+*.pyc
+
+# ---------- Datasets & large artifacts: KEEP LOCAL, never commit to the thesis repo ----------
+# (AirSim / TU Berlin data, point clouds, rosbags, model weights, videos, archives)
+data/
+datasets/
+*.bag
+*.db3
+*.pcd
+*.ply
+*.las
+*.laz
+*.h5
+*.hdf5
+*.npy
+*.npz
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.weights
+*.mp4
+*.avi
+*.mov
+*.zip
+*.tar
+*.tar.gz
+*.7z

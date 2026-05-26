@@ -1,0 +1,48 @@
+% =====================================================================
+% Chapter 7 --- Synthetic Dataset and 3D Detection Pipeline (AirSim)
+%                                                       [detection -- OTHER PC]
+% Self-contained project: Overview -> Dataset -> Detection methodology ->
+% Results -> Discussion. This is the chapter completed on the other computer.
+% Target length: ~9 pages (methodology + results).
+% =====================================================================
+
+\section{Overview and Objectives}
+% TODO: motivation -- scarcity of annotated aerial 3D datasets; use AirSim to generate
+% data and train the detection front-end of the pipeline (Chapter~\ref{cha:pipeline}).
+
+\section{The AirSim Synthetic Dataset}
+
+\subsection{Simulation Environment and Scenarios}
+% TODO: AirSim/Unreal; urban scenarios; rationale for synthetic data and generalization.
+
+\subsection{Sensor Channels and Annotations}
+% TODO: RGB + depth + LiDAR + ego-pose; 2D/3D boxes, class, tracking IDs.
+
+\subsection{Dataset Splits and Format}
+% TODO: train/val/test; KITTI/nuScenes-compatible format.
+
+\section{Detection Methodology}
+
+\subsection{2D Detection}
+% TODO: YOLO detector; inputs/outputs; training.
+
+\subsection{Frustum Proposal}
+% TODO: lifting 2D boxes into 3D frustums with camera intrinsics + point cloud.
+
+\subsection{3D Detection with PointNet}
+% TODO: PointNet on the frustum points; amodal 3D bounding box.
+
+\section{Results}
+
+\subsection{2D Detection Performance}
+% TODO
+
+\subsection{3D Detection Performance}
+% TODO
+
+\subsection{Generalization across Scenarios}
+% TODO
+
+\section{Discussion}
+% TODO: how the trained detector feeds the tracker; sim-to-real outlook
+% (link to the real-data tracking of Chapter~\ref{cha:monocular}).

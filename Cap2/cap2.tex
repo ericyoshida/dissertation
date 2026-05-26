@@ -1,0 +1,279 @@
+% =====================================================================
+% Chapter 2 --- Theoretical Background                        [cross-cutting]
+% Establishes ONCE the shared framework used by all later chapters, fixing
+% the notation reused verbatim in Chapters 5--7. Two pillars: recursive
+% Bayesian estimation (the tracker) and deep networks (the detector).
+% =====================================================================
+
+This chapter collects the mathematical tools used throughout the dissertation
+and fixes the notation reused in the later chapters. It rests on two pillars:
+recursive Bayesian estimation, which underpins the tracking stage
+(Chapters~\ref{cha:tracking} and \ref{cha:monocular}), and convolutional neural
+networks, which underpin the detection front-end (Chapters~\ref{cha:pipeline}
+and \ref{cha:airsim}). The treatment is deliberately self-contained but assumes
+familiarity with linear algebra and probability.
+
+\section{Bayesian Recursive Estimation and the Kalman Filter}
+
+The tracking problem is an instance of \emph{recursive state estimation}: an
+unobserved state evolves in time and is observed only through noisy
+measurements. We model it by the discrete-time, possibly nonlinear, state-space
+system
+\begin{align}
+  \bm{x}_k &= \bm{f}(\bm{x}_{k-1}) + \bm{w}_{k-1}, & \bm{w}_{k-1} &\sim \mathcal{N}(\bm{0},\bm{Q}_{k-1}), \label{eq:ss_process}\\
+  \bm{z}_k &= \bm{h}(\bm{x}_k) + \bm{v}_k,         & \bm{v}_k     &\sim \mathcal{N}(\bm{0},\bm{R}_k),     \label{eq:ss_meas}
+\end{align}
+where $\bm{x}_k$ is the state, $\bm{z}_k$ the measurement, $\bm{f}(\cdot)$ the
+process model, $\bm{h}(\cdot)$ the measurement model, and $\bm{w}_k,\bm{v}_k$
+mutually independent zero-mean Gaussian process and measurement noises. The state
+is assumed Markovian and the measurements conditionally independent given the
+state.
+
+Bayesian filtering propagates the posterior density $p(\bm{x}_k\mid \bm{z}_{1:k})$
+in two alternating steps: a \emph{prediction} that pushes the previous posterior
+through the process model (the Chapman--Kolmogorov equation), and an
+\emph{update} that fuses the new measurement through Bayes' rule. For the
+linear-Gaussian special case --- $\bm{f}(\bm{x})=\bm{F}\bm{x}$,
+$\bm{h}(\bm{x})=\bm{H}\bm{x}$ --- these integrals admit a closed form, the
+\emph{Kalman filter} (KF) \cite{barshalom2001,brookner1998}: the posterior
+remains Gaussian and is summarised by its mean $\hat{\bm{x}}_{k|k}$ and covariance
+$\bm{P}_{k|k}$, propagated by
+\begin{align}
+  \hat{\bm{x}}_{k|k-1} &= \bm{F}\,\hat{\bm{x}}_{k-1|k-1}, &
+  \bm{P}_{k|k-1} &= \bm{F}\,\bm{P}_{k-1|k-1}\,\bm{F}^{\top} + \bm{Q}, \label{eq:kf_predict}\\
+  \bm{K}_k &= \bm{P}_{k|k-1}\bm{H}^{\top}\bm{S}_k^{-1}, &
+  \bm{S}_k &= \bm{H}\,\bm{P}_{k|k-1}\,\bm{H}^{\top} + \bm{R}, \label{eq:kf_gain}\\
+  \hat{\bm{x}}_{k|k} &= \hat{\bm{x}}_{k|k-1} + \bm{K}_k\bm{\nu}_k, &
+  \bm{P}_{k|k} &= (\bm{I}-\bm{K}_k\bm{H})\,\bm{P}_{k|k-1}, \label{eq:kf_update}
+\end{align}
+with innovation $\bm{\nu}_k=\bm{z}_k-\bm{H}\hat{\bm{x}}_{k|k-1}$. The KF is the
+optimal (minimum mean-square-error) estimator in the linear-Gaussian case.
+
+\section{The Extended Kalman Filter}
+
+The tracking models of this work are nonlinear --- the platform rotates and the
+measurements are spherical or projective --- so the linear KF does not apply
+directly. The Extended Kalman Filter (EKF) retains the Gaussian parameterisation
+but linearises the nonlinear models about the current estimate
+\cite{terejanu2008,barshalom2001}.
+
+\subsection{Linearisation}
+
+Let
+\begin{equation}
+  \bm{F}_k = \left.\frac{\partial \bm{f}}{\partial \bm{x}}\right|_{\hat{\bm{x}}_{k-1|k-1}},
+  \qquad
+  \bm{H}_k = \left.\frac{\partial \bm{h}}{\partial \bm{x}}\right|_{\hat{\bm{x}}_{k|k-1}}
+  \label{eq:ekf_jac}
+\end{equation}
+be the Jacobians of the process and measurement models evaluated at the predicted
+state. The EKF propagates the covariance through these first-order
+approximations.
+
+\subsection{Prediction and Update}
+
+The recursion mirrors \eqref{eq:kf_predict}--\eqref{eq:kf_update}, with the
+nonlinear models used for the means and their Jacobians for the covariances:
+\begin{align}
+  \hat{\bm{x}}_{k|k-1} &= \bm{f}(\hat{\bm{x}}_{k-1|k-1}), &
+  \bm{P}_{k|k-1} &= \bm{F}_k\,\bm{P}_{k-1|k-1}\,\bm{F}_k^{\top} + \bm{Q}, \label{eq:ekf_predict}\\
+  \bm{\nu}_k &= \bm{z}_k - \bm{h}(\hat{\bm{x}}_{k|k-1}), &
+  \bm{S}_k &= \bm{H}_k\,\bm{P}_{k|k-1}\,\bm{H}_k^{\top} + \bm{R}_k, \label{eq:ekf_innov}\\
+  \bm{K}_k &= \bm{P}_{k|k-1}\bm{H}_k^{\top}\bm{S}_k^{-1}, &
+  \hat{\bm{x}}_{k|k} &= \hat{\bm{x}}_{k|k-1} + \bm{K}_k\bm{\nu}_k, \label{eq:ekf_gain}
+\end{align}
+and $\bm{P}_{k|k} = (\bm{I}-\bm{K}_k\bm{H}_k)\,\bm{P}_{k|k-1}$. Unlike the linear
+KF, the EKF is neither optimal nor unbiased: the linearisation
+\eqref{eq:ekf_jac} discards higher-order terms, and the magnitude of the
+resulting error depends on how nonlinear the models are over the support of the
+state covariance. This caveat matters in Chapter~\ref{cha:tracking}, where two
+algebraically distinct EKF formulations are compared.
+
+\section{Coordinate Frames and Rigid-Body Transformations}
+
+\subsection{World, Body, and Optical Frames}
+
+Three right-handed frames are used. The \emph{world} frame $\mathcal{W}$ is a
+local inertial East--North--Up (ENU) frame fixed to the operating area. The
+\emph{body} frame $\mathcal{B}$ is attached to the platform (Forward--Left--Up).
+The \emph{optical} frame $\mathcal{O}$ is attached to the camera (the computer
+vision convention: $x$ right, $y$ down, $z$ forward). Estimation is carried in
+$\mathcal{W}$ or $\mathcal{B}$ depending on the formulation, while measurements
+originate in $\mathcal{O}$.
+
+\subsection{Rotations, Euler Angles, and Homogeneous Transforms}
+
+A rotation is an element of $SO(3)$, represented here by a $3\times3$ matrix
+$\bm{R}$ with $\bm{R}^{\top}\bm{R}=\bm{I}$ and $\det\bm{R}=1$. Using the
+$Z$--$Y$--$X$ (yaw--pitch--roll) Euler convention adopted throughout,
+\begin{equation}
+  \bm{R}(\phi,\theta,\psi) = \bm{R}_z(\psi)\,\bm{R}_y(\theta)\,\bm{R}_x(\phi),
+  \label{eq:euler}
+\end{equation}
+with the elementary rotations
+\begin{equation}
+  \bm{R}_x(\phi)=\!\begin{bmatrix}1&0&0\\0&c_\phi&-s_\phi\\0&s_\phi&c_\phi\end{bmatrix}\!,\;
+  \bm{R}_y(\theta)=\!\begin{bmatrix}c_\theta&0&s_\theta\\0&1&0\\-s_\theta&0&c_\theta\end{bmatrix}\!,\;
+  \bm{R}_z(\psi)=\!\begin{bmatrix}c_\psi&-s_\psi&0\\s_\psi&c_\psi&0\\0&0&1\end{bmatrix}\!,
+  \label{eq:elementary}
+\end{equation}
+where $c_\bullet=\cos$ and $s_\bullet=\sin$. With this convention $\bm{R}$ maps
+body coordinates to world coordinates, and a point transforms as
+$\bm{p}^{\mathcal{W}}=\bm{R}\,\bm{p}^{\mathcal{B}}+\bm{t}$; the inverse map is
+$\bm{p}^{\mathcal{B}}=\bm{R}^{\top}(\bm{p}^{\mathcal{W}}-\bm{t})$. A pose is
+compactly written as a homogeneous transform $\bm{T}=\left[\begin{smallmatrix}\bm{R}&\bm{t}\\\bm{0}&1\end{smallmatrix}\right]\in SE(3)$.
+
+\subsection{Pose Perturbations}
+
+When the platform pose is uncertain (Chapter~\ref{cha:monocular}), its
+uncertainty must be propagated through the geometry. A small pose perturbation is
+represented in the tangent space of $SE(3)$ by a six-vector
+$\bm{\xi}=[\bm{\delta\theta}^{\top}\;\bm{\delta t}^{\top}]^{\top}$, and to first
+order a point in the camera frame perturbs as
+\begin{equation}
+  \delta\bm{p}^{\mathcal{O}} \approx -[\bm{p}^{\mathcal{O}}]_\times\,\bm{\delta\theta} + \bm{\delta t},
+  \qquad
+  [\bm{a}]_\times = \begin{bmatrix} 0 & -a_3 & a_2 \\ a_3 & 0 & -a_1 \\ -a_2 & a_1 & 0 \end{bmatrix},
+  \label{eq:se3_pert}
+\end{equation}
+where $[\,\cdot\,]_\times$ is the skew-symmetric (cross-product) matrix
+\cite{sola2018microlie}. This linearisation is the basis of the extrinsic
+Jacobian derived in Chapter~\ref{cha:monocular}.
+
+\section{Motion Models}
+
+\subsection{Constant-Velocity and Constant-Acceleration Models}
+
+In the absence of a control input, target motion is described by a kinematic
+model. The \emph{constant-velocity} (CV) model assumes piecewise-constant
+velocity perturbed by random accelerations; per Cartesian axis, the
+position--velocity pair $(p,\dot p)$ propagates as
+\begin{equation}
+  \begin{bmatrix} p_{k+1} \\ \dot p_{k+1} \end{bmatrix}
+  = \begin{bmatrix} 1 & \Delta t \\ 0 & 1 \end{bmatrix}
+    \begin{bmatrix} p_{k} \\ \dot p_{k} \end{bmatrix} + \text{noise},
+  \label{eq:cv}
+\end{equation}
+with sampling interval $\Delta t$. The \emph{constant-acceleration} model adds an
+explicit acceleration state. This work uses the CV model, with acceleration
+represented as process noise rather than as a state variable.
+
+\subsection{Process Noise}
+
+Modelling the unknown acceleration as a continuous white noise of intensity
+$\sigma_a^2$ yields, after discretisation, the per-axis process-noise covariance
+\begin{equation}
+  \bm{Q}_{\text{axis}} = \sigma_a^{2}
+  \begin{bmatrix} \Delta t^{3}/3 & \Delta t^{2}/2 \\[2pt] \Delta t^{2}/2 & \Delta t \end{bmatrix}.
+  \label{eq:cwna}
+\end{equation}
+When the same intensity $\sigma_a$ is used on all axes, the resulting block-diagonal
+$\bm{Q}$ is invariant under rotation of the coordinate axes --- a property that has
+a decisive consequence in Chapter~\ref{cha:tracking}.
+
+\section{Measurement Models}
+
+\subsection{Range--Bearing (Spherical) Measurements}
+
+A depth or fused camera--LiDAR sensor reports the relative position of a target in
+spherical coordinates. Writing the relative position in the sensor frame as
+$\bm{p}^{c}=[x^{c},y^{c},z^{c}]^{\top}$, the measurement comprises range, azimuth
+and elevation,
+\begin{equation}
+  \rho = \lVert\bm{p}^{c}\rVert,\quad
+  \alpha = \operatorname{atan2}(y^{c},x^{c}),\quad
+  \beta = \operatorname{atan2}\!\big(z^{c},\sqrt{(x^{c})^2+(y^{c})^2}\big).
+  \label{eq:spherical}
+\end{equation}
+Ranging accuracy degrades with distance, which is captured by a heteroscedastic
+range variance $\sigma_\rho^2 = \alpha_\rho\,\rho^2$, with $\alpha_\rho$ a
+sensor-dependent coefficient \cite{fernandes2020}. This model is used by the
+trackers of Chapters~\ref{cha:tracking}.
+
+\subsection{Pinhole Projection and Lens Distortion}
+
+A monocular camera (Chapter~\ref{cha:monocular}) instead measures the
+\emph{pixel} projection of a world point. Under the pinhole model, a point
+$\bm{X}^{\mathcal{O}}=[X,Y,Z]^{\top}$ in the optical frame projects to
+\begin{equation}
+  \bm{u} = \pi\!\big(\bm{K}\,\bm{X}^{\mathcal{O}}\big),
+  \qquad
+  \pi\!\left(\begin{bmatrix}X\\Y\\Z\end{bmatrix}\right) = \begin{bmatrix}X/Z\\Y/Z\end{bmatrix},
+  \qquad
+  \bm{K}=\begin{bmatrix} f_x & 0 & c_x \\ 0 & f_y & c_y \\ 0 & 0 & 1 \end{bmatrix},
+  \label{eq:pinhole}
+\end{equation}
+where $\bm{K}$ is the intrinsic matrix ($f_x,f_y$ focal lengths, $(c_x,c_y)$
+principal point). Real lenses introduce radial and tangential (plumb-bob)
+distortion, parameterised by coefficients $(k_1,k_2,k_3,p_1,p_2)$, which must be
+removed from each pixel measurement before it enters the filter; the procedure is
+detailed in Chapter~\ref{cha:monocular}.
+
+\section{Performance and Consistency Metrics}
+
+Three families of metrics are used to evaluate the estimators.
+
+\subsection{Accuracy}
+The root-mean-square error (RMSE) of the position estimate,
+averaged over $M$ Monte~Carlo runs, summarises accuracy:
+$\mathrm{RMSE}(k)=\big(\frac1M\sum_{i=1}^{M}\lVert \bm{p}_k^{(i)}-\hat{\bm{p}}_k^{(i)}\rVert^2\big)^{1/2}$.
+
+\subsection{Consistency}
+A filter is \emph{consistent} when its reported
+covariance matches its actual error. With ground truth available, the normalised
+estimation error squared (NEES) of an $n$-dimensional state,
+\begin{equation}
+  \epsilon_k = (\bm{x}_k-\hat{\bm{x}}_{k|k})^{\top}\,\bm{P}_{k|k}^{-1}\,(\bm{x}_k-\hat{\bm{x}}_{k|k}),
+  \label{eq:nees}
+\end{equation}
+follows a $\chi^2_n$ distribution (mean $n$) for a consistent filter. When ground
+truth is unavailable, the normalised innovation squared (NIS),
+$\eta_k=\bm{\nu}_k^{\top}\bm{S}_k^{-1}\bm{\nu}_k\sim\chi^2_m$ for $m$-dimensional
+measurements, provides an analogous, measurement-only check \cite{barshalom2001}.
+
+\subsection{Optimality Bound}
+The posterior Cram\'er--Rao bound (PCRB) lower-bounds
+the achievable estimation-error covariance. For the filtering problem it is
+obtained from the Fisher information recursion
+\begin{equation}
+  \bm{J}_{k+1} = \big(\bm{Q}+\bm{F}\bm{J}_k^{-1}\bm{F}^{\top}\big)^{-1}
+              + \mathbb{E}\!\big[\bm{H}_{k+1}^{\top}\bm{R}_{k+1}^{-1}\bm{H}_{k+1}\big],
+  \label{eq:pcrb}
+\end{equation}
+with the bound on the state error given by $\bm{J}_k^{-1}$ \cite{tichavsky1998}.
+This bound is used to assess near-optimality of the tracker in
+Chapter~\ref{cha:tracking}.
+
+\section{Deep Learning for Perception}
+
+The detection front-end of the pipeline is built from neural networks; this
+section summarises the building blocks used in Chapters~\ref{cha:pipeline} and
+\ref{cha:airsim}.
+
+\subsection{Convolutional Neural Networks}
+
+A convolutional neural network (CNN) applies learned convolutional filters across
+an image, sharing weights spatially and stacking layers to build a hierarchy of
+features --- from edges and textures to object parts and whole objects. Weight
+sharing makes CNNs parameter-efficient and translation-equivariant, which is why
+they dominate image perception.
+
+\subsection{Two-Dimensional Object Detection}
+
+Object detection localises and classifies objects within an image. One-stage
+detectors such as YOLO \cite{redmon2016yolo} pose detection as a single regression
+from image to a dense set of bounding boxes and class scores, achieving the
+real-time throughput required onboard a UAV. The 2D detector forms the first stage
+of the pipeline and seeds the frustum used for 3D detection.
+
+\subsection{Point-Cloud Processing and PointNet}
+
+Three-dimensional detection operates on point clouds, which are unordered sets and
+therefore ill-suited to convolution. PointNet \cite{qi2017pointnet} learns
+directly on raw point sets by applying a shared multilayer perceptron to each
+point and aggregating with a symmetric (max-pooling) function, making the output
+invariant to point ordering. Frustum PointNets \cite{qi2018frustum} combine this
+with a 2D detector: each image detection defines a viewing frustum that crops the
+point cloud, and a PointNet estimates the amodal 3D bounding box within it. This
+camera--point-cloud fusion is the architecture adopted in
+Chapter~\ref{cha:airsim}.

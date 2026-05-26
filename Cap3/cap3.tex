@@ -1,0 +1,247 @@
+% =====================================================================
+% Chapter 3 --- Related Work and Research Gap                 [cross-cutting]
+% Based on the author's systematic literature review (DEFESA SLR):
+% PRISMA 2020 + Kitchenham 5-criterion QA + Wohlin snowballing.
+% Centrepiece: the uniqueness matrix and the "why nobody did this" argument.
+% =====================================================================
+
+This chapter surveys the literature relevant to the perception pipeline of
+Chapter~\ref{cha:pipeline} and establishes the gap that the dissertation fills.
+Rather than an ad-hoc narrative, the review follows a systematic protocol, whose
+methodology is described first; the body of work is then organised thematically,
+and the chapter closes by making the gap explicit and arguing why it has remained
+open.
+
+\section{Review Methodology}
+
+\subsection{Protocol and Research Question}
+
+The review follows the PRISMA~2020 reporting guideline \cite{page2021prisma},
+the quality-assessment practice of Kitchenham and Charters
+\cite{kitchenham2007slr}, and the snowballing guidelines of Wohlin
+\cite{wohlin2014snowball}. It is driven by a single research question, framed in
+the PICOC form:
+
+\begin{quote}
+\emph{Which CNN-based techniques have been applied for situational-awareness
+perception (sense) of autonomous aerial vehicles in urban environments, using
+camera and point-cloud fusion for 3D object detection and tracking?}
+\end{quote}
+
+The \emph{population} is autonomous aerial vehicles in urban environments; the
+\emph{intervention} is CNN-based pipelines combining 2D detection with
+point-cloud processing; the \emph{comparison} baselines are monocular, stereo,
+and LiDAR-only methods; the \emph{outcome} is 3D detection and tracking accuracy
+with real-time feasibility; and the \emph{context} is urban sense-and-avoid
+(perception only).
+
+\subsection{Sources, Search, and Selection}
+
+Automated searches of OpenAlex, Semantic Scholar, and academic web search
+engines were run with three query families --- (i) UAV sense-and-avoid with deep
+perception, (ii) frustum- and PointNet-based 3D detection, and (iii)
+LiDAR--camera fusion for aerial 3D detection --- and complemented by backward and
+forward snowballing (one-hop) from four seed papers: PointNet
+\cite{qi2017pointnet}, Frustum PointNets \cite{qi2018frustum}, the UAV3D
+benchmark \cite{ye2024uav3d}, and a recent UAV 3D-perception survey. Studies were
+included if published in 2017--2026 (the year PointNet appeared), addressing
+perception (detection, tracking, or situational awareness) for UAVs or for
+ground-vehicle techniques transferable to UAVs, and containing a deep-learning
+component; works addressing only avoidance, planning, or control, lacking a
+learning component, or in unrelated domains were excluded. Each retained study
+was scored on the five Kitchenham criteria of Table~\ref{tab:qa}, on a
+$0$/$0.5$/$1$ scale; following the protocol, studies scoring below $2.5$ were
+demoted to background text and excluded from the synthesis. The process was
+managed with Rayyan, Zotero, and Parsifal.
+
+\begin{table}[H]
+  \centering
+  \caption{Quality-assessment criteria (Kitchenham), each scored $0$/$0.5$/$1$.}
+  \label{tab:qa}
+  \begin{tabular}{@{}cl@{}}
+    \toprule
+    Criterion & Question \\
+    \midrule
+    Q1 & Are the problem and objectives clearly stated? \\
+    Q2 & Is the methodology described in enough detail to reproduce? \\
+    Q3 & Are there quantitative experiments on an established benchmark? \\
+    Q4 & Does the work address a component of the proposed pipeline? \\
+    Q5 & Is the contribution clearly differentiated from prior art? \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Outcome of the Search}
+
+The automated searches returned roughly $150$ records; five thematic
+gap-filling searches added $50$; and snowballing added $44$, for $244$ records
+in total. After de-duplication, $183$ unique records remained. Title-and-abstract
+screening retained $174$ studies (with $7$ deferred to full-text assessment and
+$2$ cross-snowball duplicates removed). Quality assessment passed $173$ studies
+(mean score $4.05/5$, median $4.5$; $51\%$ from top-tier venues); a single survey
+fell below the cut-off and was demoted to background. These $173$ studies form
+the basis of the synthesis that follows.
+
+\section{Two-Dimensional Detection for Aerial Imagery}
+
+The pipeline's first stage is a 2D detector. The one-stage YOLO family
+\cite{redmon2016yolo}, which regresses bounding boxes and class scores in a
+single pass, dominates aerial detection because of its real-time throughput; a
+substantial body of work adapts it to the small objects, oblique viewpoints, and
+scale variation characteristic of aerial imagery. These detectors are mature and
+are treated here as a reliable building block rather than a research
+contribution of this work.
+
+\section{Frustum-Based 3D Detection in Autonomous Driving}
+
+The core of the proposed pipeline descends from Frustum PointNets
+\cite{qi2018frustum}, which lifts each 2D detection into a viewing frustum, crops
+the corresponding point cloud, and applies a PointNet \cite{qi2017pointnet,
+qi2017pointnetpp} to estimate an amodal 3D box. The idea spawned a rich lineage
+in the driving domain: Frustum ConvNet \cite{wang2019fconvnet} replaces the
+point-wise network with sliding-frustum convolutions, and Frustum-PointPillars
+\cite{paigwar2021fpp} substitutes a pillar encoding for the PointNet backbone.
+All of these methods are benchmarked on ground-vehicle datasets and have not been
+applied to aerial platforms.
+
+\section{Camera--LiDAR Fusion and Multi-View 3D Detection}
+
+Beyond the frustum family, a broad literature fuses camera and LiDAR for 3D
+detection. Region-level fusion methods such as AVOD \cite{ku2018avod} and
+PointFusion \cite{xu2018pointfusion} combine image and point features without an
+explicit frustum stage, while transformer- and bird's-eye-view-based detectors
+such as DETR3D \cite{wang2022detr3d} and BEVFusion \cite{liu2023bevfusion}
+operate on multi-camera or unified BEV representations. These approaches achieve
+state-of-the-art accuracy on driving benchmarks but are LiDAR- or
+multi-camera-centric and, again, are not deployed on UAVs.
+
+\section{3D Perception and Sense-and-Avoid for UAVs}
+
+On the aerial side, 3D perception is comparatively recent and follows different
+design choices. The UAV3D benchmark \cite{ye2024uav3d} provides the first
+large-scale aerial 3D dataset, but is a benchmark rather than a detection method
+and is synthetic. Method papers favour LiDAR-centric or RGB-D pipelines:
+LiDAR--camera obstacle detection for UAVs \cite{ma2021uavfusion}, aerial
+LiDAR-based detection with unscented-Kalman-filter tracking
+\cite{cherif2023aerial}, and airborne LiDAR sense-and-detect \cite{dolph2023airborne}.
+Crucially, \emph{none} of these adopts the frustum-to-PointNet fusion that is
+standard in driving --- they use voxel networks, RGB-D, or LiDAR alone.
+
+\section{Multi-Object Tracking on Moving Platforms}
+
+For the tracking stage, the literature divides into learning-based
+appearance trackers and recursive-filter trackers. Filter-based multi-object
+tracking on moving platforms --- the regime of this dissertation --- typically
+couples a detector with a Kalman or extended Kalman filter; recent UAV trackers
+such as DMTrack \cite{fu2025dmtrack} address association and motion but are
+tracker-only, without an integrated 3D detection pipeline. The author's own prior
+work \cite{delima2025fusion}, extended in Chapter~\ref{cha:tracking}, contributes
+the recursive-filter tracking stage used here.
+
+\section{Datasets for Aerial 3D Perception}
+
+The scarcity of aerial 3D data is itself a structural obstacle. The driving
+domain is served by KITTI \cite{geiger2012kitti}, nuScenes
+\cite{caesar2020nuscenes}, and the Waymo Open Dataset \cite{sun2020waymo}, with
+millions of annotated 3D boxes. For UAVs, large-scale 2D benchmarks such as
+VisDrone \cite{zhu2021visdrone} exist, but the only large-scale 3D aerial
+benchmark, UAV3D \cite{ye2024uav3d}, is one year old and synthetic. This
+motivates the synthetic dataset built with AirSim \cite{shah2018airsim} in
+Chapter~\ref{cha:airsim}.
+
+\section{The Research Gap}
+
+\subsection{Uniqueness Matrix}
+
+Table~\ref{tab:uniqueness} maps the closest adjacent works against the seven
+attributes that together define this dissertation's target: a drone target,
+a frustum stage, a PointNet 3D-box estimator, camera--LiDAR fusion, an integrated
+tracker, an urban environment, and a sense-and-avoid application. The works
+divide into two blocks. The first --- the frustum and fusion methods from driving
+--- possesses the full detection machinery but never targets UAVs. The second ---
+the UAV-specific methods --- targets drones but lacks the frustum-to-PointNet
+pipeline. Of the nineteen closest works examined, \emph{none} satisfies all seven
+attributes; only this dissertation fills every cell.
+
+\begin{table}[H]
+  \centering
+  \footnotesize
+  \caption{Uniqueness matrix. \checkmark{}: present and central; $\sim$: partial;
+  $\times$: absent. Only the last row fills all seven attributes.}
+  \label{tab:uniqueness}
+  \begin{tabular}{@{}lccccccc@{}}
+    \toprule
+    Work & Drone & Frustum & PointNet & Fusion & Track & Urban & S\&A \\
+    \midrule
+    Frustum PointNets \cite{qi2018frustum} & $\times$ & \checkmark & \checkmark & \checkmark & $\times$ & $\sim$ & $\times$ \\
+    Frustum ConvNet \cite{wang2019fconvnet} & $\times$ & \checkmark & \checkmark & \checkmark & $\times$ & $\sim$ & $\times$ \\
+    Frustum-PointPillars \cite{paigwar2021fpp} & $\times$ & \checkmark & $\times$ & \checkmark & $\times$ & $\sim$ & $\times$ \\
+    Multi-View Frustum & $\times$ & \checkmark & \checkmark & \checkmark & $\times$ & $\sim$ & $\times$ \\
+    Frustum-Fusion (embedded) & $\times$ & \checkmark & \checkmark & \checkmark & $\times$ & $\sim$ & $\times$ \\
+    PointFusion \cite{xu2018pointfusion} & $\times$ & $\times$ & \checkmark & \checkmark & $\times$ & $\sim$ & $\times$ \\
+    AVOD \cite{ku2018avod} & $\times$ & $\times$ & $\times$ & \checkmark & $\times$ & $\sim$ & $\times$ \\
+    DETR3D \cite{wang2022detr3d} & $\times$ & $\times$ & $\times$ & $\sim$ & $\times$ & $\sim$ & $\times$ \\
+    BEVFusion \cite{liu2023bevfusion} & $\times$ & $\times$ & $\times$ & \checkmark & $\times$ & $\sim$ & $\times$ \\
+    UAV3D benchmark \cite{ye2024uav3d} & \checkmark & $\times$ & $\times$ & $\sim$ & $\sim$ & \checkmark & $\sim$ \\
+    UAV LiDAR--cam \cite{ma2021uavfusion} & \checkmark & $\times$ & $\times$ & \checkmark & $\times$ & \checkmark & \checkmark \\
+    Aerial LiDAR + UKF \cite{cherif2023aerial} & \checkmark & $\times$ & $\times$ & $\times$ & \checkmark & \checkmark & $\times$ \\
+    Airborne LiDAR \cite{dolph2023airborne} & \checkmark & $\times$ & $\times$ & $\times$ & $\times$ & $\sim$ & \checkmark \\
+    DMTrack \cite{fu2025dmtrack} & \checkmark & $\times$ & $\times$ & $\times$ & \checkmark & $\sim$ & $\times$ \\
+    \midrule
+    \textbf{This dissertation} & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+The gap can be stated in one sentence: \emph{no published work has transferred
+the frustum-to-PointNet detection pipeline from autonomous driving to UAV
+sense-and-avoid in urban environments}. The closest mention in the surveyed
+literature is a single aspirational sentence in a frustum-sampling paper noting
+that such methods ``show promise'' for drones --- with no implementation or
+evaluation.
+
+\subsection{Why This Has Not Been Done Yet}
+
+A natural question is why, if the transfer is so direct, it has not been done.
+The review identifies six independent reasons:
+
+\begin{enumerate}
+  \item \textbf{LiDAR cost and weight.} Car-grade LiDAR ($\approx 13$~kg,
+  $\sim$\$75k) is prohibitive on small UAVs; light, affordable UAV-grade LiDAR
+  only matured around 2020--2022, so the sensing side of the problem did not
+  exist before then.
+  \item \textbf{Aerial annotation scarcity.} There is no KITTI/nuScenes/Waymo for
+  UAVs; the first large-scale aerial 3D benchmark, UAV3D
+  \cite{ye2024uav3d}, is one year old and synthetic, making it hard to train
+  point-cloud networks on aerial data.
+  \item \textbf{Non-trivial domain shift.} Scale, viewpoint, motion model (free
+  3D rotation and translation versus a car's 2D motion), sensor noise, and
+  obstacle geometry all differ; naively retraining a driving detector on aerial
+  data does not work.
+  \item \textbf{Onboard compute constraints.} UAV-grade compute (Jetson-class) is
+  an order of magnitude weaker than a car's; real-time frustum-plus-PointNet
+  inference at that budget is itself an active research subarea.
+  \item \textbf{Funding-priority bias.} Most autonomy funding has targeted ground
+  vehicles; Urban Air Mobility became a serious commercial agenda only in the
+  late 2010s.
+  \item \textbf{Deferred tracker integration.} 3D-detection papers typically stop
+  at single-frame detection and mark tracking as future work, whereas for
+  sense-and-avoid the tracker is the safety-critical stage.
+\end{enumerate}
+
+Combinations of these reasons explain the timing: reasons~(1)--(2) mean the
+infrastructure did not exist before $\sim$2022; reasons~(3)--(4) mean the
+engineering is hard even with it; and reasons~(5)--(6) mean the incentives were
+thin until Urban Air Mobility matured.
+
+\section{Positioning of This Dissertation}
+
+Against this landscape, the dissertation occupies the empty cell of
+Table~\ref{tab:uniqueness}: it adapts the frustum-to-PointNet pipeline from
+ground vehicles to urban UAV perception, integrates 2D detection, frustum
+proposal, 3D box estimation, and recursive-filter tracking into one
+situational-awareness pipeline, and addresses the data and compute obstacles
+through a synthetic dataset and an efficient, rigorously analysed tracker. The
+tracking stage --- the safety-critical component that the literature most often
+defers --- is the most mature contribution and is developed first, in
+Chapter~\ref{cha:tracking}.

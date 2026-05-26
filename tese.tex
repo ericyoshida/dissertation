@@ -1,0 +1,196 @@
+%%% Exemplo de utilização da classe ITA
+%%%
+%%%   por        Fábio Fagundes Silveira   -  ffs [at] ita [dot] br
+%%%              Benedito C. O. Maciel     -  bcmaciel [at] ita [dot] br
+%%%              Giovani Volnei Meinertz   -  giovani [at] ita [dot] br
+%%%    	         Hudson Alberto Bode       -  bode [at] ita [dot]br
+%%%    	         P. I. Braga de Queiroz    -  pi [at] ita [dot] br
+%%%    	         Jorge A. B. Gripp         -  gripp [at] ita [dot] br
+%%%    	         Juliano Monte-Mor         -  jamontemor [at] yahoo [dot] com [dot] br
+%%%    	         Tarcisio A. B. Gripp      -  tarcisio.gripp [at] gmail [dot] com
+%%%
+%%%   Versão para overleaf:
+%%%   por        Alejandro A. Rios Cruz    - aarc.88@gmail.com
+%%%              Saulo Gómez               - sagomezs@unal.edu.co
+%%%              Ocimar Santos             - ocimar.acad@gmail.com
+%%%
+%%%   Template disponibilizado em:
+%%%              Overleaf: https://pt.overleaf.com/latex/templates/thesis-template-aeronautics-institute-of-technology-ita/yhfrqqydpygk
+%%%
+%%%   Contribuia você também!
+%%%              GitHub:   https://github.com/AlejandroRios/Template_Thesis_ITA
+%%%
+%%% ITALUS
+%%% Instituto Tecnológico de Aeronáutica --- ITA, Sao Jose dos Campos, Brasil
+%%%
+%++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+% Para alterar o TIPO DE DOCUMENTO, preencher a linha abaixo \documentclass[?]{?}
+%   \documentclass[tg]{ita}			= Trabalho de Graduacao
+%   \documentclass[tgfem]{ita}	= Para Engenheiras
+%   								msc     		= Dissertacao de Mestrado
+%   								mscfem   		= Para Mestras
+%   								dsc      		= Tese de Doutorado
+%   								dscfem   		= Para Doutoras
+%   								quali    		= Exame de Qualificacao
+%   								qualifem 		= Exame de Qualificacao para Doutoras
+% Para 'Draft Version'/'Versao Preliminar' com data no rodape, adicionar 'dv':
+%   \documentclass[dsc, dv]{ita}
+% Para trabalhos em Inglês, adicionar 'eng':
+%   \documentclass[dsc, eng]{ita}
+%++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+\documentclass[msc, eng]{ita}    % Dissertação de Mestrado, em inglês
+% Ao alterar a classe, rode o BUILD mais uma vez caso apareça algum erro.
+\usepackage{ae}
+\usepackage{graphicx}
+\usepackage{epsfig}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{subfig}
+\usepackage{multirow}
+\usepackage{float}
+\usepackage{amsthm}
+\usepackage{url}         % formats URL addresses properly
+\usepackage{appendix}    % allows appendix section to be included
+\usepackage{lscape}      % allows a page to be rendered in landscape mode
+\usepackage{multicol}    % allows text in multi columns
+\usepackage{cancel}      % needed to show canceled terms in equations
+\usepackage{lettrine}
+\usepackage{float}
+\usepackage{placeins}
+
+\usepackage{caption}
+\usepackage{subcaption}
+
+\usepackage{booktabs}
+\usepackage{bm}          % bold math symbols for vectors/matrices
+
+% Theorem-like environments (used in the methodology chapters)
+\newtheorem{proposition}{Proposition}[chapter]
+\newtheorem{lemma}{Lemma}[chapter]
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}[chapter]
+
+%++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+% Espaçamento padrão de todo o documento
+%++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+\onehalfspacing
+
+%++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+% Identificações (trabalho em inglês -> dados em inglês)
+%++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+\course{Electronic Engineering and Computer Science}  % TODO: confirmar nome do Programa de Pós-Graduação
+\area{Informatics}                                    % TODO: confirmar área de concentração
+
+% Autor do trabalho: Nome Sobrenome
+\authorgender{masc}                     % masc ou fem
+\author{Eric Ezequiel Yoshida}{de Lima}
+\itaauthoraddress{Rua H8B, Ap. 216}{12.228-461}{São José dos Campos--SP}
+
+% Título da Dissertação (título travado, conforme slides de defesa)
+\title{Convolutional Neural Networks for Urban Autonomous Aerial Vehicle Situational Awareness: A Camera--Point Cloud Fusion Approach for Obstacle Detection and Tracking}
+
+% Orientador
+\advisorgender{masc}                    % masc ou fem
+\advisor{Prof.~Dr.}{Marcos Ricardo Omena de Albuquerque Máximo}{ITA}
+
+% Coorientador
+\coadvisorgender{masc}                  % masc ou fem
+\coadvisor{Prof.~Dr.}{Stiven Schwanz Dias}{Embraer S.A.}
+
+% Pró-reitor da Pós-graduação
+\bossgender{masc}                       % masc ou fem
+\boss{Prof.~Dr.}{[Nome do Pró-Reitor da Pós-Graduação]}   % TODO: confirmar
+
+% Coordenador do curso -> somente TG (não se aplica a mestrado)
+%\bosscoursegender{masc}
+%\bosscourse{Prof.~Dr.}{}
+
+% Palavras-Chaves informadas pela Biblioteca -> utilizada na CIP
+\kwcip{Unmanned aerial vehicles}
+\kwcip{Detect-and-avoid}
+\kwcip{Object tracking}
+\kwcip{Extended Kalman filter}
+\kwcip{3D object detection}
+\kwcip{Sensor fusion}
+\kwcip{Convolutional neural networks}
+
+% Membros da banca examinadora (TODO: confirmar banca)
+\examiner{Prof.~Dr.}{[Examinador 1 --- Presidente]}{}{ITA}
+\examiner{Prof.~Dr.}{[Examinador 2]}{}{ITA}
+\examiner{Prof.~Dr.}{[Examinador 3 --- Externo]}{}{}
+
+% Data da defesa (mês em maiúsculo, pois o trabalho é em inglês)
+\date{XX}{Month}{2026}                  % TODO: data da defesa
+
+% Número CDU -> somente TG (não se aplica a mestrado)
+%\cdu{}
+
+% Glossário
+\makeglossary
+\frontmatter
+
+\begin{document}
+\input{PreTextuais/main}
+
+\mainmatter
+% Os capítulos começam aqui
+
+\chapter{Introduction}
+\input{Cap1/cap1}
+
+\chapter{Theoretical Background}\label{cha:background}
+\input{Cap2/cap2}
+
+\chapter{Related Work and Research Gap}\label{cha:relatedwork}
+\input{Cap3/cap3}
+
+\chapter{Perception Pipeline Architecture}\label{cha:pipeline}
+\input{Cap4/cap4}
+
+\chapter{EKF-Based Target Tracking in Global and Local Frames}\label{cha:tracking}
+\input{Cap5/cap5}
+
+\chapter{Extending the Tracker to Monocular Real-World Operation}\label{cha:monocular}
+\input{Cap6/cap6}
+
+\chapter{Synthetic Dataset and 3D Detection Pipeline}\label{cha:airsim}
+\input{Cap7/cap7}
+
+\chapter{Conclusions and Future Work}\label{cha:conclusions}
+\input{Cap8/cap8}
+
+% REFERÊNCIAS BIBLIOGRÁFICAS
+\renewcommand\bibname{\itareferencesnamebabel} % renomeia o título do capítulo de referências
+\bibliography{Referencias/referencias}
+
+% Apêndices
+\appendix
+\chapter{Detailed Jacobian and CRLB Derivations}
+\input{ApeA/apendiceA}
+
+\chapter{Dataset Details and Additional Results}
+\input{ApeB/apendiceB}
+
+% Anexos (opcional)
+% \annex
+% \chapter{...}
+% \input{AneA/anexoA}
+
+% Glossário (opcional)
+%\itaglossary
+%\printglossary
+
+% Folha de Registro do Documento (FRD)
+\FRDitadata{XX de mês de 2026}                                   % TODO: data
+\FRDitadocnro{DCTA/ITA/DM - XXX/2026}                            % TODO: número de registro solicitado à biblioteca
+\FRDitaorgaointerno{Instituto Tecnológico de Aeronáutica -- ITA}
+\FRDitapalavrasautor{Unmanned aerial vehicles; Detect-and-avoid; Object tracking; Extended Kalman filter; 3D object detection; Sensor fusion; Convolutional neural networks.}
+\FRDitapalavrasresult{Aeronaves não-tripuladas; Rastreamento; Filtro de Kalman estendido; Redes neurais convolucionais; Visão computacional; Fusão de sensores; Métodos computacionais.}
+\FRDitapalavraapresentacao{ITA, São José dos Campos. Curso de Mestrado. Programa de Pós-Graduação em [Programa]. Área de [Área]. Orientador: Prof.~Dr.~Marcos Ricardo Omena de Albuquerque Máximo; Coorientador: Prof.~Dr.~Stiven Schwanz Dias. Defesa em XX/XX/2026.}   % TODO
+\FRDitaresumo{\input{PreTextuais/resumo}}
+%  Primeiro parametro: Nacional ou Internacional -- N/I
+%  Segundo parametro: Ostensivo, Reservado, Confidencial ou Secreto -- O/R/C/S
+\FRDitaOpcoes{N}{O}
+\itaFRD
+
+\end{document}

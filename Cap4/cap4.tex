@@ -1,0 +1,30 @@
+% =====================================================================
+% Chapter 4 --- The Perception Pipeline (cohesion hub)            [cross-cutting]
+% Presents the end-to-end pipeline ONCE and maps the three self-contained
+% project chapters (5, 6, 7) onto it. This is the chapter that keeps the
+% three projects reading as one coherent work.
+% Target length: ~5 pages.
+% =====================================================================
+
+\section{Overview: A Modular Camera--Point-Cloud Pipeline}
+% TODO: end-to-end diagram RGB -> 2D detection -> frustum -> PointNet 3D -> EKF tracker -> 3D track;
+% the pipeline as the realization of the "Sense" capability for detect-and-avoid.
+
+\section{The Four Stages at a Glance}
+\subsection{2D Detection}
+\subsection{Frustum Proposal}
+\subsection{3D Detection (PointNet)}
+\subsection{Tracking (EKF)}
+% TODO: one concise conceptual paragraph per stage (inputs/method/outputs); the detailed
+% methodology is deferred to the project chapters, to avoid duplication.
+
+\section{Modularity and Cross-Domain Generality}
+% TODO: why a modular pipeline -- each stage is trained/validated independently and can be
+% reused or swapped across domains; this is what makes the three projects composable.
+
+\section{Mapping the Contributions onto the Pipeline}
+% TODO: locate the three self-contained projects on the pipeline (the unifying thread):
+%   - the EKF tracker stage          -> Chapter~\ref{cha:tracking}  (simulation; global vs. local)
+%   - the monocular real-world variant -> Chapter~\ref{cha:monocular} (real UAV data; TU Berlin)
+%   - the detection front-end + dataset -> Chapter~\ref{cha:airsim}    (synthetic data; AirSim)
+% State explicitly: one vision (the pipeline), three contributions.

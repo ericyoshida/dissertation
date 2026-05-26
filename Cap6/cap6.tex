@@ -1,0 +1,51 @@
+% =====================================================================
+% Chapter 6 --- Monocular Person Tracking from a Moving UAV (TU Berlin)
+%                                                            [tracker -- HERE]
+% Self-contained project: Overview -> Methodology -> Results -> Discussion.
+% Framed as an EXTENSION of Chapter~\ref{cha:tracking}: the same EKF framework
+% generalises to a harder, monocular, real-world case and, because the platform
+% pose is now uncertain, the global/local frames genuinely diverge here.
+% Target length: ~9 pages (methodology + results).
+% =====================================================================
+
+\section{Overview and Objectives}
+% TODO: the TU Berlin collaboration; from obstacle tracking to person tracking;
+% generality of the framework of Chapter~\ref{cha:tracking}; camera-only sensing,
+% ground-plane + known-height assumptions (no LiDAR).
+
+\section{Methodology}
+
+\subsection{Monocular Measurement Model and Plumb-Bob Undistortion}
+% TODO: nonlinear pinhole projection as the measurement; iterative undistortion.
+
+\subsection{Ground-Plane Constraint and Ray--Plane Initialization}
+% TODO: target on plane z = z_obj; ray-plane lift of the first detection.
+
+\subsection{Extrinsic-Aware Innovation Covariance}
+% TODO: the core contribution -- propagate 6-DoF camera-pose uncertainty into the
+% innovation covariance, S = H P H^T + J_ext Sigma_pose J_ext^T + R_cam.
+
+\subsection{Temporal Synchronization}
+% TODO: camera-to-pose latency compensation; SLERP/linear interpolation.
+
+\subsection{Experimental Platform}
+% TODO: custom quadrotor; global-shutter camera (IMX296); PX4/ASPN-PVT navigation feed.
+
+\section{Results}
+
+\subsection{Experimental Scenarios and Protocol}
+% TODO: real flights; scenarios; ground-truth/annotation.
+
+\subsection{Reprojection Error and Track Continuity}
+% TODO
+
+\subsection{Consistency under Platform Motion (NIS)}
+% TODO: NIS over time; behaviour during aggressive platform motion.
+
+\subsection{Ablation: Pose-Uncertainty On versus Off}
+% TODO: the main ablation (Sigma_pose ON vs OFF).
+
+\section{Discussion}
+% TODO: connect back to Chapter~\ref{cha:tracking} -- this is precisely the regime
+% (uncertain platform pose) where the global and local frames stop being equivalent --
+% and to the pipeline (Chapter~\ref{cha:pipeline}).

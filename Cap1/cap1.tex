@@ -1,0 +1,186 @@
+% =====================================================================
+% Chapter 1 --- Introduction                                  [cross-cutting]
+% Establishes the vision (UAM -> detect-and-avoid -> Sense -> the pipeline)
+% and ties the three projects together as "one vision, three contributions".
+% =====================================================================
+
+Autonomous and remotely supervised aircraft are moving from isolated research
+demonstrations toward routine operation in low-altitude urban airspace. For such
+aircraft to fly safely among buildings, smaller drones, birds, and other
+vehicles, they must build their own picture of the surrounding environment from
+onboard sensors and react to it in real time. This dissertation addresses the
+perception layer of that capability: detecting and tracking obstacles in three
+dimensions from a moving aerial platform, using a fusion of camera imagery and
+point-cloud data.
+
+\section{Context: Urban Air Mobility and Situational Awareness}
+
+Urban Air Mobility (UAM) refers to the emerging ecosystem of small, typically
+electric vertical take-off and landing (eVTOL) aircraft intended to move people
+and cargo within and around cities. A new generation of vehicles --- including
+those developed by Joby Aviation, Lilium, and Embraer's subsidiary Eve Air
+Mobility --- is being designed for this role, and with them comes a regulatory and
+engineering push toward progressively higher levels of flight autonomy.
+
+Operating in the urban canyon is fundamentally harder than operating at cruise
+altitude. The airspace is cluttered and dynamic: static structures, moving
+ground vehicles, other UAVs, and uncooperative traffic share a small volume, and
+the margins for error are tight. A human pilot manages this through continuous
+\emph{situational awareness} --- perceiving nearby objects, estimating their
+motion, and anticipating conflicts. An autonomous aircraft must reconstruct the
+same awareness from its sensor suite. Building that awareness reliably, on
+board, and in real time is the central enabling problem for safe autonomous
+flight in cities.
+
+This work was carried out within the FlyMov Engineering Research Center, a
+partnership between the Aeronautics Institute of Technology (ITA), Embraer, and
+the São Paulo Research Foundation (FAPESP), whose mission includes the
+perception and decision-making technologies required for autonomous eVTOL
+operation.
+
+\section{Detect-and-Avoid and the Sense Problem}
+
+For any aircraft to share the airspace safely, it must be able to perceive
+potential conflicts and act to prevent collisions. Aviation authorities codify
+this requirement under the term \emph{Detect-and-Avoid} (D\&A), and it is a
+mandatory element of the certification of autonomous and beyond-visual-line-of-sight
+operations. D\&A decomposes naturally into two coupled problems:
+
+\begin{itemize}
+  \item \textbf{Sense} --- the \emph{perception} problem: detecting obstacles,
+  estimating their three-dimensional position and extent, and tracking their
+  motion over time from onboard sensors;
+  \item \textbf{Avoid} --- the \emph{decision and control} problem: planning and
+  executing an evasive manoeuvre once a threat has been characterised.
+\end{itemize}
+
+This dissertation is concerned exclusively with the \textbf{Sense} side. The
+avoidance problem --- trajectory planning and control --- is outside its scope and
+is treated as a downstream consumer of the perception output. The essential
+requirement that Sense places on Avoid is not merely an estimate of where an
+obstacle is, but a \emph{calibrated} estimate: a state together with a
+trustworthy measure of its uncertainty, so that the avoidance logic can reason
+about risk. This emphasis on calibrated uncertainty recurs throughout the thesis
+and motivates several of its technical choices.
+
+Within Sense, three perception sub-problems must be solved in sequence:
+two-dimensional detection (locating objects in the image), three-dimensional
+detection (lifting those objects into metric space), and tracking (maintaining
+their state over time). The first two are powered by convolutional neural
+networks (CNNs); the third, the safety-critical component, by recursive
+Bayesian estimation.
+
+\section{Problem Statement}
+
+Concretely, we consider a UAV equipped with a camera and a source of
+three-dimensional measurements --- a LiDAR or a stereo/depth sensor --- that must,
+in real time and from a moving platform, (i) detect obstacles in its field of
+view, (ii) estimate their three-dimensional position and size, and (iii) track
+them over time, producing calibrated state estimates suitable for a downstream
+avoidance module. Three characteristics make this difficult:
+
+\begin{enumerate}
+  \item \textbf{The observer is in motion.} Measurements are taken from a
+  platform that is itself translating and rotating, so the obstacle's apparent
+  motion in the sensor frame is not inertial and the sensor pose must be
+  accounted for explicitly.
+  \item \textbf{Depth is uncertain.} Monocular images are depth-ambiguous, and
+  even active range sensors degrade with distance; the measurement noise is
+  range-dependent and must be modelled as such.
+  \item \textbf{Aerial data are scarce and compute is limited.} Unlike ground
+  autonomy, there is no abundance of annotated three-dimensional aerial
+  datasets, and the perception stack must ultimately run on constrained onboard
+  hardware.
+\end{enumerate}
+
+The approach taken here is a \emph{modular camera--point-cloud fusion pipeline}.
+A CNN detector first localises objects in the image; each two-dimensional
+detection is lifted into a viewing \emph{frustum} that bounds the corresponding
+region of the point cloud; a point-cloud network estimates an amodal
+three-dimensional bounding box within that frustum; and an Extended Kalman
+Filter (EKF) tracks the resulting detections over time. This frustum-based
+fusion follows the lineage of Frustum PointNets \cite{qi2018frustum}, adapted
+here to the aerial sense-and-avoid setting.
+
+\section{Objectives}
+
+\subsection{General Objective}
+
+To develop and validate the perception (\emph{Sense}) stack for UAV
+detect-and-avoid in urban environments, structured as a modular
+camera--point-cloud fusion pipeline whose safety-critical tracking stage is
+formulated, analysed, and validated with mathematical rigour.
+
+\subsection{Specific Objectives}
+
+\begin{enumerate}
+  \item To formulate the obstacle-tracking problem from a moving platform as an
+  EKF and to analyse rigorously the two natural choices of reference frame
+  (global inertial versus local sensor), establishing their relationship and
+  benchmarking the filter against the Cram\'er--Rao bound.
+  \item To demonstrate the generality of the resulting framework by adapting it
+  to monocular person tracking from a real UAV, explicitly propagating the
+  camera-pose uncertainty into the estimator.
+  \item To design the detection front-end of the pipeline and to assemble a
+  fully-annotated synthetic aerial dataset that enables its training in the
+  absence of large-scale real data.
+  \item To position the work in the literature through a systematic review,
+  identifying and substantiating the research gap it addresses.
+\end{enumerate}
+
+\section{Contributions}
+
+The dissertation makes the following contributions, organised as one overarching
+system --- the perception pipeline --- and three self-contained studies that
+realise and validate its components:
+
+\begin{enumerate}
+  \item \textbf{A rigorous treatment of EKF tracking from a moving platform}
+  (Chapter~\ref{cha:tracking}). We give a unified derivation of the global- and
+  local-frame formulations for spherical (range--bearing) measurements, prove
+  that the two are \emph{mathematically equivalent} under a known platform pose
+  and isotropic process noise, and characterise precisely the conditions under
+  which they genuinely diverge. The formulation was presented at the IEEE
+  International Conference on Information Fusion \cite{delima2025fusion}.
+  \item \textbf{Generality of the framework, validated on real data}
+  (Chapter~\ref{cha:monocular}). The same estimator is extended to monocular
+  person tracking from a UAV operated at TU Berlin, where the platform pose is
+  uncertain; the filter propagates the six-degree-of-freedom camera-pose
+  covariance into its innovation, yielding consistent estimates under aggressive
+  platform motion.
+  \item \textbf{A synthetic aerial dataset and detection front-end}
+  (Chapter~\ref{cha:airsim}). A configurable, fully-annotated dataset built in
+  AirSim addresses the scarcity of three-dimensional aerial data and is used to
+  train the CNN-based two- and three-dimensional detectors of the pipeline.
+  \item \textbf{A systematic literature review} (Chapter~\ref{cha:relatedwork})
+  following the PRISMA, Kitchenham, and Wohlin methodologies, which establishes
+  that frustum-based camera--point-cloud detection has not previously been
+  brought to UAV sense-and-avoid, and locates this work within that gap.
+\end{enumerate}
+
+\section{Publications}
+
+The tracking formulation of Chapter~\ref{cha:tracking} was published as:
+de~Lima, Dias, and M\'aximo, \emph{Extended Kalman Filter-Based Object Tracking
+Using Global and Local Frames}, IEEE International Conference on Information
+Fusion (FUSION), 2025 \cite{delima2025fusion}. The real-data study of
+Chapter~\ref{cha:monocular}, developed with the Intelligent Multi-Robot
+Coordination Lab at TU Berlin, is in preparation for publication.
+
+\section{Outline of the Dissertation}
+
+The remainder of the dissertation is organised so that a shared foundation
+supports three self-contained studies. Chapter~\ref{cha:background} establishes
+the common theoretical framework --- recursive Bayesian estimation and the EKF,
+coordinate frames, motion and measurement models, consistency metrics, and the
+neural-network building blocks --- from which every later chapter draws.
+Chapter~\ref{cha:relatedwork} reviews the literature and substantiates the
+research gap. Chapter~\ref{cha:pipeline} presents the perception pipeline as a
+single architecture and shows how the three studies map onto it. The three study
+chapters then follow, each self-contained with its own methodology and results:
+Chapter~\ref{cha:tracking} develops and analyses the EKF tracker in global and
+local frames; Chapter~\ref{cha:monocular} extends it to monocular tracking from a
+real UAV; and Chapter~\ref{cha:airsim} builds the synthetic dataset and the
+detection front-end. Chapter~\ref{cha:conclusions} synthesises the three studies,
+revisits the contributions, and outlines future work toward an integrated,
+onboard sense-and-avoid system.
