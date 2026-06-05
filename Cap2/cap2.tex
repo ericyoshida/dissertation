@@ -33,8 +33,8 @@ Bayesian filtering propagates the posterior density $p(\bm{x}_k\mid \bm{z}_{1:k}
 in two alternating steps: a \emph{prediction} that pushes the previous posterior
 through the process model (the Chapman--Kolmogorov equation), and an
 \emph{update} that fuses the new measurement through Bayes' rule. For the
-linear-Gaussian special case --- $\bm{f}(\bm{x})=\bm{F}\bm{x}$,
-$\bm{h}(\bm{x})=\bm{H}\bm{x}$ --- these integrals admit a closed form, the
+linear-Gaussian special case, with $\bm{f}(\bm{x})=\bm{F}\bm{x}$ and
+$\bm{h}(\bm{x})=\bm{H}\bm{x}$, these integrals admit a closed form, the
 \emph{Kalman filter} (KF) \cite{barshalom2001,brookner1998}: the posterior
 remains Gaussian and is summarised by its mean $\hat{\bm{x}}_{k|k}$ and covariance
 $\bm{P}_{k|k}$, propagated by
@@ -51,8 +51,8 @@ optimal (minimum mean-square-error) estimator in the linear-Gaussian case.
 
 \section{The Extended Kalman Filter}
 
-The tracking models of this work are nonlinear --- the platform rotates and the
-measurements are spherical or projective --- so the linear KF does not apply
+The tracking models of this work are nonlinear, since the platform rotates and the
+measurements are spherical or projective, so the linear KF does not apply
 directly. The Extended Kalman Filter (EKF) retains the Gaussian parameterisation
 but linearises the nonlinear models about the current estimate
 \cite{terejanu2008,barshalom2001}.
@@ -168,7 +168,7 @@ $\sigma_a^2$ yields, after discretisation, the per-axis process-noise covariance
   \label{eq:cwna}
 \end{equation}
 When the same intensity $\sigma_a$ is used on all axes, the resulting block-diagonal
-$\bm{Q}$ is invariant under rotation of the coordinate axes --- a property that has
+$\bm{Q}$ is invariant under rotation of the coordinate axes, a property that has
 a decisive consequence in Chapter~\ref{cha:tracking}.
 
 \section{Measurement Models}
@@ -211,7 +211,8 @@ detailed in Chapter~\ref{cha:monocular}.
 
 \section{Performance and Consistency Metrics}
 
-Three families of metrics are used to evaluate the estimators.
+Several families of metrics are used across the dissertation: the first three
+evaluate the estimator, and the last evaluates the detection and tracking chain.
 
 \subsection{Accuracy}
 The root-mean-square error (RMSE) of the position estimate,
@@ -244,6 +245,25 @@ with the bound on the state error given by $\bm{J}_k^{-1}$ \cite{tichavsky1998}.
 This bound is used to assess near-optimality of the tracker in
 Chapter~\ref{cha:tracking}.
 
+\subsection{Detection and Multi-Object-Tracking Metrics}
+\label{sec:detmetrics}
+
+The detection front-end (Chapter~\ref{cha:airsim}) is evaluated with the standard
+detection and tracking measures. A detection is counted correct when it matches a
+ground-truth object under an overlap or distance gate; \emph{precision} is the
+fraction of detections that are correct, \emph{recall} the fraction of objects
+detected, and $F_1$ their harmonic mean. Sweeping the detector's confidence
+threshold traces a precision--recall curve whose area is the average precision,
+averaged over classes and gates to give the mean average precision (mAP). For the
+temporal chain, multi-object-tracking accuracy (MOTA) aggregates false positives,
+misses, and identity switches at one operating point, and the identity score
+(IDF1) measures how consistently tracks preserve object identity. Because MOTA is
+read at a single threshold, the driving community favours its integral over recall,
+the average MOTA (AMOTA) \cite{weng2020ab3dmot}, which characterizes the
+detector--tracker chain independently of a particular threshold; its companion
+AMOTP averages the localization error of matched tracks. These measures are used
+throughout Chapter~\ref{cha:airsim}.
+
 \section{Deep Learning for Perception}
 
 The detection front-end of the pipeline is built from neural networks; this
@@ -254,7 +274,7 @@ section summarises the building blocks used in Chapters~\ref{cha:pipeline} and
 
 A convolutional neural network (CNN) applies learned convolutional filters across
 an image, sharing weights spatially and stacking layers to build a hierarchy of
-features --- from edges and textures to object parts and whole objects. Weight
+features, from edges and textures to object parts and whole objects. Weight
 sharing makes CNNs parameter-efficient and translation-equivariant, which is why
 they dominate image perception.
 
@@ -264,7 +284,12 @@ Object detection localises and classifies objects within an image. One-stage
 detectors such as YOLO \cite{redmon2016yolo} pose detection as a single regression
 from image to a dense set of bounding boxes and class scores, achieving the
 real-time throughput required onboard a UAV. The 2D detector forms the first stage
-of the pipeline and seeds the frustum used for 3D detection.
+of the pipeline and seeds the frustum used for 3D detection. Because a detector's
+accuracy depends on the match between its training distribution and the
+deployment scene, a network intended to operate in an environment unseen during
+training is commonly trained on a diverse union of datasets to widen its
+generalisation; this strategy is applied to the aerial person detector of
+Chapter~\ref{cha:monocular}.
 
 \subsection{Point-Cloud Processing and PointNet}
 
@@ -277,3 +302,33 @@ with a 2D detector: each image detection defines a viewing frustum that crops th
 point cloud, and a PointNet estimates the amodal 3D bounding box within it. This
 camera--point-cloud fusion is the architecture adopted in
 Chapter~\ref{cha:airsim}.
+
+\subsection{Single-Stage Voxel Detection}
+
+The frustum approach is a \emph{two-stage} detector: a 2D network proposes
+regions and a point-cloud network refines them in 3D, so its recall is bounded by
+the 2D stage. The complementary \emph{single-stage} family detects directly in
+the point cloud over the whole scene. Because raw points are irregular, these
+methods first impose a regular structure: VoxelNet and SECOND
+\cite{yan2018second} quantize space into 3D voxels and apply (sparse) 3D
+convolutions, while PointPillars \cite{lang2019pointpillars} collapses the
+vertical axis into a bird's-eye-view (BEV) grid of \emph{pillars}, encodes each
+pillar with a small PointNet, and runs an ordinary 2D convolutional backbone on
+the resulting pseudo-image, trading a little vertical resolution for real-time
+speed. Detection heads are increasingly \emph{centre-based}: rather than
+classifying anchor boxes, the network predicts a heatmap whose peaks are object
+centres and regresses the box parameters at each peak \cite{zhou2019objects}.
+Chapter~\ref{cha:airsim} contrasts this single-stage voxel paradigm with the
+two-stage frustum pipeline on aerial data.
+
+\subsection{Training Losses for Detection}
+
+Detectors are dominated by background: the vast majority of candidate locations
+contain no object. Trained naively, the classifier is overwhelmed by easy
+negatives. The \emph{focal loss} \cite{lin2017focal} addresses this by
+down-weighting well-classified examples,
+$\mathrm{FL}(p_t)=-\alpha_t\,(1-p_t)^{\gamma}\log p_t$, where $p_t$ is the
+predicted probability of the true class and $\gamma>0$ concentrates the gradient
+on hard examples; it is used for the objectness and heatmap heads in
+Chapter~\ref{cha:airsim}, while box parameters are regressed with a smooth-$L_1$
+(Huber) loss.

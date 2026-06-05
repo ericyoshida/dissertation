@@ -1,30 +1,161 @@
 % =====================================================================
 % Chapter 4 --- The Perception Pipeline (cohesion hub)            [cross-cutting]
 % Presents the end-to-end pipeline ONCE and maps the three self-contained
-% project chapters (5, 6, 7) onto it. This is the chapter that keeps the
-% three projects reading as one coherent work.
-% Target length: ~5 pages.
+% project chapters (5, 6, 7) onto it.
 % =====================================================================
 
+The three studies that form the body of this dissertation address different
+problems: a simulated range--bearing tracker (Chapter~\ref{cha:tracking}), a
+real-world monocular tracker (Chapter~\ref{cha:monocular}), and a synthetic
+dataset with a 3D detector (Chapter~\ref{cha:airsim}). Yet they are not three
+separate works. They are three contributions to a single artefact: the perception
+(\emph{Sense}) pipeline that turns onboard sensing into calibrated
+three-dimensional tracks for detect-and-avoid. This chapter presents that pipeline
+once, as a whole, and shows where each subsequent chapter plugs in. It is the hub
+that makes the rest of the dissertation read as one system rather than three
+appendices.
+
 \section{Overview: A Modular Camera--Point-Cloud Pipeline}
-% TODO: end-to-end diagram RGB -> 2D detection -> frustum -> PointNet 3D -> EKF tracker -> 3D track;
-% the pipeline as the realization of the "Sense" capability for detect-and-avoid.
+\label{sec:pipeline-overview}
+
+The pipeline realizes the \emph{Sense} capability of
+Chapter~\ref{cha:relatedwork} as a cascade of four stages, shown in
+Figure~\ref{fig:pipeline}. A monocular image is first reduced to a set of
+two-dimensional object detections; each detection is lifted into a viewing
+frustum that bounds the corresponding volume of the point cloud; a point-cloud
+network estimates an amodal three-dimensional box within that frustum; and a
+recursive Bayesian filter tracks the resulting detections over time, emitting a
+state estimate together with its covariance. The design follows the
+camera--point-cloud fusion lineage of Frustum~PointNets \cite{qi2018frustum},
+adapted to the aerial sense-and-avoid setting and terminated by the tracking stage
+that the literature most often defers (Chapter~\ref{cha:relatedwork}).
+
+Two design commitments run through the whole pipeline. The first is
+\emph{fusion by geometry}: rather than fusing camera and point-cloud features in a
+learned latent space, the image detection geometrically constrains the
+point-cloud search through the camera model of Chapter~\ref{cha:background},
+keeping each modality interpretable and each stage independently trainable. The
+second is \emph{calibrated output}: the pipeline does not merely report where an
+obstacle is, but how uncertain that estimate is, because the downstream avoidance
+logic must reason about collision risk. This is why the safety-critical final
+stage is a Bayesian filter and not a regressor, and why its consistency, not
+just its accuracy, is analysed in Chapters~\ref{cha:tracking}
+and~\ref{cha:monocular}.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{Cap4/pipeline_architecture.pdf}
+  \caption{The modular camera--point-cloud perception pipeline. A 2D detector
+  seeds a viewing frustum that crops the point cloud; a point-cloud network
+  regresses a 3D box; and a recursive filter tracks the detections, emitting
+  calibrated 3D tracks for the avoidance layer. The three self-contained studies
+  of this dissertation contribute the stages annotated above each block.}
+  \label{fig:pipeline}
+\end{figure}
 
 \section{The Four Stages at a Glance}
-\subsection{2D Detection}
+\label{sec:pipeline-stages}
+
+Each stage is summarized conceptually here, with its inputs, method, and
+outputs; the detailed methodology is developed in the project chapters, so as not
+to duplicate it.
+
+\subsection{Two-Dimensional Detection}
+The first stage maps the RGB image to a set of object bounding boxes with
+confidence scores. It uses a one-stage convolutional detector of the YOLO family
+\cite{redmon2016yolo}, chosen for the real-time throughput an onboard system
+demands. Operating in the image alone, it provides high-recall \emph{where}
+information at low cost but no metric depth; its boxes are proposals that the next
+stage lifts into three dimensions. Its training and accuracy are treated in
+Chapter~\ref{cha:airsim}.
+
 \subsection{Frustum Proposal}
-\subsection{3D Detection (PointNet)}
-\subsection{Tracking (EKF)}
-% TODO: one concise conceptual paragraph per stage (inputs/method/outputs); the detailed
-% methodology is deferred to the project chapters, to avoid duplication.
+Each 2D box, together with the camera intrinsics of
+Chapter~\ref{cha:background}, defines a viewing frustum, the cone of space that
+projects into the box. Intersecting this frustum with the point cloud yields a
+small, target-centred subset of points, reducing an unordered scene of $10^5$
+points to a few thousand that plausibly belong to one object. This is the
+geometric fusion step: the image localizes the search, the point cloud supplies
+the depth. It carries no learned parameters and is detailed in
+Chapter~\ref{cha:airsim}.
+
+\subsection{Three-Dimensional Detection}
+A PointNet-style network \cite{qi2017pointnetpp} consumes the frustum points and
+regresses an amodal 3D bounding box (centre, size, and an objectness score that
+rejects frustums seeded by a false positive). Operating on the raw point set, it is
+invariant to point ordering and recovers metric position where the monocular image
+could not. Its output, expressed as a range, azimuth, elevation, and size, is the
+measurement consumed by the tracker. The architecture, its failure modes, and
+principled alternatives are the subject of Chapter~\ref{cha:airsim}.
+
+\subsection{Tracking}
+The final stage is an Extended Kalman Filter
+(Chapter~\ref{cha:background}) that fuses the stream of per-frame 3D detections
+into a temporally coherent state (position, velocity, and size) with an
+explicit covariance. It rejects spurious detections through gating, bridges
+missed detections through prediction, and reports a calibrated
+uncertainty. Because the sensor rides a moving platform, the filter must account
+for the observer's own motion; this is the problem analysed in depth in
+Chapters~\ref{cha:tracking} and~\ref{cha:monocular}.
 
 \section{Modularity and Cross-Domain Generality}
-% TODO: why a modular pipeline -- each stage is trained/validated independently and can be
-% reused or swapped across domains; this is what makes the three projects composable.
+\label{sec:pipeline-modularity}
+
+The pipeline is deliberately modular: the interfaces between stages are explicit
+and low-dimensional (boxes, then frustum points, then a 3D measurement with
+covariance), so each stage can be trained, validated, and replaced
+independently. This is what makes the three studies composable rather than
+monolithic, and it carries two further benefits.
+
+First, \emph{independent validation}: a stage can be analysed against its own
+ground truth without an end-to-end system. The tracker can be proved correct and
+benchmarked against the Cram\'er--Rao bound in simulation
+(Chapter~\ref{cha:tracking}) before any detector is attached; the detector can be
+evaluated on detection and localization metrics (Chapter~\ref{cha:airsim})
+independently of the filter. The safety-critical stage thus receives the
+mathematical scrutiny it warrants in isolation.
+
+Second, \emph{cross-domain generality}: because the tracker consumes an abstract
+range--bearing measurement with a covariance, it does not care whether that
+measurement came from a camera--LiDAR fusion detecting a drone or from a monocular
+detector localizing a person. The same estimator therefore serves both the 3D
+obstacle-tracking task of Chapter~\ref{cha:tracking} and the monocular
+person-tracking task of Chapter~\ref{cha:monocular}, a designed feature of the
+modular interface rather than a coincidence. The two domains differ in whether
+the platform pose is known, which is exactly the condition that
+Chapter~\ref{cha:tracking} identifies as the boundary between the equivalent and
+the divergent regimes of the filter.
 
 \section{Mapping the Contributions onto the Pipeline}
-% TODO: locate the three self-contained projects on the pipeline (the unifying thread):
-%   - the EKF tracker stage          -> Chapter~\ref{cha:tracking}  (simulation; global vs. local)
-%   - the monocular real-world variant -> Chapter~\ref{cha:monocular} (real UAV data; TU Berlin)
-%   - the detection front-end + dataset -> Chapter~\ref{cha:airsim}    (synthetic data; AirSim)
-% State explicitly: one vision (the pipeline), three contributions.
+\label{sec:pipeline-mapping}
+
+The three self-contained studies of this dissertation each contribute one part of
+the pipeline of Figure~\ref{fig:pipeline}; together they constitute the
+\emph{one vision, three contributions} structure of the work.
+
+\begin{itemize}
+  \item \textbf{The tracking stage} (Chapter~\ref{cha:tracking}). The
+  safety-critical filter is formulated for a moving platform, its global- and
+  local-frame variants are proved equivalent under known pose and isotropic
+  process noise, the regimes of genuine divergence are characterized, and the
+  filter is benchmarked against the Cram\'er--Rao bound in simulation. This is the
+  most mature contribution and is developed first.
+  \item \textbf{The tracking stage under uncertain pose}
+  (Chapter~\ref{cha:monocular}). The same estimator is taken to real flight data,
+  where the platform pose is \emph{estimated} rather than known; the filter
+  propagates the camera-pose uncertainty into its innovation, instantiating the
+  divergent regime that Chapter~\ref{cha:tracking} predicts and demonstrating the
+  generality of the framework on a different sensor (monocular) and target
+  (person).
+  \item \textbf{The detection front-end and its data}
+  (Chapter~\ref{cha:airsim}). The 2D detector, frustum proposal, and 3D detector are
+  designed and trained, and the synthetic dataset that makes their training
+  possible is built; the chapter also compares the adopted two-stage frustum
+  design against the single-stage voxel alternative on a moving-observer campaign.
+\end{itemize}
+
+In short, Chapters~\ref{cha:tracking} and~\ref{cha:monocular} build and validate
+the tracking stage in two complementary regimes, and Chapter~\ref{cha:airsim}
+builds the detection stages that feed it. The chapters that follow can therefore
+be read independently, each as a complete study, while this pipeline keeps them
+anchored to a single end-to-end system.

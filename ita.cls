@@ -141,7 +141,7 @@
    \input{\itaclassfile{itabr.babel}}
  \fi
 
-\RequirePackage[latin1,utf8]{inputenc} % latin -> utf . Modification to use idiomatic ascents directly: âáìõ
+\RequirePackage[utf8]{inputenc} % UTF-8 sources (equivalent to prior [latin1,utf8]: last option wins); utf8-only also works under XeTeX/tectonic
 \RequirePackage{setspace}
 \RequirePackage{fancyhdr}
 \RequirePackage{amsfonts}                 % Fontes p/ conjuntos: R,Z,H,...

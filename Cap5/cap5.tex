@@ -11,8 +11,8 @@ Chapter~\ref{cha:pipeline} as a self-contained estimation problem: recovering th
 three-dimensional position, velocity and size of a moving object from
 range--bearing measurements produced by a sensor rigidly attached to a moving
 aerial platform. Two formulations of the Extended Kalman Filter (EKF) are
-derived --- one that carries the object state in a global inertial frame and
-one that carries it in the platform's local frame --- and their relationship is
+derived, one carrying the object state in a global inertial frame and
+one carrying it in the platform's local frame, and their relationship is
 analysed rigorously. The central result is that, under the modelling
 assumptions adopted here, the two formulations are \emph{mathematically
 equivalent}; we then identify the precise conditions under which a genuine
@@ -149,7 +149,7 @@ covariance is then
   \bm{R}_k = \operatorname{diag}\!\big(\alpha_{\rho}\rho_k^{2},\; \sigma_{\alpha}^{2},\; \sigma_{\beta}^{2},\; \sigma_{r}^{2}\big).
   \label{eq:Rmatrix}
 \end{equation}
-Because $\rho_k$ is the \emph{range} --- a frame-invariant scalar --- the noise
+Because $\rho_k$ is the \emph{range}, a frame-invariant scalar, the noise
 model \eqref{eq:rangenoise}--\eqref{eq:Rmatrix} is identical regardless of the
 frame in which the state is carried.
 
@@ -237,7 +237,7 @@ $\bm{A}_k = \bm{R}_k^{\top}\bm{R}_{k-1}$,
   \label{eq:reor_cov}
 \end{equation}
 The deterministic translation $\bm{R}_k^{\top}(\bm{p}^{p}_{k-1}-\bm{p}^{p}_k)$
-shifts the mean but, being noise-free, leaves the covariance unchanged --- hence
+shifts the mean but, being noise-free, leaves the covariance unchanged, so
 only the rotation $\bm{A}_k$ appears in \eqref{eq:reor_cov}. After reorientation,
 the constant-velocity prediction \eqref{eq:gpredict} is applied in the frame at
 time $k$.
@@ -260,8 +260,8 @@ $\bm{H}^{\mathrm{g}}_k$.
 \section{Equivalence of the Two Formulations}
 \label{sec:equiv}
 
-The two filters appear to differ substantially --- one rotates the measurement,
-the other rotates the state --- yet under the present assumptions they are
+The two filters appear to differ substantially (one rotates the measurement,
+the other rotates the state), yet under the present assumptions they are
 identical. Define the frame-change operator
 \begin{equation}
   \bm{T}_k = \operatorname{blkdiag}\!\big(\bm{R}_k^{\top},\,\bm{R}_k^{\top},\,1\big),
@@ -309,7 +309,7 @@ $\bm{T}_k\bm{Q}\bm{T}_k^{\top}=\bm{Q}$, then yields
 $\hat{\bm{x}}^{\mathrm{l}}_{k|k-1}=\bm{T}_k\hat{\bm{x}}^{\mathrm{g}}_{k|k-1}+\bm{c}_k$
 and $\bm{P}^{\mathrm{l}}_{k|k-1}=\bm{T}_k\bm{P}^{\mathrm{g}}_{k|k-1}\bm{T}_k^{\top}$.
 Because the predicted local position coincides with the global one, the predicted
-range $\rho$ --- and hence $\bm{R}_k$ in \eqref{eq:Rmatrix} --- is identical, as is
+range $\rho$, and hence $\bm{R}_k$ in \eqref{eq:Rmatrix}, is identical, as is
 the innovation $\bm{\nu}_k$. Using $\bm{H}^{\mathrm{g}}_k=\bm{H}^{\mathrm{l}}_k\bm{T}_k$
 in \eqref{eq:gSK} gives $\bm{S}^{\mathrm{l}}_k=\bm{S}^{\mathrm{g}}_k$ and
 $\bm{K}^{\mathrm{l}}_k=\bm{T}_k\bm{K}^{\mathrm{g}}_k$, from which the update
@@ -321,8 +321,8 @@ Proposition~\ref{prop:equiv} was verified numerically by implementing both
 filters in a common environment and driving them with the same Monte~Carlo data
 ($300$ independent runs of $300$ steps, $\Delta t=0.1$~s). Mapping the local
 estimate back to the global frame, the maximum discrepancy between the two
-position estimates over all runs and steps was $1.7\times10^{-13}$~m --- machine
-precision --- and both filters attained a mean Euclidean error of $0.181$~m and an
+position estimates over all runs and steps was $1.7\times10^{-13}$~m (machine
+precision), and both filters attained a mean Euclidean error of $0.181$~m and an
 RMSE of $0.228$~m. The two curves in Figure~\ref{fig:ekf_equiv} are therefore
 indistinguishable.
 
@@ -345,8 +345,8 @@ and understanding these regimes is what actually guides the choice of frame.
 
 \subsection{Neglecting Platform Motion}
 
-If the reorientation \eqref{eq:reor_pos}--\eqref{eq:reor_cov} is omitted --- i.e.\
-the moving body frame is implicitly treated as inertial --- the prediction is
+If the reorientation \eqref{eq:reor_pos}--\eqref{eq:reor_cov} is omitted, i.e.\
+the moving body frame is implicitly treated as inertial, the prediction is
 biased by the platform displacement between consecutive steps. This single
 omission raises the RMSE from $0.228$~m to $0.301$~m (the red curve in
 Figure~\ref{fig:ekf_equiv}); it does \emph{not} reflect any intrinsic inferiority
@@ -358,14 +358,14 @@ recovers the global filter's accuracy exactly.
 \subsection{Anisotropic Process Noise}
 
 Assumption~(ii) fails when the acceleration noise is directional in the inertial
-frame --- for instance, a target that accelerates predominantly along its track.
+frame, for instance a target that accelerates predominantly along its track.
 Then $\bm{T}_k\bm{Q}\bm{T}_k^{\top}\neq\bm{Q}$, and the formulation whose frame
 diagonalises $\bm{Q}$ is preferred: the global filter models inertial-frame
 directional noise correctly, whereas the local filter injects it in the rotating
 frame and is mismatched. With a strongly anisotropic intensity
 ($\sigma_{a,x}=0.6$, $\sigma_{a,y}=\sigma_{a,z}=0.05~\mathrm{m/s^2}$) and a
 platform yawing at $0.6~\mathrm{rad/s}$, the global filter attains an RMSE of
-$0.380$~m against $0.534$~m for the local filter --- a $41\%$ degradation
+$0.380$~m against $0.534$~m for the local filter, a $41\%$ degradation
 (Figure~\ref{fig:aniso}). Symmetrically, noise that is diagonal in the body frame
 favours the local formulation. The guiding principle is to carry the state in the
 frame where the process noise is naturally uncorrelated.
@@ -402,9 +402,9 @@ recursion
               + \mathbb{E}\!\big[\bm{H}_{k+1}^{\top}\,\bm{R}_{k+1}^{-1}\,\bm{H}_{k+1}\big],
   \label{eq:fim}
 \end{equation}
-where the expectation is taken over the state trajectory --- approximated by
+where the expectation is taken over the state trajectory (approximated by
 Monte~Carlo, with $\bm{H}_{k+1}$ and $\bm{R}_{k+1}$ evaluated along each true
-trajectory --- and the position bound is read off the inverse,
+trajectory), and the position bound is read off the inverse,
 \begin{equation}
   \mathrm{PCRB}(k) = \big[\bm{J}_k^{-1}\big]_{1:3,\,1:3}.
   \label{eq:crlb}
@@ -412,7 +412,7 @@ trajectory --- and the position bound is read off the inverse,
 By Proposition~\ref{prop:equiv} the two formulations share the same bound.
 Figure~\ref{fig:crlb} compares, per axis, the empirical RMSE of the filter (over
 $3{,}000$ Monte~Carlo runs) with $\sqrt{\mathrm{PCRB}}$. The achieved error
-remains at or above the bound at every step --- the filter is near-optimal ---
+remains at or above the bound at every step (the filter is near-optimal),
 and the two grow together over time: as the object recedes from the
 platform, the range $\rho$ increases and the heteroscedastic term
 $\sigma_{\rho}^{2}=\alpha_{\rho}\rho^{2}$ in \eqref{eq:rangenoise} inflates the

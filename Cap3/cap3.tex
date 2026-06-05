@@ -38,9 +38,9 @@ with real-time feasibility; and the \emph{context} is urban sense-and-avoid
 \subsection{Sources, Search, and Selection}
 
 Automated searches of OpenAlex, Semantic Scholar, and academic web search
-engines were run with three query families --- (i) UAV sense-and-avoid with deep
+engines were run with three query families, namely (i) UAV sense-and-avoid with deep
 perception, (ii) frustum- and PointNet-based 3D detection, and (iii)
-LiDAR--camera fusion for aerial 3D detection --- and complemented by backward and
+LiDAR--camera fusion for aerial 3D detection, and complemented by backward and
 forward snowballing (one-hop) from four seed papers: PointNet
 \cite{qi2017pointnet}, Frustum PointNets \cite{qi2018frustum}, the UAV3D
 benchmark \cite{ye2024uav3d}, and a recent UAV 3D-perception survey. Studies were
@@ -90,7 +90,15 @@ single pass, dominates aerial detection because of its real-time throughput; a
 substantial body of work adapts it to the small objects, oblique viewpoints, and
 scale variation characteristic of aerial imagery. These detectors are mature and
 are treated here as a reliable building block rather than a research
-contribution of this work.
+contribution of this work. The practical difficulty in the aerial setting is
+\emph{domain shift}: a detector trained on one regime of altitude, viewpoint, and
+background degrades on another, so a network tuned to a single benchmark does not
+transfer to an unseen operating scene. A standard mitigation, adopted for the
+real-world person detector of Chapter~\ref{cha:monocular}, is to train on a union
+of complementary aerial datasets that jointly span the urban, rural, near-range,
+and high-altitude regimes (Section~\ref{sec:slr_datasets}), broadening the
+detector's operating envelope so that it generalises to a deployment environment
+absent from any one of them.
 
 \section{Frustum-Based 3D Detection in Autonomous Driving}
 
@@ -115,6 +123,16 @@ operate on multi-camera or unified BEV representations. These approaches achieve
 state-of-the-art accuracy on driving benchmarks but are LiDAR- or
 multi-camera-centric and, again, are not deployed on UAVs.
 
+Orthogonal to the two-stage frustum design is the \emph{single-stage} voxel
+paradigm, which detects directly in the point cloud without a 2D proposal:
+VoxelNet/SECOND \cite{yan2018second} apply 3D convolutions over a voxel grid,
+PointPillars \cite{lang2019pointpillars} encodes a bird's-eye-view pillar grid for
+real-time inference, and centre-based heads \cite{zhou2019objects} predict object
+centres as heatmap peaks. This paradigm removes the recall ceiling imposed by the
+2D detector at the cost of detecting in the whole, cluttered scene; it is the
+alternative against which the frustum pipeline is empirically compared on aerial
+data in Chapter~\ref{cha:airsim}.
+
 \section{3D Perception and Sense-and-Avoid for UAVs}
 
 On the aerial side, 3D perception is comparatively recent and follows different
@@ -124,21 +142,22 @@ and is synthetic. Method papers favour LiDAR-centric or RGB-D pipelines:
 LiDAR--camera obstacle detection for UAVs \cite{ma2021uavfusion}, aerial
 LiDAR-based detection with unscented-Kalman-filter tracking
 \cite{cherif2023aerial}, and airborne LiDAR sense-and-detect \cite{dolph2023airborne}.
-Crucially, \emph{none} of these adopts the frustum-to-PointNet fusion that is
-standard in driving --- they use voxel networks, RGB-D, or LiDAR alone.
+None of these, however, adopts the frustum-to-PointNet fusion that is
+standard in driving; they use voxel networks, RGB-D, or LiDAR alone.
 
 \section{Multi-Object Tracking on Moving Platforms}
 
 For the tracking stage, the literature divides into learning-based
 appearance trackers and recursive-filter trackers. Filter-based multi-object
-tracking on moving platforms --- the regime of this dissertation --- typically
+tracking on moving platforms, the regime of this dissertation, typically
 couples a detector with a Kalman or extended Kalman filter; recent UAV trackers
 such as DMTrack \cite{fu2025dmtrack} address association and motion but are
 tracker-only, without an integrated 3D detection pipeline. The author's own prior
 work \cite{delima2025fusion}, extended in Chapter~\ref{cha:tracking}, contributes
 the recursive-filter tracking stage used here.
 
-\section{Datasets for Aerial 3D Perception}
+\section{Datasets for Aerial Perception}
+\label{sec:slr_datasets}
 
 The scarcity of aerial 3D data is itself a structural obstacle. The driving
 domain is served by KITTI \cite{geiger2012kitti}, nuScenes
@@ -149,6 +168,19 @@ benchmark, UAV3D \cite{ye2024uav3d}, is one year old and synthetic. This
 motivates the synthetic dataset built with AirSim \cite{shah2018airsim} in
 Chapter~\ref{cha:airsim}.
 
+For aerial \emph{person} detection in particular, the measurement front-end of
+the monocular tracker of Chapter~\ref{cha:monocular}, the available 2D datasets
+are complementary rather than interchangeable, each covering one regime of the
+domain-shift space discussed above. VisDrone \cite{zhu2021visdrone} captures
+urban, oblique, low-to-medium-altitude scenes with dense pedestrians; the
+search-and-rescue datasets SARD \cite{sambolek2021sard} and HERIDAL
+\cite{bozic2019heridal} contribute, respectively, near-range rural imagery with
+non-canonical body poses and high-altitude near-nadir imagery in which persons
+appear as small, low-contrast targets. Because no single corpus spans the
+altitude, viewpoint, and environment ranges of a real deployment, training the
+detector on their union is what yields the cross-domain generalisation exploited
+in Chapter~\ref{cha:monocular}.
+
 \section{The Research Gap}
 
 \subsection{Uniqueness Matrix}
@@ -157,9 +189,9 @@ Table~\ref{tab:uniqueness} maps the closest adjacent works against the seven
 attributes that together define this dissertation's target: a drone target,
 a frustum stage, a PointNet 3D-box estimator, camera--LiDAR fusion, an integrated
 tracker, an urban environment, and a sense-and-avoid application. The works
-divide into two blocks. The first --- the frustum and fusion methods from driving
---- possesses the full detection machinery but never targets UAVs. The second ---
-the UAV-specific methods --- targets drones but lacks the frustum-to-PointNet
+divide into two blocks. The first (the frustum and fusion methods from driving)
+possesses the full detection machinery but never targets UAVs. The second (the
+UAV-specific methods) targets drones but lacks the frustum-to-PointNet
 pipeline. Of the nineteen closest works examined, \emph{none} satisfies all seven
 attributes; only this dissertation fills every cell.
 
@@ -197,7 +229,7 @@ The gap can be stated in one sentence: \emph{no published work has transferred
 the frustum-to-PointNet detection pipeline from autonomous driving to UAV
 sense-and-avoid in urban environments}. The closest mention in the surveyed
 literature is a single aspirational sentence in a frustum-sampling paper noting
-that such methods ``show promise'' for drones --- with no implementation or
+that such methods ``show promise'' for drones, with no implementation or
 evaluation.
 
 \subsection{Why This Has Not Been Done Yet}
@@ -242,6 +274,6 @@ ground vehicles to urban UAV perception, integrates 2D detection, frustum
 proposal, 3D box estimation, and recursive-filter tracking into one
 situational-awareness pipeline, and addresses the data and compute obstacles
 through a synthetic dataset and an efficient, rigorously analysed tracker. The
-tracking stage --- the safety-critical component that the literature most often
-defers --- is the most mature contribution and is developed first, in
+tracking stage, the safety-critical component that the literature most often
+defers, is the most mature contribution and is developed first, in
 Chapter~\ref{cha:tracking}.

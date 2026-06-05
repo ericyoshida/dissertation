@@ -17,16 +17,16 @@ point-cloud data.
 
 Urban Air Mobility (UAM) refers to the emerging ecosystem of small, typically
 electric vertical take-off and landing (eVTOL) aircraft intended to move people
-and cargo within and around cities. A new generation of vehicles --- including
+and cargo within and around cities. A new generation of vehicles, including
 those developed by Joby Aviation, Lilium, and Embraer's subsidiary Eve Air
-Mobility --- is being designed for this role, and with them comes a regulatory and
+Mobility, is being designed for this role, and with them comes a regulatory and
 engineering push toward progressively higher levels of flight autonomy.
 
 Operating in the urban canyon is fundamentally harder than operating at cruise
 altitude. The airspace is cluttered and dynamic: static structures, moving
 ground vehicles, other UAVs, and uncooperative traffic share a small volume, and
 the margins for error are tight. A human pilot manages this through continuous
-\emph{situational awareness} --- perceiving nearby objects, estimating their
+\emph{situational awareness}: perceiving nearby objects, estimating their
 motion, and anticipating conflicts. An autonomous aircraft must reconstruct the
 same awareness from its sensor suite. Building that awareness reliably, on
 board, and in real time is the central enabling problem for safe autonomous
@@ -47,15 +47,15 @@ mandatory element of the certification of autonomous and beyond-visual-line-of-s
 operations. D\&A decomposes naturally into two coupled problems:
 
 \begin{itemize}
-  \item \textbf{Sense} --- the \emph{perception} problem: detecting obstacles,
+  \item \textbf{Sense}, the \emph{perception} problem: detecting obstacles,
   estimating their three-dimensional position and extent, and tracking their
   motion over time from onboard sensors;
-  \item \textbf{Avoid} --- the \emph{decision and control} problem: planning and
+  \item \textbf{Avoid}, the \emph{decision and control} problem: planning and
   executing an evasive manoeuvre once a threat has been characterised.
 \end{itemize}
 
 This dissertation is concerned exclusively with the \textbf{Sense} side. The
-avoidance problem --- trajectory planning and control --- is outside its scope and
+avoidance problem (trajectory planning and control) is outside its scope and
 is treated as a downstream consumer of the perception output. The essential
 requirement that Sense places on Avoid is not merely an estimate of where an
 obstacle is, but a \emph{calibrated} estimate: a state together with a
@@ -73,7 +73,7 @@ Bayesian estimation.
 \section{Problem Statement}
 
 Concretely, we consider a UAV equipped with a camera and a source of
-three-dimensional measurements --- a LiDAR or a stereo/depth sensor --- that must,
+three-dimensional measurements (a LiDAR or a stereo/depth sensor) that must,
 in real time and from a moving platform, (i) detect obstacles in its field of
 view, (ii) estimate their three-dimensional position and size, and (iii) track
 them over time, producing calibrated state estimates suitable for a downstream
@@ -123,7 +123,9 @@ formulated, analysed, and validated with mathematical rigour.
   camera-pose uncertainty into the estimator.
   \item To design the detection front-end of the pipeline and to assemble a
   fully-annotated synthetic aerial dataset that enables its training in the
-  absence of large-scale real data.
+  absence of large-scale real data, and to evaluate the front-end, together with
+  alternative detection paradigms, on a moving-observer campaign with
+  three-dimensional detection and tracking metrics.
   \item To position the work in the literature through a systematic review,
   identifying and substantiating the research gap it addresses.
 \end{enumerate}
@@ -131,7 +133,7 @@ formulated, analysed, and validated with mathematical rigour.
 \section{Contributions}
 
 The dissertation makes the following contributions, organised as one overarching
-system --- the perception pipeline --- and three self-contained studies that
+system, the perception pipeline, and three self-contained studies that
 realise and validate its components:
 
 \begin{enumerate}
@@ -145,13 +147,25 @@ realise and validate its components:
   \item \textbf{Generality of the framework, validated on real data}
   (Chapter~\ref{cha:monocular}). The same estimator is extended to monocular
   person tracking from a UAV operated at TU Berlin, where the platform pose is
-  uncertain; the filter propagates the six-degree-of-freedom camera-pose
-  covariance into its innovation, yielding consistent estimates under aggressive
-  platform motion.
+  uncertain and depth is unobservable. A person detector trained on a union of
+  complementary aerial datasets (spanning urban, rural near-range, and
+  high-altitude regimes) supplies the image measurements; a ground-plane
+  constraint recovers metric position from the single view; and the filter
+  propagates the six-degree-of-freedom camera-pose covariance into its
+  innovation, which an ablation shows to be necessary for statistical
+  consistency under aggressive platform motion. The system is validated on real
+  flights against a LiDAR-referenced ground truth.
   \item \textbf{A synthetic aerial dataset and detection front-end}
   (Chapter~\ref{cha:airsim}). A configurable, fully-annotated dataset built in
-  AirSim addresses the scarcity of three-dimensional aerial data and is used to
-  train the CNN-based two- and three-dimensional detectors of the pipeline.
+  AirSim addresses the scarcity of three-dimensional aerial data: a pixel-exact
+  synthetic-composition scheme circumvents the simulator's unreliable annotation
+  interfaces, and a geometric construction supplies trustworthy 3D boxes. The data
+  train the CNN-based two- and three-dimensional detectors, which are then
+  evaluated on a moving-observer campaign with the multi-object-tracking metrics
+  standard in autonomous driving. The study further identifies foreground
+  extraction, rather than the box regressor, as the dominant lever on 3D
+  localization accuracy, and provides the first empirical comparison of the
+  two-stage frustum design against the single-stage voxel paradigm on aerial data.
   \item \textbf{A systematic literature review} (Chapter~\ref{cha:relatedwork})
   following the PRISMA, Kitchenham, and Wohlin methodologies, which establishes
   that frustum-based camera--point-cloud detection has not previously been
@@ -171,9 +185,9 @@ Coordination Lab at TU Berlin, is in preparation for publication.
 
 The remainder of the dissertation is organised so that a shared foundation
 supports three self-contained studies. Chapter~\ref{cha:background} establishes
-the common theoretical framework --- recursive Bayesian estimation and the EKF,
-coordinate frames, motion and measurement models, consistency metrics, and the
-neural-network building blocks --- from which every later chapter draws.
+the common theoretical framework, comprising recursive Bayesian estimation and the
+EKF, coordinate frames, motion and measurement models, consistency metrics, and the
+neural-network building blocks from which every later chapter draws.
 Chapter~\ref{cha:relatedwork} reviews the literature and substantiates the
 research gap. Chapter~\ref{cha:pipeline} presents the perception pipeline as a
 single architecture and shows how the three studies map onto it. The three study

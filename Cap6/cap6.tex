@@ -1,51 +1,527 @@
 % =====================================================================
-% Chapter 6 --- Monocular Person Tracking from a Moving UAV (TU Berlin)
-%                                                            [tracker -- HERE]
+% Chapter 6 --- Extending the Tracker to Monocular Real-World Operation
+%               (TU Berlin)                                  [tracker -- HERE]
 % Self-contained project: Overview -> Methodology -> Results -> Discussion.
 % Framed as an EXTENSION of Chapter~\ref{cha:tracking}: the same EKF framework
 % generalises to a harder, monocular, real-world case and, because the platform
 % pose is now uncertain, the global/local frames genuinely diverge here.
-% Target length: ~9 pages (methodology + results).
 % =====================================================================
 
+This chapter takes the estimation framework of Chapter~\ref{cha:tracking} out of
+simulation and onto a real aerial platform. The obstacle tracker developed there
+assumed a metric range--bearing sensor and a \emph{known} platform pose, and both
+assumptions are relaxed here at once. The sensor is now a single calibrated
+camera, with no depth and no LiDAR on the target, and the platform pose is
+\emph{estimated} on board and therefore uncertain. The target is a walking person
+rather than a generic obstacle. The study was carried out during a three-month
+research stay with the Control Systems Group at the Technische Universit\"at
+Berlin (TU Berlin), using a custom quadrotor and real flight data. It is the
+empirical counterpart of Chapter~\ref{cha:tracking}, and it operates in the
+regime where the global and local formulations of Chapter~\ref{cha:tracking} stop
+being equivalent: when the platform pose is uncertain, its covariance must be
+propagated into the filter, and doing so correctly is the central methodological
+contribution of this chapter.
+
 \section{Overview and Objectives}
-% TODO: the TU Berlin collaboration; from obstacle tracking to person tracking;
-% generality of the framework of Chapter~\ref{cha:tracking}; camera-only sensing,
-% ground-plane + known-height assumptions (no LiDAR).
+\label{sec:mono_overview}
+
+The guiding question is one of \emph{generality}: does the recursive-filter
+tracking stage of the pipeline (Chapter~\ref{cha:pipeline}) survive the
+transition from a controlled, range-sensing simulation to a monocular,
+real-world deployment? Answering it requires three adaptations of the
+Chapter~\ref{cha:tracking} estimator, each addressing one property that the
+simulation took for granted.
+
+\begin{enumerate}
+  \item \textbf{From range--bearing to bearing-only sensing.} A monocular camera
+  measures a pixel, not a range, and depth is unobservable from a single view. The
+  spherical measurement model of Chapter~\ref{cha:tracking} is replaced by the
+  nonlinear pinhole projection of Chapter~\ref{cha:background}, and the lost
+  depth dimension is recovered through a \emph{ground-plane} constraint: the
+  target is a person standing on a surface of known height, which closes the
+  projective ambiguity.
+  \item \textbf{From known to uncertain platform pose.} The pose is supplied by
+  the onboard navigation system and is itself an estimate. Its
+  six-degree-of-freedom (6-DoF) uncertainty is propagated into the innovation
+  covariance through an \emph{extrinsic Jacobian}, so that the filter inflates
+  its gate when the platform pose is least trustworthy, during aggressive
+  manoeuvres.
+  \item \textbf{From a generic obstacle to a learned person detector.} The 2D
+  measurement is produced by a CNN person detector
+  (Chapter~\ref{cha:background}). Since the operating scene differs from any
+  single public benchmark, the detector is trained on a \emph{union} of aerial
+  person-detection datasets spanning urban, rural, near, and far viewpoints, so
+  that it generalises to the deployment environment.
+\end{enumerate}
+
+The objective of the chapter is therefore twofold: to formulate a monocular,
+pose-uncertainty-aware EKF for person tracking from a moving UAV, and to validate
+it on real flights against an independently surveyed, LiDAR-referenced ground
+truth. The remainder follows the self-contained structure of the project
+chapters. Section~\ref{sec:mono_method} develops the methodology, covering the
+detector, the measurement model, the ground-plane initialisation, the
+extrinsic-aware innovation covariance, the temporal synchronisation, and the
+experimental platform; Section~\ref{sec:mono_results} reports the experimental
+protocol and results; and Section~\ref{sec:mono_discussion} connects the findings
+back to the equivalence theorem of Chapter~\ref{cha:tracking}.
 
 \section{Methodology}
+\label{sec:mono_method}
+
+The monocular tracker is organised as two branches that meet at the filter, shown
+in Figure~\ref{fig:mono_pipeline}. A \emph{vision} branch turns each frame into a
+metric measurement: the image is undistorted, a person detector
+(Section~\ref{sec:mono_detector}) localises the target, and its foot pixel is
+extracted (Section~\ref{sec:mono_meas}). A \emph{navigation} branch supplies the
+platform pose and its uncertainty, temporally aligned to the frame
+(Section~\ref{sec:mono_sync}). The two meet in the ground-plane geometry: the
+first detection is lifted to a metric position by ray--plane intersection
+(Section~\ref{sec:mono_groundplane}), and every subsequent detection updates an
+EKF whose innovation covariance is inflated by the propagated pose uncertainty
+(Section~\ref{sec:mono_extrinsic}). The following subsections develop each block
+in turn.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{Cap6/pipeline_monocular.pdf}
+  \caption{The monocular person-tracking pipeline. The vision branch (top)
+  produces the foot-pixel measurement; the navigation branch (bottom) produces
+  the time-synchronised camera pose and its covariance $\bm{\Sigma}$. They meet at
+  the ground-plane initialisation and the extrinsic-aware EKF update, whose
+  innovation covariance
+  $\bm{S}=\bm{H}\bm{P}\bm{H}^{\top}+\bm{J}_{\mathrm{ext}}\bm{\Sigma}\bm{J}_{\mathrm{ext}}^{\top}+\bm{R}_{\mathrm{cam}}$
+  carries the pose uncertainty into the filter.}
+  \label{fig:mono_pipeline}
+\end{figure}
+
+\subsection{Cross-Domain Training of the Person Detector}
+\label{sec:mono_detector}
+
+The first stage of the monocular pipeline is the 2D person detector that supplies
+the filter's measurements. The deployment scene, an indoor sports hall imaged
+from a low-altitude quadrotor, is not represented by any single public benchmark,
+since aerial person-detection datasets are each specialised to one regime of
+altitude, viewpoint, and background. Training on any one of them in isolation
+yields a detector that overfits that regime and degrades under the domain shift
+of a new environment.
+
+To obtain a detector that generalises, we trained the one-stage YOLO architecture
+(Chapter~\ref{cha:background}, \cite{redmon2016yolo}) on the \emph{union} of three
+complementary aerial datasets, illustrated in Figure~\ref{fig:datasets}:
+
+\begin{itemize}
+  \item \textbf{VisDrone} \cite{zhu2021visdrone} is a large-scale urban
+  drone-imagery benchmark with dense pedestrians and vehicles seen from oblique,
+  low-to-medium altitudes (Figure~\ref{fig:datasets}a). It contributes
+  \emph{urban} clutter and crowded, small-object scenes.
+  \item \textbf{SARD} \cite{sambolek2021sard} is a search-and-rescue dataset of
+  actors emulating lost or injured persons in rural terrain, captured at close
+  range and oblique angles (Figure~\ref{fig:datasets}b). It contributes
+  \emph{near-range, non-canonical body poses} (crouching, lying) against natural
+  backgrounds.
+  \item \textbf{HERIDAL} \cite{bozic2019heridal} is a wilderness
+  search-and-rescue dataset acquired at high altitude with a near-nadir
+  viewpoint, in which persons appear as very small, low-contrast targets over
+  heterogeneous terrain (Figure~\ref{fig:datasets}c). It contributes the
+  \emph{far-range, tiny-target} regime.
+\end{itemize}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{Cap6/datasets_montage.pdf}
+  \caption{The three aerial person-detection datasets combined to train the
+  detector. Their complementary regimes (urban and oblique in VisDrone,
+  rural and near-range in SARD, wilderness and high-altitude-nadir in HERIDAL)
+  span the viewpoints, scales, and backgrounds that no single benchmark provides,
+  so that the trained detector generalises to the unseen TU Berlin scene.}
+  \label{fig:datasets}
+\end{figure}
+
+The three datasets were chosen to be \emph{orthogonal} along the axes that drive
+aerial domain shift: altitude (near to far), viewpoint (oblique to nadir), and
+environment (built to natural). Their union therefore covers the interior of that
+space instead of a single corner of it. Training on the combined corpus yields a
+detector whose decision boundary is shaped by the full range of scales and
+appearances, and this generalisation lets the network, trained entirely on
+external data, detect the person reliably in the TU Berlin sports hall, a scene
+present in none of the training sets. This trained network is the detector used
+throughout the tracking experiments of this chapter; for each frame it outputs the
+set of person bounding boxes from which the filter's measurement is extracted
+(Section~\ref{sec:mono_meas}).
 
 \subsection{Monocular Measurement Model and Plumb-Bob Undistortion}
-% TODO: nonlinear pinhole projection as the measurement; iterative undistortion.
+\label{sec:mono_meas}
+
+The filter state is the target's planar position and velocity on the ground
+plane,
+\begin{equation}
+  \bm{x}_k = \begin{bmatrix} x_k & y_k & \dot{x}_k & \dot{y}_k \end{bmatrix}^{\!\top},
+  \label{eq:mono_state}
+\end{equation}
+expressed in the world frame $\mathcal{W}$ of Chapter~\ref{cha:background}. The
+target is propagated with the constant-velocity, white-acceleration model
+\eqref{eq:cv}--\eqref{eq:cwna}: with sampling interval $\Delta t$,
+\begin{equation}
+  \bm{x}_{k} = \bm{F}\,\bm{x}_{k-1} + \bm{w}_{k-1},\quad
+  \bm{F} = \begin{bmatrix} \bm{I}_2 & \Delta t\,\bm{I}_2 \\ \bm{0} & \bm{I}_2 \end{bmatrix},\quad
+  \bm{Q} = \bm{G}\,\sigma_a^2\bm{I}_2\,\bm{G}^{\!\top},\quad
+  \bm{G} = \begin{bmatrix} \tfrac{\Delta t^2}{2}\bm{I}_2 \\ \Delta t\,\bm{I}_2 \end{bmatrix},
+  \label{eq:mono_process}
+\end{equation}
+with acceleration intensity $\sigma_a$. The one change of substance relative
+to Chapter~\ref{cha:tracking} is the measurement: a camera reports the
+\emph{pixel} projection of the target, not its range and bearing.
+
+Let $\bm{T}_{\mathcal{W}\to\mathcal{O},k}=(\bm{R}^{wo}_k,\bm{t}^{wo}_k)$ be the
+rigid transform from world to optical frame at time $k$, composed from the
+platform pose and the fixed camera mounting (Section~\ref{sec:mono_platform}). A
+world point $\bm{X}^{\mathcal{W}}$ maps to the optical frame as
+$\bm{X}^{\mathcal{O}}=\bm{R}^{wo}_k\bm{X}^{\mathcal{W}}+\bm{t}^{wo}_k$ and projects
+to the normalised pixel through the pinhole model \eqref{eq:pinhole},
+\begin{equation}
+  \bm{h}(\bm{X}^{\mathcal{W}}) = \pi\!\big(\bm{K}\,\bm{X}^{\mathcal{O}}\big)
+  = \begin{bmatrix} f_x\,X^{\mathcal{O}}/Z^{\mathcal{O}} + c_x \\[2pt]
+                    f_y\,Y^{\mathcal{O}}/Z^{\mathcal{O}} + c_y \end{bmatrix}.
+  \label{eq:mono_h}
+\end{equation}
+The intrinsics $\bm{K}$ and the radial--tangential (plumb-bob) distortion
+coefficients $(k_1,k_2,k_3,p_1,p_2)$ are obtained by an offline checkerboard
+calibration. Because the measurement model \eqref{eq:mono_h} is the
+\emph{distortion-free} pinhole map, every detected pixel is first undistorted: the
+plumb-bob model is inverted iteratively (fixed-point iteration on the normalised
+coordinates) to recover the ideal pinhole pixel that \eqref{eq:mono_h} predicts.
+All measurements entering the filter are thus expressed in the rectified image,
+which keeps the measurement equation a pure projection.
+
+From each confirmed person detection, the measurement is taken as the
+\emph{foot point}, the mid-bottom of the bounding box,
+$\bm{z}_k=[\tfrac{1}{2}(x_1+x_2),\,y_2]^{\top}$ in box corner coordinates. The
+foot point is the image of the target's contact with the ground plane, so it is
+the pixel that the ground-plane constraint (next subsection) maps to a metric
+position; the bounding-box centroid, by contrast, floats with the target's
+apparent height and does not lie on the plane.
 
 \subsection{Ground-Plane Constraint and Ray--Plane Initialization}
-% TODO: target on plane z = z_obj; ray-plane lift of the first detection.
+\label{sec:mono_groundplane}
+
+A single bearing does not determine a 3D position, since the pre-image of a pixel
+under \eqref{eq:mono_h} is an entire ray. The missing constraint is supplied by
+the geometry of the task. A person stands on a surface of known height, so the
+target's vertical coordinate in the world frame is fixed at a known value
+$z_{\mathrm{obj}}$, and its state is confined to the horizontal plane
+$\mathcal{P}=\{\bm{X}^{\mathcal{W}}: Z^{\mathcal{W}}=z_{\mathrm{obj}}\}$. This
+assumption reduces the state to the planar form \eqref{eq:mono_state}
+and makes a single camera sufficient for metric localisation.
+
+The constraint is used directly to initialise a new track. Given the first
+undistorted foot pixel $\bm{u}=(u,v)$, the corresponding viewing ray is
+constructed in the optical frame from the inverse intrinsics,
+$\bm{d}^{\mathcal{O}}=[(u-c_x)/f_x,\;(v-c_y)/f_y,\;1]^{\top}$, rotated into the
+world frame, and intersected with $\mathcal{P}$. With camera centre
+$\bm{C}^{\mathcal{W}}=-\bm{R}^{wo\top}_k\bm{t}^{wo}_k$ and ray direction
+$\bm{r}^{\mathcal{W}}=\bm{R}^{wo\top}_k\bm{d}^{\mathcal{O}}$, the intersection is
+\begin{equation}
+  \lambda^\star = \frac{z_{\mathrm{obj}} - C^{\mathcal{W}}_z}{r^{\mathcal{W}}_z},
+  \qquad
+  \bm{X}^{\mathcal{W}}_0 = \bm{C}^{\mathcal{W}} + \lambda^\star\,\bm{r}^{\mathcal{W}},
+  \label{eq:rayplane}
+\end{equation}
+defined whenever $r^{\mathcal{W}}_z\neq 0$ and $\lambda^\star>0$ (the target is in
+front of the camera). The planar components of $\bm{X}^{\mathcal{W}}_0$ initialise
+the position state and the velocity is set to zero, with a large initial
+covariance so that the first measurements dominate and the filter converges
+quickly. Subsequent frames are handled by the standard EKF predict--update
+recursion rather than by re-intersection, so that the temporal model
+\eqref{eq:mono_process} smooths the inevitably noisy single-frame lift.
 
 \subsection{Extrinsic-Aware Innovation Covariance}
-% TODO: the core contribution -- propagate 6-DoF camera-pose uncertainty into the
-% innovation covariance, S = H P H^T + J_ext Sigma_pose J_ext^T + R_cam.
+\label{sec:mono_extrinsic}
+
+The measurement model \eqref{eq:mono_h} depends not only on the target state but
+also on the platform pose, through $\bm{T}_{\mathcal{W}\to\mathcal{O},k}$. In
+Chapter~\ref{cha:tracking} the pose was assumed known and this dependence was
+deterministic; on the real platform the pose is an \emph{estimate} delivered by
+the navigation system, and its error feeds directly into the predicted pixel. A
+filter that ignores this and treats the pose as exact underestimates its own
+innovation covariance, becomes overconfident, and diverges when the pose error is
+largest, that is, during aggressive platform motion. This is the
+``uncertain platform pose'' regime identified in Chapter~\ref{cha:tracking} as
+the setting where the global and local formulations cease to be equivalent.
+
+The remedy is to propagate the pose uncertainty into the innovation covariance.
+Lift the planar state to the 3D point $\bm{X}^{\mathcal{W}}=[x_k,\,y_k,\,z_{\mathrm{obj}}]^{\top}$
+on the plane and let $\bm{p}^{\mathcal{O}}=\bm{R}^{wo}_k\bm{X}^{\mathcal{W}}+\bm{t}^{wo}_k$
+be its optical-frame coordinates. The Jacobian of the projection
+\eqref{eq:mono_h} with respect to the optical-frame point is
+\begin{equation}
+  \bm{J}_{\pi} = \frac{\partial \pi(\bm{K}\,\cdot)}{\partial \bm{p}^{\mathcal{O}}}
+  = \begin{bmatrix}
+      f_x/Z^{\mathcal{O}} & 0 & -f_x X^{\mathcal{O}}/(Z^{\mathcal{O}})^2 \\[2pt]
+      0 & f_y/Z^{\mathcal{O}} & -f_y Y^{\mathcal{O}}/(Z^{\mathcal{O}})^2
+    \end{bmatrix}.
+  \label{eq:Jpi}
+\end{equation}
+\emph{State} Jacobian. Since only the planar coordinates are free and
+$\partial\bm{p}^{\mathcal{O}}/\partial[x_k,y_k] = \bm{R}^{wo}_k[:,1{:}2]$, the
+$2\times4$ measurement Jacobian is
+\begin{equation}
+  \bm{H}_k = \bm{J}_{\pi}\,\bm{R}^{wo}_k\!\begin{bmatrix}\bm{I}_2\\\bm{0}\end{bmatrix}\!
+             \begin{bmatrix}\bm{I}_2 & \bm{0}_2\end{bmatrix},
+  \label{eq:Hmono}
+\end{equation}
+the trailing block reflecting that velocities do not enter the measurement.
+
+\emph{Extrinsic} Jacobian. A small perturbation of the camera pose is represented
+in the tangent space of $SE(3)$ by $\bm{\xi}=[\bm{\delta\theta}^{\top}\;\bm{\delta t}^{\top}]^{\top}$
+(Chapter~\ref{cha:background}, \eqref{eq:se3_pert}); to first order it displaces
+the optical-frame point by
+$\delta\bm{p}^{\mathcal{O}}\approx-[\bm{p}^{\mathcal{O}}]_\times\bm{\delta\theta}+\bm{\delta t}$.
+Composing with \eqref{eq:Jpi} gives the $2\times6$ extrinsic Jacobian of the pixel
+with respect to the pose,
+\begin{equation}
+  \bm{J}_{\mathrm{ext}} = \bm{J}_{\pi}
+  \begin{bmatrix} -[\bm{p}^{\mathcal{O}}]_\times & \bm{I}_3 \end{bmatrix},
+  \label{eq:Jext}
+\end{equation}
+whose rotational block $-\bm{J}_{\pi}[\bm{p}^{\mathcal{O}}]_\times$ and
+translational block $\bm{J}_{\pi}$ map, respectively, an attitude error and a
+position error of the platform into a pixel displacement of the target.
+
+\emph{Augmented innovation covariance.} Modelling the navigation pose error as
+zero-mean Gaussian with $6\times6$ covariance $\bm{\Sigma}$, the innovation
+covariance gains a third additive term beyond the state and sensor contributions:
+\begin{equation}
+  \boxed{\;\bm{S}_k = \bm{H}_k\,\bm{P}_{k|k-1}\,\bm{H}_k^{\!\top}
+                     \;+\; \bm{J}_{\mathrm{ext}}\,\bm{\Sigma}\,\bm{J}_{\mathrm{ext}}^{\!\top}
+                     \;+\; \bm{R}_{\mathrm{cam}}\;}
+  \label{eq:Smono}
+\end{equation}
+with $\bm{R}_{\mathrm{cam}}=\sigma_{\mathrm{cam}}^2\bm{I}_2$ the pixel-noise
+covariance. The middle term is the methodological core of this chapter. It
+inflates the gate by the amount of pixel uncertainty that the pose error induces
+at the current geometry, so that the Kalman gain
+$\bm{K}_k=\bm{P}_{k|k-1}\bm{H}_k^{\top}\bm{S}_k^{-1}$ automatically down-weights
+measurements taken while the platform pose is poorly known. The update otherwise
+follows the standard EKF recursion of Chapter~\ref{cha:background}. Equation
+\eqref{eq:Smono} is the concrete instance, for the monocular projective
+measurement, of the pose-uncertainty propagation that Chapter~\ref{cha:tracking}
+anticipated once assumption~(i) of its equivalence proposition is dropped.
 
 \subsection{Temporal Synchronization}
-% TODO: camera-to-pose latency compensation; SLERP/linear interpolation.
+\label{sec:mono_sync}
+
+The camera and the navigation system are asynchronous streams with distinct
+clocks and rates, so each image must be paired with the platform pose at its true
+\emph{capture} instant. Two effects are corrected. First, a fixed camera latency
+$\tau$ (the capture-to-timestamp delay) is subtracted from each frame's timestamp.
+Second, the pose is interpolated to the corrected instant: the position by linear
+interpolation and the orientation by spherical linear interpolation (SLERP) of
+the unit quaternions, which respects the geometry of $SO(3)$. A pose paired with a
+stale or mis-synchronised frame would inject a spurious apparent motion of the
+target, so correct synchronisation is a prerequisite for the extrinsic-aware
+covariance \eqref{eq:Smono} to reflect the true pose uncertainty instead of a
+timing artefact.
 
 \subsection{Experimental Platform}
-% TODO: custom quadrotor; global-shutter camera (IMX296); PX4/ASPN-PVT navigation feed.
+\label{sec:mono_platform}
+
+The data were collected with a custom quadrotor carrying a global-shutter camera
+(a Raspberry Pi Global Shutter module, Sony IMX296 sensor) at
+$1280\times960$~px. A global shutter is essential on a rotating platform, because
+a rolling shutter would skew the target during the aggressive yaw manoeuvres that
+characterise the flights. The camera is rigidly mounted ahead of and above the
+body centre and pitched downward, a fixed extrinsic
+$\bm{T}_{\mathcal{B}\to\mathcal{O}}$ composed with the platform pose to form the
+world-to-optical transform of \eqref{eq:mono_h}. The platform pose itself is
+streamed by the onboard navigation system as a position--attitude solution
+(a fused LiDAR-inertial estimate), which provides the $(\bm{R}^{wo}_k,\bm{t}^{wo}_k)$
+sequence and motivates the covariance $\bm{\Sigma}$ of \eqref{eq:Smono}. The
+camera intrinsics and plumb-bob coefficients were calibrated offline and held
+fixed throughout.
 
 \section{Results}
+\label{sec:mono_results}
 
-\subsection{Experimental Scenarios and Protocol}
-% TODO: real flights; scenarios; ground-truth/annotation.
+\subsection{Experimental Scenario and Ground-Truth Acquisition}
+\label{sec:mono_scenario}
 
-\subsection{Reprojection Error and Track Continuity}
-% TODO
+The tracker was evaluated on a real flight in an indoor sports hall, in which the
+quadrotor hovered and manoeuvred over a matted area ($\approx 11.0\times12.0$~m,
+surveyed) while a single person walked along its perimeter. The flight lasted
+about $150$~s. Importantly for the analysis below, the platform executed full
+$360^\circ$ yaw rotations, so the target traversed the entire field of view and
+the platform pose varied over its whole range, which is a demanding test of the
+pose-uncertainty handling.
 
-\subsection{Consistency under Platform Motion (NIS)}
-% TODO: NIS over time; behaviour during aggressive platform motion.
+Obtaining metric ground truth for a freely walking person indoors, without
+instrumenting the subject, is itself non-trivial. We used the room geometry as
+the reference. A dense LiDAR point-cloud map of the hall (acquired with a
+Livox Mid-360, $\sim 1.8\times10^{6}$ points) provides a centimetre-accurate
+metric model of the floor and its landmarks. Reference positions were then
+obtained by manual annotation: for a set of $135$ frames spread across the
+flight, an operator marked the target's foot point in the image and the
+corresponding floor location in a top-down rendering of the LiDAR map, which
+yields a paired image/world ground-truth sample per annotated frame. The
+annotation uses neither the camera pose nor the detector, so it is independent of
+the tracker and provides an unbiased reference. A consistency check confirms its
+validity: the annotated trajectory spans $11.9\times12.8$~m, matching the
+surveyed mat; the implied walking speed averages $1.04$~m/s with a maximum of
+$3.8$~m/s, consistent with a walking person; and the path forms approximately
+$1.6$ laps of the mat perimeter, as observed in the video.
 
-\subsection{Ablation: Pose-Uncertainty On versus Off}
-% TODO: the main ablation (Sigma_pose ON vs OFF).
+\subsection{Localization Accuracy against LiDAR-Referenced Ground Truth}
+\label{sec:mono_accuracy}
+
+The tracker produced a continuous ground-plane estimate over the flight, active
+in $626$ frames. Comparing it to the manual ground truth at the annotated instants
+(matched by timestamp to within $0.5$~s, $128$ paired samples) gives the
+horizontal localisation error reported in Figure~\ref{fig:mono_result}. The
+estimate is the \emph{raw} filter output: no post-hoc alignment, bias removal, or
+trajectory registration of any kind is applied, so the numbers reflect the
+end-to-end accuracy an onboard consumer would actually receive.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{Cap6/tracking_result_raw.pdf}
+  \caption{Monocular tracking accuracy against the LiDAR-referenced ground truth,
+  raw filter output. (a) Estimated track (time-coloured) over the top-down LiDAR
+  map, with the surveyed mat outline (dashed) and the manual ground-truth samples
+  (green); the estimate follows the perimeter walk but is distorted during the
+  platform's aggressive rotations. (b) Horizontal error over time. (c) Empirical
+  CDF of the error. Across the $128$ matched samples the RMSE is $6.18$~m, the
+  mean is $4.88$~m, and the median is $4.31$~m.}
+  \label{fig:mono_result}
+\end{figure}
+
+Over the matched samples the tracker attains a root-mean-square error of
+$6.18$~m, a mean of $4.88$~m, and a median of $4.31$~m, with a $90$th percentile
+of $10.3$~m and a worst case of $15.6$~m. These figures are best read against the
+scale and difficulty of the task: a single uninstrumented camera, recovering
+metric position through a ground-plane lift, on a platform undergoing full
+rotations, with a navigation pose that is itself estimated. The median error of
+$4.3$~m over a $\sim 12$~m working area, with the target $10$--$20$~m from the
+camera, is a meaningful localisation from monocular cues alone, and it is of the
+same order as the accuracy of consumer GNSS, which this pipeline does not use.
+The spatial plot (Figure~\ref{fig:mono_result}a) shows that the estimated track
+reproduces the perimeter shape of the walk but is rotated and stretched relative
+to the ground truth. The error time series (Figure~\ref{fig:mono_result}b) shows
+that the largest excursions are concentrated in time rather than uniform, and
+that they coincide with the platform's fastest rotations; this link is made
+quantitative in Section~\ref{sec:mono_consistency}.
+
+Figure~\ref{fig:mono_frames} shows the system in operation, with the trained
+detector's measurement and the projected estimate overlaid on two frames of the
+flight.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{Cap6/tracking_frames.pdf}
+  \caption{The monocular tracker in operation over the matted area. The on-board
+  detector localises the walking person; the foot point feeds the EKF; and the
+  filter's state, reprojected into the image, follows the target across the
+  platform's motion. Surveyed floor landmarks (rings) are shown for reference.}
+  \label{fig:mono_frames}
+\end{figure}
+
+\subsection{Filter Consistency and the Role of Pose-Uncertainty Propagation}
+\label{sec:mono_consistency}
+
+The accuracy figures above are an end-to-end summary. The more incisive question
+for a safety-critical estimator is whether the filter is \emph{consistent}, that
+is, whether its reported covariance matches its actual error
+(Chapter~\ref{cha:background}). With no per-step ground truth for the full state,
+consistency is assessed through the normalised innovation squared (NIS),
+$\eta_k=\bm{\nu}_k^{\top}\bm{S}_k^{-1}\bm{\nu}_k$, which for the two-dimensional
+pixel innovation follows a $\chi^2_2$ law with mean $2$ under a consistent filter.
+The NIS bears directly on the contribution of
+Section~\ref{sec:mono_extrinsic}, because the pose-uncertainty term in
+\eqref{eq:Smono} acts entirely through $\bm{S}_k$.
+
+To isolate that term we performed an ablation over the pose-uncertainty scale
+$\sigma_{\mathrm{pose}}$ (with $\bm{\Sigma}=\sigma_{\mathrm{pose}}\bm{I}_6$),
+re-running the filter on the recorded detections and poses; Figure~\ref{fig:mono_nis}
+reports the result. With the extrinsic term switched off
+($\bm{\Sigma}=\bm{0}$), which treats the platform pose as exact, the mean NIS is
+$3.4\times10^{4}$, four orders of magnitude above the consistent value of $2$.
+The filter is grossly \emph{overconfident}: it reports a tiny innovation
+covariance while the actual innovations, driven by the unmodelled pose error, are
+large. As $\sigma_{\mathrm{pose}}$ increases, the mean NIS falls monotonically and
+crosses the consistent value $\bar\eta=2$ near
+$\sigma_{\mathrm{pose}}\approx10^{-3}$; beyond that the filter becomes
+conservative (underconfident). The time series
+(Figure~\ref{fig:mono_nis}b) confirms that the pose-off filter sits far above the
+$95\%$ $\chi^2_2$ gate throughout the flight, while the calibrated filter stays
+near the consistent regime.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{Cap6/nis_consistency.pdf}
+  \caption{Filter consistency and the role of pose-uncertainty propagation.
+  (a) Mean NIS as a function of the pose-uncertainty scale
+  $\sigma_{\mathrm{pose}}$. Without the extrinsic term ($\bm{\Sigma}=\bm{0}$,
+  ``OFF'') the filter is overconfident by four orders of magnitude; propagating
+  the pose covariance brings the filter to statistical consistency
+  ($\bar\eta=2$, green) near $\sigma_{\mathrm{pose}}\approx10^{-3}$. (b) NIS over
+  the flight for the pose-off and calibrated filters; the consistent band and the
+  $95\%$ $\chi^2_2$ gate are shown for reference.}
+  \label{fig:mono_nis}
+\end{figure}
+
+The ablation makes the methodological point concrete. The extrinsic term of
+\eqref{eq:Smono} is not a cosmetic refinement. Omitting it renders the filter
+statistically meaningless, with a covariance that understates the true error by
+four orders of magnitude, whereas including it, with a single scalar tuned to the
+navigation solution's quality, restores consistency. The downstream avoidance
+logic depends on this kind of consistent covariance, as emphasised in the
+introduction, so propagating the pose uncertainty is what makes the monocular
+estimate trustworthy as well as accurate.
 
 \section{Discussion}
-% TODO: connect back to Chapter~\ref{cha:tracking} -- this is precisely the regime
-% (uncertain platform pose) where the global and local frames stop being equivalent --
-% and to the pipeline (Chapter~\ref{cha:pipeline}).
+\label{sec:mono_discussion}
+
+This chapter set out to test the generality of the
+Chapter~\ref{cha:tracking} framework, and the result is affirmative with one
+caveat. The same constant-velocity EKF, with the spherical measurement replaced
+by a ground-constrained pinhole projection, tracks a walking person from a real,
+freely manoeuvring UAV using a single camera and an estimated platform pose. The
+end-to-end accuracy, a median horizontal error of $4.3$~m over a $\sim 12$~m arena
+from monocular cues and without GNSS, shows that the estimator survives the
+transition from simulation to the real world.
+
+The caveat is the platform pose, and it ties this chapter back to the theory of
+Chapter~\ref{cha:tracking}. There, the global and local EKF formulations were
+proven equivalent under three assumptions, the first of which was a \emph{known}
+platform pose; that chapter flagged the uncertain-pose case as the regime where
+the equivalence breaks and a pose-covariance term must enter the innovation. This
+chapter is the empirical realisation of that regime. The extrinsic-aware
+innovation covariance \eqref{eq:Smono} is the concrete form of that term for a
+projective measurement, and the NIS ablation (Figure~\ref{fig:mono_nis}) shows
+that it is necessary: without it the filter is overconfident by four orders of
+magnitude. The generality of the framework is thus conditional. It is the
+generality of a single estimator that must be supplied, in each deployment, with
+an honest model of where its uncertainty comes from.
+
+The error analysis also delineates the limits of monocular ground-plane tracking
+and points to the remedies. The largest errors are concentrated during the
+platform's fastest rotations, where two effects compound: the navigation pose is
+least accurate when it changes fastest, and any residual camera--navigation
+desynchronisation (Section~\ref{sec:mono_sync}) is most damaging when the scene
+sweeps quickly across the image. Both effects follow from relying on an estimated
+pose under aggressive motion, and both are what the covariance term
+\eqref{eq:Smono} is designed to absorb into the filter's uncertainty instead of
+its point estimate. A second, structural limitation is the ground-plane
+assumption itself: the monocular lift trades the unobservable depth for the known
+target height, so any violation of that assumption, or any error in the
+foot-point detection that stands in for the ground contact, maps directly to a
+planar error that grows with range. This is the fundamental reason a single
+camera cannot match a true range sensor, and it motivates the camera--point-cloud
+fusion that the full pipeline (Chapter~\ref{cha:pipeline}) restores through the 3D
+detection front-end of Chapter~\ref{cha:airsim}, where the depth need not be
+assumed because a point cloud is available.
+
+Read alongside Chapter~\ref{cha:tracking}, the two tracking studies bracket the
+same estimator from opposite ends, a controlled range-sensing known-pose
+simulation and an uncertain-pose bearing-only real-world deployment, and together
+they substantiate the dissertation's claim that one recursive estimator, properly
+instrumented with its uncertainty model, serves the sense stage across sensing
+modalities.

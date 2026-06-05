@@ -1,15 +1,232 @@
 % =====================================================================
 % Chapter 8 --- Conclusions and Future Work                  [cross-cutting]
+% Synthesising conclusion: ties the three studies back to the pipeline,
+% revisits the contributions in light of the results, states honest
+% limitations, and charts the path to an integrated onboard system.
 % Target length: ~4 pages.
 % =====================================================================
 
+This dissertation addressed the perception (\emph{Sense}) layer of urban UAV
+detect-and-avoid: detecting and tracking obstacles in three dimensions, in real
+time, from a platform that is itself moving. Chapter~\ref{cha:relatedwork}
+isolated three properties that make this problem hard, namely an observer in
+motion, depth that is uncertain and range-dependent, and a scarcity of annotated
+three-dimensional aerial data, and the work confronted all three through a single
+artefact: the modular camera--point-cloud pipeline of
+Chapter~\ref{cha:pipeline}, in which a CNN detector seeds a viewing frustum, a
+point-cloud network lifts each detection into a metric box, and a recursive
+Bayesian filter turns the stream of detections into calibrated tracks. The three
+self-contained studies of Chapters~\ref{cha:tracking}--\ref{cha:airsim} are not
+three separate works but three contributions to that one pipeline. This closing
+chapter revisits what each study established, draws out the threads that bind
+them into one system, states plainly what remains unsolved, and sets the agenda
+for an integrated onboard capability.
+
 \section{Summary of Contributions}
-% TODO: revisit the contributions in light of the results.
+
+The dissertation's contributions follow the \emph{one vision, three
+contributions} structure: a systematic positioning of the problem, and three
+studies that build and validate the components of the pipeline.
+
+\paragraph*{Positioning the problem (Chapter~\ref{cha:relatedwork}).}
+A systematic literature review following the PRISMA, Kitchenham, and Wohlin
+protocols screened $183$ unique records and synthesised $173$ studies. Its
+centrepiece, the uniqueness matrix, established that of the nineteen closest
+adjacent works \emph{none} simultaneously targets a UAV, employs a
+frustum-to-PointNet detector with camera--LiDAR fusion, and terminates in an
+integrated tracker for urban sense-and-avoid. The review thereby substantiated,
+rather than merely asserted, the gap that the dissertation fills, and explained
+its timing through the recent maturation of light UAV-grade LiDAR, the absence of
+a real aerial 3D benchmark, and the non-trivial domain shift from ground to air.
+
+\paragraph*{The tracking stage and the reference-frame question
+(Chapter~\ref{cha:tracking}).}
+The safety-critical filter was formulated for a moving platform observing a
+target through range--bearing measurements, in two natural variants: one carrying
+the object state in the global inertial frame, the other in the local sensor
+frame. The central result is an \emph{equivalence theorem}: under a known
+platform pose and rotation-invariant (isotropic) process noise, the two
+formulations are mathematically identical, a claim proven analytically and
+verified numerically to $1.7\times10^{-13}$~m, with both filters attaining the
+same RMSE of $0.228$~m. This corrects the framing of the earlier conference
+report \cite{delima2025fusion}: the apparent superiority of the global frame was
+an artefact of a local filter that omitted the inter-frame state reorientation,
+not an intrinsic advantage. The chapter further characterised precisely the
+regimes where a genuine difference arises, namely anisotropic process noise
+(where the frame that diagonalises $\bm{Q}$ wins, a $41\%$ RMSE difference under
+strong directional noise and platform yaw) and, most consequentially, an
+uncertain platform pose. Benchmarking against the posterior Cram\'er--Rao bound
+confirmed the filter to be near-optimal, with an estimation error that grows
+gracefully with range, exactly the behaviour a collision-avoidance system
+requires.
+
+\paragraph*{Generality of the framework on real data
+(Chapter~\ref{cha:monocular}).}
+The same constant-velocity EKF was then taken out of simulation and onto a real
+quadrotor at TU Berlin, with two of the simulation's assumptions removed at once:
+the metric range--bearing sensor became a single monocular camera (depth
+recovered through a ground-plane constraint), and the platform pose became an
+on-board estimate rather than a known quantity. Tracking a freely walking person
+during flights with full $360^\circ$ yaw rotations, the system attained a median
+horizontal error of $4.3$~m over a ${\sim}12$~m arena from monocular cues alone
+and without GNSS, against a LiDAR-referenced ground truth and with no post-hoc
+alignment. More important than the accuracy was the consistency result: this is
+exactly the uncertain-pose regime that Chapter~\ref{cha:tracking} predicted would
+break the frame equivalence, and propagating the six-degree-of-freedom camera-pose
+covariance into the innovation through an extrinsic Jacobian proved
+\emph{necessary}, not cosmetic. An ablation showed that omitting this term leaves
+the filter overconfident by four orders of magnitude (mean NIS $3.4\times10^{4}$
+against the consistent value of $2$), whereas including it restores statistical
+consistency. The study thus demonstrated both the generality of the estimator
+across sensing modalities and the condition under which that generality holds: an
+honest model of where the uncertainty comes from.
+
+\paragraph*{The detection front-end and its data
+(Chapter~\ref{cha:airsim}).}
+The two stages that feed the tracker were designed, trained, and evaluated on a
+purpose-built synthetic aerial dataset. A pixel-exact synthetic-composition
+scheme circumvented the simulator's unreliable annotation interfaces and trained
+a 2D detector to $\mathrm{mAP}_{50}=0.994$, while a geometric construction
+supplied trustworthy 3D supervision. The study's principal empirical finding is
+that \emph{foreground extraction, not the box regressor, governs frustum
+localisation}: removing the background that dominates the point-cloud
+normalisation, whether by a depth-band heuristic or a learned segmentation, took
+the 3D error from ${\approx}3$~m to ${\approx}1$~m. The chapter also delivered the
+first empirical comparison of the two-stage frustum design against the
+single-stage voxel paradigm on aerial data, exposing a clean recall--precision
+trade-off: the frustum pipeline is precise (AMOTA $0.81$, precision $0.90$) but
+inherits its 2D detector's recall ceiling (${\approx}0.49$), whereas a
+learned-feature voxel detector recalls far more targets ($0.80$) and localises
+them best ($0.87$~m RMSE) at the cost of noisier identities, with a late fusion
+recovering much of both. Crucially, the localisation error is essentially flat
+with range, mirroring the range-bounded uncertainty of the
+Chapter~\ref{cha:tracking} filter and confirming that detector and tracker are
+matched by design.
+
+\paragraph*{Synthesis.}
+Read together, the studies make a single claim about \emph{one} system. The
+common thread is calibrated uncertainty: every stage was designed to report not
+only where an obstacle is but how trustworthy that estimate is, because the
+downstream avoidance logic reasons about risk. This is why the pipeline
+terminates in a Bayesian filter rather than a regressor, why
+Chapter~\ref{cha:tracking} analysed the filter's \emph{consistency} against the
+Cram\'er--Rao bound and not merely its accuracy, and why the central real-world
+result of Chapter~\ref{cha:monocular} is a consistency result. The second thread
+is geometric, interpretable fusion: the image localises the search and the point
+cloud supplies the depth, keeping each modality independently trainable and each
+stage independently validatable, which is precisely what let the tracker be
+proven correct in isolation, the detector be evaluated on its own metrics, and
+the same estimator serve both a 3D LiDAR-fused obstacle and a monocular person.
+Finally, the boundary that
+Chapters~\ref{cha:tracking} and~\ref{cha:monocular} share, known versus uncertain
+platform pose, is not a coincidence of two projects but the single hinge on which
+the framework turns from its equivalent to its divergent regime.
 
 \section{Limitations}
-% TODO: honest limitations (e.g., real quantitative validation still maturing,
-% detection-tracking integration not yet end-to-end on hardware).
+
+The contributions are best understood alongside an honest account of what the
+work does not yet establish.
+
+\begin{itemize}
+  \item \textbf{The pipeline is validated stage-wise, not yet end-to-end on
+  hardware.} Each stage was exercised against its own ground truth, by design of
+  the modular architecture, but no single experiment runs the full
+  camera--point-cloud chain on a real UAV against real three-dimensional
+  obstacles. The obstacle tracker was validated in simulation
+  (Chapter~\ref{cha:tracking}), the detection front-end in simulation
+  (Chapter~\ref{cha:airsim}), and only the monocular tracker on real flights
+  (Chapter~\ref{cha:monocular}).
+  \item \textbf{The detection front-end is trained and tested purely in
+  simulation.} The AirSim study sidesteps the data-scarcity obstacle but inherits
+  a sim-to-real gap: the detectors have not been confronted with the noise,
+  lighting, and appearance statistics of real aerial footage, so their reported
+  accuracy is an upper bound on real-world performance.
+  \item \textbf{Recall, not precision, limits the two-stage design.} The frustum
+  pipeline's recall falls to $0.31$--$0.58$ under tree clutter and fog, inherited
+  almost entirely from the 2D stage. For a safety-critical application a missed
+  obstacle is the most dangerous failure, so this ceiling is a genuine
+  limitation, only partially relieved by the voxel and fusion variants.
+  \item \textbf{The monocular tracker rests on a ground-plane assumption.} The
+  single-camera lift trades the unobservable depth for a known target height; any
+  violation of that assumption, or any error in the foot-point detection that
+  stands in for ground contact, maps directly to a planar error that grows with
+  range. The largest errors concentrate during the platform's most aggressive
+  rotations, where the estimated pose is least accurate. The study also rests on a
+  single scene and a single target class.
+  \item \textbf{The multi-object layer is not analysed with the rigour of the
+  single-target filter.} The data association and track lifecycle of
+  Chapter~\ref{cha:airsim} are a heuristic, SORT-style layer; the
+  Cram\'er--Rao and consistency analysis of Chapter~\ref{cha:tracking} applies to
+  the per-track filter, not to the association problem, whose identity switches
+  remain a measured weakness of the voxel detectors.
+  \item \textbf{Pose-uncertainty propagation has not been carried into the 3D
+  pipeline.} The extrinsic-aware innovation covariance of
+  Chapter~\ref{cha:monocular} was derived for the monocular projective
+  measurement; the 3D detection-fed tracker of Chapter~\ref{cha:airsim} still
+  treats the platform pose as known.
+  \item \textbf{No real-time, embedded demonstration.} All inference was run
+  offline; the onboard-compute budget that an embedded sense-and-avoid system
+  imposes (Chapter~\ref{cha:relatedwork}) has not yet been met.
+\end{itemize}
 
 \section{Future Work}
-% TODO: real dataset from TU Berlin; full end-to-end pipeline integration;
-% embedded deployment (Jetson); collaborative multi-UAV perception.
+
+These limitations chart a concrete agenda, ordered roughly from the most
+immediate to the most ambitious.
+
+\begin{itemize}
+  \item \textbf{Closing the sim-to-real gap.} The most direct next step is to
+  validate the Chapter~\ref{cha:airsim} detectors on real aerial footage, exactly
+  as the monocular tracker of Chapter~\ref{cha:monocular} was validated on real
+  flights. Domain randomisation and domain adaptation during synthetic training,
+  together with the collection or annotation of a modest real aerial 3D set, are
+  the natural means; the foreground-extraction finding suggests that robustifying
+  the segmentation to real clutter is where the effort should concentrate.
+  \item \textbf{End-to-end integration on a single platform.} The stages should be
+  composed into one system running the full
+  2D~$\rightarrow$~frustum~$\rightarrow$~3D~$\rightarrow$~EKF chain on a real UAV,
+  closing the loop that the modular validation deliberately left open, and
+  deployed on embedded, Jetson-class hardware within a real-time budget. The
+  recall ceiling motivates fielding the late frustum--voxel fusion rather than the
+  frustum pipeline alone.
+  \item \textbf{Tighter detector--tracker coupling.} The detector's own
+  uncertainty should feed the filter's measurement covariance $\bm{R}$ rather than
+  a fixed model, and the heuristic association should give way to an
+  uncertainty-aware, possibly learned, scheme that receives the rigorous treatment
+  the single-target filter already enjoys.
+  \item \textbf{Pose uncertainty in the full 3D pipeline.} The pose-covariance
+  propagation proven necessary in Chapter~\ref{cha:monocular} should be carried
+  into the spherical-measurement tracker of Chapter~\ref{cha:airsim}, instantiating
+  the uncertain-pose divergent regime of Chapter~\ref{cha:tracking} for the 3D
+  case and yielding a tracker that is consistent under the real navigation
+  solution rather than an assumed-known pose.
+  \item \textbf{Collaborative multi-UAV perception.} Because the tracker consumes
+  an abstract measurement with a calibrated covariance, tracks estimated by
+  several platforms can in principle be fused into a shared situational picture,
+  extending the single-observer awareness of this work to a cooperative one.
+  \item \textbf{Closing the loop to \emph{Avoid}.} The calibrated tracks this
+  pipeline emits were designed for a risk-aware avoidance layer; coupling the
+  perception output to trajectory planning and control would complete the
+  detect-and-avoid capability of which this dissertation built the \emph{Sense}
+  half.
+\end{itemize}
+
+\section{Concluding Remarks}
+
+Safe autonomous flight in the urban canyon will be certified, ultimately, on the
+trustworthiness of the aircraft's situational awareness, and trustworthiness
+means not only accurate estimates but estimates that know how uncertain they are.
+This dissertation contributed the perception layer of that capability as a single
+modular camera--point-cloud pipeline and validated its components from three
+complementary angles: a rigorous, near-optimal tracker whose two natural
+formulations were proven equivalent and whose divergence regimes were mapped; a
+demonstration that the same estimator generalises to monocular real-world
+operation, provided its pose uncertainty is propagated honestly; and a detection
+front-end, trained on a purpose-built synthetic dataset, whose dominant
+accuracy lever and architectural trade-offs were laid bare. The unifying lesson
+is that a recursive estimator, instrumented with a faithful model of where its
+uncertainty originates, is what carries the \emph{Sense} stage across sensing
+modalities, targets, and environments. Bridging the remaining gap, from
+stage-wise validation to an integrated, embedded, real-time system flying against
+real obstacles, is the work that turns this perception pipeline into a deployable
+component of urban air mobility.
