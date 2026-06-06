@@ -500,6 +500,18 @@ threshold, the reported tracking numbers chiefly reflect the quality of the
 \emph{detection} front-end, the subject of this chapter, rather than the tuning of
 the filter \cite{weng2020ab3dmot}.
 
+To be explicit about integration: \emph{every} detection variant evaluated in this
+chapter, both the two-stage frustum detectors and the single-stage voxel
+detectors, is run through this same tracking stage (SORT-style association
+followed by the per-track EKF of Chapter~\ref{cha:tracking}). The AMOTA, MOTA,
+IDF1, and identity-switch figures reported throughout are therefore end-to-end
+\emph{detection-plus-tracking} results, not single-frame detection scores; the
+detectors are not left unintegrated. What the full pipeline does \emph{not} yet
+do is feed the platform-pose covariance into this 3D filter (the pose is treated
+as known here, as in Chapter~\ref{cha:tracking}); carrying the
+Chapter~\ref{cha:monocular} pose-uncertainty term into the 3D tracker is left as
+future work.
+
 \section{Experimental Setup}
 \label{sec:setup}
 

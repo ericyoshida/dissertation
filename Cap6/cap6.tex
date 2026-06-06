@@ -458,9 +458,12 @@ end-to-end accuracy an onboard consumer would actually receive.
 \begin{figure}[H]
   \centering
   \includegraphics[width=\linewidth]{Cap6/tracking_errors.pdf}
-  \caption{Localization error against the ground truth. (a) Horizontal error over
-  flight time. (b) Empirical CDF of the error. Across the $128$ matched samples
-  the RMSE is $6.18$~m, the mean is $4.88$~m, and the median is $4.31$~m.}
+  \caption{Localization error against the ground truth. (a) Horizontal error
+  (red) over flight time, with the platform's yaw rate overlaid (blue, right
+  axis): the largest errors coincide with the fastest rotations, while the
+  low-error opening of the flight is nearly rotation-free. (b) Empirical CDF of
+  the error. Across the $128$ matched samples the RMSE is $6.18$~m, the mean is
+  $4.88$~m, and the median is $4.31$~m.}
   \label{fig:mono_errors}
 \end{figure}
 
@@ -476,9 +479,12 @@ same order as the accuracy of consumer GNSS, which this pipeline does not use.
 The spatial plot (Figure~\ref{fig:mono_traj}) shows that the estimated track
 reproduces the perimeter shape of the walk but is rotated and stretched relative
 to the ground truth. The error time series (Figure~\ref{fig:mono_errors}a) shows
-that the largest excursions are concentrated in time rather than uniform, and
-that they coincide with the platform's fastest rotations; this link is made
-quantitative in Section~\ref{sec:mono_consistency}.
+that the largest excursions are concentrated in time rather than uniform: overlaying
+the platform's yaw rate on the same axis makes the cause visible, as the error
+peaks track the rotation peaks (the largest errors fall in the
+$30$--$50$~s window of fastest yaw, while the rotation-free opening of the flight
+is accurate), with a sample correlation of about $0.5$ between error and yaw rate.
+The mechanism behind this link is examined in Section~\ref{sec:mono_consistency}.
 
 Figure~\ref{fig:mono_frames} shows the system in operation, with the trained
 detector's measurement and the projected estimate overlaid on two frames of the
