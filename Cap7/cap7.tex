@@ -770,14 +770,14 @@ range.
   \centering
   \includegraphics[width=0.92\linewidth]{Cap7/pipeline_frames.pdf}
   \caption{Camera--point-cloud input for three real detections at increasing range
-  (top to bottom, $15$, $31$, and $52$~m). Left: the RGB frame with the YOLO 2D
-  detection box. Right: the point cloud the frustum stage extracts behind that box
-  --- the actual LiDAR returns falling on the target --- shown in the
-  sensor frame and colored by height. The simulated LiDAR resolves the quadrotor's
-  body and rotor arms clearly at close range, and the number of returns on the
-  target falls steadily with distance, so that by the longest ranges the cloud is
-  reduced to a sparse cluster. This degradation, rather than the regressor, is what
-  ultimately limits 3D localization at range.}
+  (top to bottom, $15$, $34$, and $52$~m). Left: the RGB frame with the drone
+  enclosed by its detection box. Right: the point cloud the frustum stage extracts
+  behind that box --- the actual LiDAR returns falling on the target --- shown in
+  the sensor frame and colored by height. The simulated LiDAR resolves the
+  quadrotor's body and rotor arms clearly at close range; as range grows the target
+  is captured by progressively fewer returns and degrades to a sparse cluster. This
+  degradation, rather than the regressor, is what ultimately limits 3D localization
+  at range.}
   \label{fig:pipeline_frames}
 \end{figure}
 
