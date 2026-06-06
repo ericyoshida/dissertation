@@ -21,11 +21,13 @@ Status: ✅ feito · 🟡 decisão/dado seu · 🖼️ figura nova · ♻️ já
   - `nis_consistency.pdf` EMPILHADA (a) sweep / (b) NIS no tempo, aumentada — #145.
   - Texto: 90th pct corrigido para **10.3 m** (cap6_stats.json p90=10.33; o "10.1" da figura antiga é que estava errado).
 - ✅ **Cap.7** `tracking_stage.pdf` (editei `airsim/make_dissertation_figs.py::fig_tracker`): subcaptions encurtadas e movidas para ABAIXO de cada painel (a)/(b) — #186.
-- 🟡 **#95** (Cap.5 `ekf_equivalence.pdf`, cor do global EKF) → fica para a **máquina principal** (simulação tracking-comparison; não está aqui).
+- ✅ **#95** (Cap.5 `ekf_equivalence.pdf`, cor do global EKF) → FEITO na **máquina principal** (ver seção "Regenerar plots" abaixo).
 
 ## Ainda em aberto (decisão sua / precisa de fonte)
 - ✅ **#225** (Cap.8): contribuições convertidas em `enumerate` e **reordenadas pela sequência do pipeline** (SLR → detecção → tracking → generalidade). Intro ajustada; parágrafo Synthesis é temático, sem conflito.
-- 🖼️ **Regenerar plots** (preciso dos scripts/dados originais): #95 (cor do EKF global em `ekf_equivalence`), #140 (quebrar a Fig.6.3 em duas), #145/#186 (empilhar figuras / subcaptions).
+- ✅ **Regenerar plots** — todos os 4 itens de figura concluídos:
+  - **#95** (`ekf_equivalence`): máquina principal (tracker), via `tracking-comparison/fig_ekf_equivalence.py` — global = linha azul-clara grossa, local frame-consistent = pontilhado preto por cima (dados idênticos, só apresentação); legenda do Cap.5 ajustada (dashed→dotted).
+  - **#140 / #145 / #186**: máquina de dados — ver seção "Figuras corrigidas a partir dos dados reais" acima.
 - ✅ **#61**: busca web (plano A) NÃO achou paper verificável com a frase "show promise para drones" — era afirmação inverificável (provável floreio). Apliquei o plano B: troquei pela afirmação geral ancorada nos frustum reais (qi2018frustum, wang2019fconvnet, paigwar2021fpp). Sem flanco.
 - micro-carets de pura preferência (pluralizar "s", trocar vírgula): pulados onde o texto já está correto.
 
