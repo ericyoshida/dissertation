@@ -8,7 +8,7 @@
 This chapter surveys the literature relevant to the perception pipeline of
 Chapter~\ref{cha:pipeline} and establishes the gap that the dissertation fills.
 Rather than an ad-hoc narrative, the review follows a systematic protocol, whose
-methodology is described first; the body of work is then organised thematically,
+methodology is described first; the body of work is then organized thematically,
 and the chapter closes by making the gap explicit and arguing why it has remained
 open.
 
@@ -16,11 +16,14 @@ open.
 
 \subsection{Protocol and Research Question}
 
-The review follows the PRISMA~2020 reporting guideline \cite{page2021prisma},
-the quality-assessment practice of Kitchenham and Charters
-\cite{kitchenham2007slr}, and the snowballing guidelines of Wohlin
-\cite{wohlin2014snowball}. It is driven by a single research question, framed in
-the PICOC form:
+The review follows the PRISMA~2020 reporting guideline \cite{page2021prisma}, a
+standard checklist for transparent reporting of the screening and selection
+process; the quality-assessment practice of Kitchenham and Charters
+\cite{kitchenham2007slr}, a protocol for systematic reviews in software
+engineering; and the snowballing guidelines of Wohlin \cite{wohlin2014snowball},
+which chase citations backward and forward to recover studies a keyword search
+misses. The review is driven by a single research question, framed in
+the PICOC (Population, Intervention, Comparison, Outcome, Context) form:
 
 \begin{quote}
 \emph{Which CNN-based techniques have been applied for situational-awareness
@@ -52,7 +55,8 @@ learning component, or in unrelated domains were excluded. Each retained study
 was scored on the five Kitchenham criteria of Table~\ref{tab:qa}, on a
 $0$/$0.5$/$1$ scale; following the protocol, studies scoring below $2.5$ were
 demoted to background text and excluded from the synthesis. The process was
-managed with Rayyan, Zotero, and Parsifal.
+managed with Rayyan, Zotero, and Parsifal, standard tools for conducting
+systematic literature reviews.
 
 \begin{table}[H]
   \centering
@@ -97,7 +101,7 @@ transfer to an unseen operating scene. A standard mitigation, adopted for the
 real-world person detector of Chapter~\ref{cha:monocular}, is to train on a union
 of complementary aerial datasets that jointly span the urban, rural, near-range,
 and high-altitude regimes (Section~\ref{sec:slr_datasets}), broadening the
-detector's operating envelope so that it generalises to a deployment environment
+detector's operating envelope so that it generalizes to a deployment environment
 absent from any one of them.
 
 \section{Frustum-Based 3D Detection in Autonomous Driving}
@@ -127,8 +131,8 @@ Orthogonal to the two-stage frustum design is the \emph{single-stage} voxel
 paradigm, which detects directly in the point cloud without a 2D proposal:
 VoxelNet/SECOND \cite{yan2018second} apply 3D convolutions over a voxel grid,
 PointPillars \cite{lang2019pointpillars} encodes a bird's-eye-view pillar grid for
-real-time inference, and centre-based heads \cite{zhou2019objects} predict object
-centres as heatmap peaks. This paradigm removes the recall ceiling imposed by the
+real-time inference, and center-based heads \cite{zhou2019objects} predict object
+centers as heatmap peaks. This paradigm removes the recall ceiling imposed by the
 2D detector at the cost of detecting in the whole, cluttered scene; it is the
 alternative against which the frustum pipeline is empirically compared on aerial
 data in Chapter~\ref{cha:airsim}.
@@ -137,10 +141,11 @@ data in Chapter~\ref{cha:airsim}.
 
 On the aerial side, 3D perception is comparatively recent and follows different
 design choices. The UAV3D benchmark \cite{ye2024uav3d} provides the first
-large-scale aerial 3D dataset, but is a benchmark rather than a detection method
-and is synthetic. Method papers favour LiDAR-centric or RGB-D pipelines:
+large-scale aerial 3D dataset; it is a benchmark rather than a detection method
+and, like the dataset built in this work, is synthetic. Method papers favor
+LiDAR-centric or RGB-D pipelines:
 LiDAR--camera obstacle detection for UAVs \cite{ma2021uavfusion}, aerial
-LiDAR-based detection with unscented-Kalman-filter tracking
+LiDAR-based detection with Unscented Kalman Filter (UKF) tracking
 \cite{cherif2023aerial}, and airborne LiDAR sense-and-detect \cite{dolph2023airborne}.
 None of these, however, adopts the frustum-to-PointNet fusion that is
 standard in driving; they use voxel networks, RGB-D, or LiDAR alone.
@@ -164,7 +169,8 @@ domain is served by KITTI \cite{geiger2012kitti}, nuScenes
 \cite{caesar2020nuscenes}, and the Waymo Open Dataset \cite{sun2020waymo}, with
 millions of annotated 3D boxes. For UAVs, large-scale 2D benchmarks such as
 VisDrone \cite{zhu2021visdrone} exist, but the only large-scale 3D aerial
-benchmark, UAV3D \cite{ye2024uav3d}, is one year old and synthetic. This
+benchmark, UAV3D \cite{ye2024uav3d}, is recent (2024) and, like most aerial 3D
+resources, synthetic. This
 motivates the synthetic dataset built with AirSim \cite{shah2018airsim} in
 Chapter~\ref{cha:airsim}.
 
@@ -178,7 +184,7 @@ search-and-rescue datasets SARD \cite{sambolek2021sard} and HERIDAL
 non-canonical body poses and high-altitude near-nadir imagery in which persons
 appear as small, low-contrast targets. Because no single corpus spans the
 altitude, viewpoint, and environment ranges of a real deployment, training the
-detector on their union is what yields the cross-domain generalisation exploited
+detector on their union is what yields the cross-domain generalization exploited
 in Chapter~\ref{cha:monocular}.
 
 \section{The Research Gap}
@@ -201,6 +207,7 @@ attributes; only this dissertation fills every cell.
   \caption{Uniqueness matrix. \checkmark{}: present and central; $\sim$: partial;
   $\times$: absent. Only the last row fills all seven attributes.}
   \label{tab:uniqueness}
+  \setlength{\tabcolsep}{4.4pt}
   \begin{tabular}{@{}lccccccc@{}}
     \toprule
     Work & Drone & Frustum & PointNet & Fusion & Track & Urban & S\&A \\
@@ -227,12 +234,13 @@ attributes; only this dissertation fills every cell.
 
 The gap can be stated in one sentence: \emph{no published work has transferred
 the frustum-to-PointNet detection pipeline from autonomous driving to UAV
-sense-and-avoid in urban environments}. The closest mention in the surveyed
-literature is a single aspirational sentence in a frustum-sampling paper noting
-that such methods ``show promise'' for drones, with no implementation or
-evaluation.
+sense-and-avoid in urban environments}. Across the surveyed literature the
+frustum family remains confined to ground-vehicle and embedded benchmarks
+\cite{qi2018frustum,wang2019fconvnet,paigwar2021fpp}; its transfer to aerial
+platforms is, at most, noted in passing as a possible future direction, and is
+never implemented or evaluated.
 
-\subsection{Why This Has Not Been Done Yet}
+\subsection{Factors That Kept the Gap Open}
 
 A natural question is why, if the transfer is so direct, it has not been done.
 The review identifies six independent reasons:
@@ -240,31 +248,32 @@ The review identifies six independent reasons:
 \begin{enumerate}
   \item \textbf{LiDAR cost and weight.} Car-grade LiDAR ($\approx 13$~kg,
   $\sim$\$75k) is prohibitive on small UAVs; light, affordable UAV-grade LiDAR
-  only matured around 2020--2022, so the sensing side of the problem did not
-  exist before then.
+  only matured around 2020--2022 (for example, the lightweight Livox Mid-360 used
+  on research UAVs \cite{livox_mid360}), so the sensing side of the problem did
+  not exist before then.
   \item \textbf{Aerial annotation scarcity.} There is no KITTI/nuScenes/Waymo for
   UAVs; the first large-scale aerial 3D benchmark, UAV3D
-  \cite{ye2024uav3d}, is one year old and synthetic, making it hard to train
+  \cite{ye2024uav3d}, is recent and synthetic, making it hard to train
   point-cloud networks on aerial data.
   \item \textbf{Non-trivial domain shift.} Scale, viewpoint, motion model (free
   3D rotation and translation versus a car's 2D motion), sensor noise, and
-  obstacle geometry all differ; naively retraining a driving detector on aerial
-  data does not work.
-  \item \textbf{Onboard compute constraints.} UAV-grade compute (Jetson-class) is
+  obstacle geometry all differ; retraining a driving detector on aerial
+  data does not work without adaptation.
+  \item \textbf{Onboard compute constraints.} Embedded UAV-grade compute is
   an order of magnitude weaker than a car's; real-time frustum-plus-PointNet
   inference at that budget is itself an active research subarea.
   \item \textbf{Funding-priority bias.} Most autonomy funding has targeted ground
   vehicles; Urban Air Mobility became a serious commercial agenda only in the
-  late 2010s.
+  late 2010s \cite{straubinger2020uam}.
   \item \textbf{Deferred tracker integration.} 3D-detection papers typically stop
   at single-frame detection and mark tracking as future work, whereas for
-  sense-and-avoid the tracker is the safety-critical stage.
+  sense-and-avoid the tracker is the stage that matters most.
 \end{enumerate}
 
 Combinations of these reasons explain the timing: reasons~(1)--(2) mean the
 infrastructure did not exist before $\sim$2022; reasons~(3)--(4) mean the
 engineering is hard even with it; and reasons~(5)--(6) mean the incentives were
-thin until Urban Air Mobility matured.
+limited until Urban Air Mobility matured.
 
 \section{Positioning of This Dissertation}
 
@@ -273,7 +282,7 @@ Table~\ref{tab:uniqueness}: it adapts the frustum-to-PointNet pipeline from
 ground vehicles to urban UAV perception, integrates 2D detection, frustum
 proposal, 3D box estimation, and recursive-filter tracking into one
 situational-awareness pipeline, and addresses the data and compute obstacles
-through a synthetic dataset and an efficient, rigorously analysed tracker. The
-tracking stage, the safety-critical component that the literature most often
+through a synthetic dataset and an efficient, rigorously analyzed tracker. The
+tracking stage, the component that the literature most often
 defers, is the most mature contribution and is developed first, in
 Chapter~\ref{cha:tracking}.

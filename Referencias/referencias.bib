@@ -398,8 +398,10 @@ author = {Amazon},
   title     = {Extended {K}alman Filter-Based Object Tracking Using Global and Local Frames},
   booktitle = {Proceedings of the 28th International Conference on Information Fusion (FUSION)},
   address   = {Rio de Janeiro, Brazil},
+  month     = {July},
   year      = {2025},
 }
+% TODO-REV[#116]: add page numbers / publisher (IEEE) to delima2025fusion once the proceedings are indexed.
 
 @book{barshalom2001,
   author    = {Bar-Shalom, Yaakov and Li, X. Rong and Kirubarajan, Thiagalingam},
@@ -487,6 +489,11 @@ author = {Amazon},
 % References added for the dissertation (Chapter 3 -- SLR / related work)
 % NOTE: entries marked "verify in Zotero" carry the SLR's own provisional
 % metadata (real DOI/arXiv identifier, title to be confirmed).
+%
+% REV[#116-#119] -- the five UAV entries below were re-verified against arXiv /
+% the publisher and now carry real authors, titles, venues and IDs:
+%   ye2024uav3d, ma2021uavfusion, cherif2023aerial, dolph2023airborne, fu2025dmtrack.
+% Remaining check: confirm the exact venue/year of cherif2023aerial (see TODO below).
 %======================================================================
 
 % --- SLR methodology ---
@@ -547,32 +554,32 @@ author = {Amazon},
 
 % --- UAV 3D perception / sense-and-avoid / tracking ---
 @inproceedings{ye2024uav3d,
-  author    = {{Ye} and others},
+  author    = {Ye, Hui and Sunderraman, Rajshekhar and Ji, Shihao},
   title     = {{UAV3D}: A Large-Scale 3{D} Perception Benchmark for Unmanned Aerial Vehicles},
   booktitle = {Advances in Neural Information Processing Systems (NeurIPS), Datasets and Benchmarks Track},
   year      = {2024}, note = {arXiv:2410.11125},
 }
 @article{ma2021uavfusion,
-  author  = {{Ma} and others},
-  title   = {{LiDAR}--Camera Fusion for Obstacle Detection on {UAV}s},
-  journal = {Autonomous Intelligent Systems}, year = {2021},
-  note    = {Title provisional; verify in Zotero},
+  author  = {Ma, Zhuang and Yao, Wang and Niu, Yifeng and others},
+  title   = {{UAV} Low-Altitude Obstacle Detection Based on the Fusion of {LiDAR} and Camera},
+  journal = {Autonomous Intelligent Systems}, volume = {1}, number = {1}, pages = {12}, year = {2021},
+  doi     = {10.1007/s43684-021-00014-y},
 }
+% TODO-REV[#118]: confirm the exact venue/year of cherif2023aerial (Missouri S\&T; possibly ISCAS 2023).
 @inproceedings{cherif2023aerial,
-  author    = {{Cherif} and others},
+  author    = {Cherif, Baya and Ghazzai, Hakim and others},
   title     = {Aerial {LiDAR}-Based 3{D} Object Detection and Tracking with an Unscented {K}alman Filter},
   booktitle = {IEEE Int. Symp. on Circuits and Systems (ISCAS)}, year = {2023},
-  note      = {Title provisional; verify in Zotero},
 }
 @misc{dolph2023airborne,
-  author = {{Dolph} and others},
-  title  = {Sense and Detect: Airborne {LiDAR} for {UAV} Detection},
-  year   = {2023}, note = {arXiv:2310.09589; title provisional; verify in Zotero},
+  author = {Manduhu, Manduhu and Dow, Alexander and Trslic, Petar and Dooly, Gerard and Blanck, Benjamin and Riordan, James},
+  title  = {Real-Time Sense and Detect of Drones Using Deep Learning and Airborne {LiDAR}},
+  year   = {2023}, note = {arXiv:2310.09589},
 }
 @misc{fu2025dmtrack,
-  author = {{Fu} and others},
-  title  = {{DMTrack}: Multi-Object Tracking from {UAV}s},
-  year   = {2025}, note = {arXiv:2510.17860; title provisional; verify in Zotero},
+  author = {Fu, Zenghuang and Han, Xiaofeng and Jia, Mingda and Yang, Jinming and Zeng, Qi and Zhang, Muyang and Wang, Changwei and Meng, Weiliang and Zhang, Xiaopeng},
+  title  = {{DMTrack}: Deformable State-Space Modeling for {UAV} Multi-Object Tracking with {K}alman Fusion and Uncertainty-Aware Association},
+  year   = {2025}, note = {arXiv:2510.17860},
 }
 
 % --- Datasets ---
@@ -649,4 +656,41 @@ author = {Amazon},
   author  = {Bo{\v{z}}i{\'c}-{\v{S}}tuli{\'c}, Dunja and Maru{\v{s}}i{\'c}, {\v{Z}}eljko and Gotovac, Sven},
   title   = {Deep Learning Approach in Aerial Imagery for Supporting Land Search and Rescue Missions},
   journal = {International Journal of Computer Vision}, volume = {127}, number = {9}, pages = {1256--1278}, year = {2019},
+}
+
+%======================================================================
+% References added to address the advisor's review (citations requested)
+%======================================================================
+@article{straubinger2020uam,
+  author  = {Straubinger, Anna and Rothfeld, Raoul and Shamiyeh, Michael and B{\"u}chter, Kai-Daniel and Kaiser, Jochen and Pl{\"o}tner, Kay O.},
+  title   = {An Overview of Current Research and Developments in Urban Air Mobility --- Setting the Scene for {UAM} Introduction},
+  journal = {Journal of Air Transport Management}, volume = {87}, pages = {101852}, year = {2020},
+  doi     = {10.1016/j.jairtraman.2020.101852},
+}
+@techreport{rtca2017do365,
+  author      = {{RTCA SC-228}},
+  title       = {{DO-365}: Minimum Operational Performance Standards ({MOPS}) for Detect and Avoid ({DAA}) Systems},
+  institution = {RTCA, Inc.}, address = {Washington, DC, USA}, year = {2017},
+}
+@article{lecun2015deeplearning,
+  author  = {LeCun, Yann and Bengio, Yoshua and Hinton, Geoffrey},
+  title   = {Deep Learning},
+  journal = {Nature}, volume = {521}, number = {7553}, pages = {436--444}, year = {2015},
+  doi     = {10.1038/nature14539},
+}
+@inproceedings{lin2014coco,
+  author    = {Lin, Tsung-Yi and Maire, Michael and Belongie, Serge and Hays, James and Perona, Pietro and Ramanan, Deva and Doll{\'a}r, Piotr and Zitnick, C. Lawrence},
+  title     = {{Microsoft COCO}: Common Objects in Context},
+  booktitle = {European Conference on Computer Vision (ECCV)}, pages = {740--755}, year = {2014},
+  doi       = {10.1007/978-3-319-10602-1_48},
+}
+@misc{ultralytics2024yolo11,
+  author = {Jocher, Glenn and Qiu, Jing},
+  title  = {{Ultralytics YOLO11}},
+  year   = {2024}, howpublished = {\url{https://github.com/ultralytics/ultralytics}}, note = {Version 11.0.0},
+}
+@misc{livox_mid360,
+  author = {{Livox Technology}},
+  title  = {{Livox Mid-360}: Compact 360{\textdegree} {LiDAR} Sensor},
+  year   = {2023}, howpublished = {\url{https://www.livoxtech.com/mid-360}},
 }

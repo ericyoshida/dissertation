@@ -2,7 +2,7 @@
 % Chapter 5 --- EKF-Based Target Tracking in Global and Local Frames
 %                                                            [tracker -- HERE]
 % Narrative: derive both formulations, PROVE their equivalence under the
-% stated assumptions, verify it numerically, and characterise the regimes
+% stated assumptions, verify it numerically, and characterize the regimes
 % where they genuinely diverge. Builds on the framework of Chapter 2.
 % =====================================================================
 
@@ -13,13 +13,18 @@ range--bearing measurements produced by a sensor rigidly attached to a moving
 aerial platform. Two formulations of the Extended Kalman Filter (EKF) are
 derived, one carrying the object state in a global inertial frame and
 one carrying it in the platform's local frame, and their relationship is
-analysed rigorously. The central result is that, under the modelling
+analyzed rigorously. The central result is that, under the modeling
 assumptions adopted here, the two formulations are \emph{mathematically
 equivalent}; we then identify the precise conditions under which a genuine
-difference between them emerges. This material extends the formulation first
-reported in \cite{delima2025fusion}.
+difference between them emerges. Much of the formulation in this chapter follows
+the article \cite{delima2025fusion}; the present treatment extends it in three
+ways: it derives the global- and local-frame filters within a single unified
+framework, it proves their equivalence under the stated assumptions, and it
+revises the local-frame filter of the original article, which omitted the
+inter-frame state reorientation (Section~\ref{sec:diverge}) and so reported a
+difference between the frames that does not in fact exist.
 
-\section{Tracking on a Moving Platform: The Reference-Frame Dilemma}
+\section{Selection of the Reference Frame}
 
 Consider an aerial platform carrying a sensor (a depth or stereo camera, or a
 camera fused with a LiDAR) that, at each discrete time $k$, reports the relative
@@ -28,17 +33,16 @@ $\alpha_k$ and elevation $\beta_k$, together with an estimate of the obstacle
 size $r_k$. Both the obstacle and the platform move, so the measurement is taken
 from a frame that is itself translating and rotating.
 
-The estimator designer faces a modelling choice. The object's motion is most
+The estimator designer faces a modeling choice. The object's motion is most
 naturally described by a linear, time-invariant kinematic model in a
 \emph{global} inertial frame, but the measurement is generated in the
 \emph{local} sensor frame; conversely, the measurement model is simplest in the
 local frame, but there the object's apparent motion is no longer inertial
-because the frame itself accelerates and rotates. This is the
-\emph{reference-frame dilemma}: should the filter state live in the global frame
-(paying the cost of a pose-dependent measurement equation) or in the local frame
-(paying the cost of re-expressing the state as the frame moves)?
-\cite{barshalom2001,lerro1993}. The remainder of this chapter formalises both
-options and answers the question.
+because the frame itself accelerates and rotates. The designer therefore faces a
+choice: should the filter state live in the global frame, paying the cost of a
+pose-dependent measurement equation, or in the local frame, paying the cost of
+re-expressing the state as the frame moves \cite{barshalom2001,lerro1993}? The
+remainder of this chapter formalizes both options and answers the question.
 
 \section{State-Space Formulation}
 
@@ -49,16 +53,16 @@ The object is described by the seven-dimensional state
   \bm{x}_k = \begin{bmatrix} x_k & y_k & z_k & \dot{x}_k & \dot{y}_k & \dot{z}_k & r_k \end{bmatrix}^{\!\top},
   \label{eq:obj_state}
 \end{equation}
-collecting position $\bm{p}_k=[x_k,y_k,z_k]^\top$, velocity
-$\bm{v}_k=[\dot{x}_k,\dot{y}_k,\dot{z}_k]^\top$, and a scalar size parameter
-$r_k$ (an effective radius). The platform pose is treated as a \emph{known}
-quantity supplied by the onboard navigation system,
+collecting the object position $\bm{p}_k=[x_k,y_k,z_k]^\top$ (expressed in the
+global frame), velocity $\bm{v}_k=[\dot{x}_k,\dot{y}_k,\dot{z}_k]^\top$, and a
+scalar size parameter $r_k$ (an effective radius). The platform pose is treated as
+a \emph{known} quantity supplied by the onboard navigation system,
 \begin{equation}
   \bm{x}^{p}_k = \begin{bmatrix} \bm{p}^{p}_k{}^{\!\top} & \bm{v}^{p}_k{}^{\!\top} & \phi_k & \theta_k & \psi_k \end{bmatrix}^{\!\top},
   \label{eq:plat_state}
 \end{equation}
-where $\bm{p}^{p}_k$ is the platform position and $(\phi_k,\theta_k,\psi_k)$ are
-its roll, pitch and yaw. Following the $Z$--$Y$--$X$ convention of
+where $\bm{p}^{p}_k$ and $\bm{v}^{p}_k$ are the platform position and velocity,
+respectively, and $(\phi_k,\theta_k,\psi_k)$ are its roll, pitch and yaw. Following the $Z$--$Y$--$X$ convention of
 Chapter~\ref{cha:background}, the body-to-world rotation matrix is
 \begin{equation}
   \bm{R}_k \;=\; \bm{R}_z(\psi_k)\,\bm{R}_y(\theta_k)\,\bm{R}_x(\phi_k),
@@ -94,28 +98,35 @@ with
   \end{bmatrix}.
   \label{eq:Fmatrix}
 \end{equation}
-Acceleration is not part of the state; it is modelled as the zero-mean white
+Acceleration is not part of the state; it is modeled as the zero-mean white
 process noise that excites the velocity. Using the continuous white-noise
-acceleration model, each position--velocity axis pair $i\in\{x,y,z\}$ contributes
-the block
+acceleration model with intensity $\sigma_a^2$ on each axis and a small
+random-walk term $\sigma_r^2$ on the size, and following the state ordering of
+\eqref{eq:obj_state} (the three positions, then the three velocities, then the
+size), the full $7\times7$ process-noise covariance is
 \begin{equation}
-  \bm{Q}_{i} = \sigma_{a}^{2}
-  \begin{bmatrix} \Delta t^{3}/3 & \Delta t^{2}/2 \\[2pt] \Delta t^{2}/2 & \Delta t \end{bmatrix},
-  \qquad \bm{Q}_{rr} = \sigma_{r}^{2},
-  \label{eq:Qblock}
+  \bm{Q} =
+  \begin{bmatrix}
+    \tfrac{\Delta t^{3}}{3}\sigma_a^{2}\,\bm{I}_3 & \tfrac{\Delta t^{2}}{2}\sigma_a^{2}\,\bm{I}_3 & \bm{0}_{3\times1}\\[4pt]
+    \tfrac{\Delta t^{2}}{2}\sigma_a^{2}\,\bm{I}_3 & \Delta t\,\sigma_a^{2}\,\bm{I}_3 & \bm{0}_{3\times1}\\[4pt]
+    \bm{0}_{1\times3} & \bm{0}_{1\times3} & \sigma_r^{2}
+  \end{bmatrix},
+  \label{eq:Qfull}
 \end{equation}
-with a common acceleration intensity $\sigma_a$ on all three axes and a small
-random-walk term $\sigma_r$ on the size parameter. The isotropy of $\bm{Q}$
-(equal $\sigma_a$ on every axis) is not incidental: it is the property that makes
-the two formulations of Section~\ref{sec:equiv} coincide, and relaxing it is one
-of the ways they are made to diverge (Section~\ref{sec:diverge}).
+where $\bm{I}_3$ is the $3\times3$ identity. The position--velocity coupling
+($\Delta t^2/2$ off-diagonal blocks) reflects that the same acceleration noise
+drives both, consistent with the constant-velocity transition $\bm{F}$ of
+\eqref{eq:Fmatrix}. The isotropy of $\bm{Q}$ (equal
+$\sigma_a$ on every axis) matters for what follows: it is what makes the two
+formulations of Section~\ref{sec:equiv} coincide, and relaxing it is one of the
+ways they diverge (Section~\ref{sec:diverge}).
 
 \begin{remark}
-The seminal description of this model in \cite{delima2025fusion} refers to it as
+The original description of this model in \citen{delima2025fusion} refers to it as
 a ``constant-acceleration'' model. Strictly, the implemented transition matrix
-\eqref{eq:Fmatrix} is constant-\emph{velocity}; the acceleration enters only
-through the process-noise covariance \eqref{eq:Qblock}. We adopt the precise
-terminology throughout.
+\eqref{eq:Fmatrix} is constant-\emph{velocity}, the acceleration entering only
+through the process-noise covariance \eqref{eq:Qfull}; we adopt this more precise
+terminology here.
 \end{remark}
 
 \section{Spherical Measurement Model}
@@ -143,7 +154,7 @@ adopt the heteroscedastic model
   \label{eq:rangenoise}
 \end{equation}
 where $\alpha_{\rho}$ is a sensor-dependent coefficient, a choice supported by the
-factor-graph localisation study of \cite{fernandes2020}. The measurement-noise
+factor-graph localization study of \cite{fernandes2020}. The measurement-noise
 covariance is then
 \begin{equation}
   \bm{R}_k = \operatorname{diag}\!\big(\alpha_{\rho}\rho_k^{2},\; \sigma_{\alpha}^{2},\; \sigma_{\beta}^{2},\; \sigma_{r}^{2}\big).
@@ -201,8 +212,8 @@ is
 \end{equation}
 
 \subsection{Update}
-With innovation $\bm{\nu}_k = \bm{z}_k - \hat{\bm{z}}_{k|k-1}$ (the angular
-components wrapped to $(-\pi,\pi]$),
+With the innovation $\bm{\nu}_k = \bm{z}_k - \hat{\bm{z}}_{k|k-1}$ (the angular
+components wrapped to $(-\pi,\pi]$), we obtain
 \begin{align}
   \bm{S}_k &= \bm{H}^{\mathrm{g}}_k\,\bm{P}_{k|k-1}\,\bm{H}^{\mathrm{g}\top}_k + \bm{R}_k,
   & \bm{K}_k &= \bm{P}_{k|k-1}\,\bm{H}^{\mathrm{g}\top}_k\,\bm{S}_k^{-1}, \label{eq:gSK}\\
@@ -222,7 +233,8 @@ the posterior must be re-expressed in the new frame before the prediction.
 
 Let $\hat{\bm{x}}_{k-1|k-1}=[\bm{p}^{(k-1)\top},\bm{v}^{(k-1)\top},r]^{\top}$ be
 the posterior expressed in the frame at time $k-1$. It is first lifted to the
-global frame and then projected onto the frame at time $k$:
+global frame and then projected onto the frame at time $k$, giving the
+\emph{reoriented} state, marked by the subscript $\mathrm{re}$:
 \begin{align}
   \bm{p}^{(k)}_{\mathrm{re}} &= \bm{R}_k^{\top}\!\big(\bm{R}_{k-1}\,\bm{p}^{(k-1)} + \bm{p}^{p}_{k-1} - \bm{p}^{p}_k\big), \label{eq:reor_pos}\\
   \bm{v}^{(k)}_{\mathrm{re}} &= \bm{R}_k^{\top}\bm{R}_{k-1}\,\bm{v}^{(k-1)}. \label{eq:reor_vel}
@@ -275,8 +287,8 @@ the affine map $\bm{x}^{\mathrm{l}}_k = \bm{T}_k\,\bm{x}^{\mathrm{g}}_k + \bm{c}
 \label{prop:equiv}
 Assume that (i) the platform pose $(\bm{R}_k,\bm{p}^{p}_k)$ is known, (ii) the
 process-noise covariance is rotation-invariant, $\bm{T}_k\bm{Q}\bm{T}_k^{\top}=\bm{Q}$
-(in particular, the isotropic $\bm{Q}$ of \eqref{eq:Qblock}), and (iii) both
-filters receive the same measurements and are initialised consistently,
+(in particular, the isotropic $\bm{Q}$ of \eqref{eq:Qfull}), and (iii) both
+filters receive the same measurements and are initialized consistently,
 $\hat{\bm{x}}^{\mathrm{l}}_{0}=\bm{T}_0\hat{\bm{x}}^{\mathrm{g}}_{0}+\bm{c}_0$ and
 $\bm{P}^{\mathrm{l}}_{0}=\bm{T}_0\bm{P}^{\mathrm{g}}_{0}\bm{T}_0^{\top}$. Then for
 all $k$,
@@ -349,26 +361,32 @@ If the reorientation \eqref{eq:reor_pos}--\eqref{eq:reor_cov} is omitted, i.e.\
 the moving body frame is implicitly treated as inertial, the prediction is
 biased by the platform displacement between consecutive steps. This single
 omission raises the RMSE from $0.228$~m to $0.301$~m (the red curve in
-Figure~\ref{fig:ekf_equiv}); it does \emph{not} reflect any intrinsic inferiority
-of the local frame, but a modelling error. This regime is important precisely
-because it can masquerade as a fair ``global versus local'' comparison and
-produce a spurious advantage for the global formulation; the correct local filter
-recovers the global filter's accuracy exactly.
+Figure~\ref{fig:ekf_equiv}); it reflects a modeling error rather than any
+intrinsic inferiority of the local frame. This is exactly the step that was
+missing from the local filter of the original article \citen{delima2025fusion}:
+there the local formulation reported a larger error than the global one, which
+was read as an advantage of the global frame, when in fact it was an artifact of
+the omitted reorientation. With the reorientation restored, the local filter
+recovers the global filter's accuracy exactly (Proposition~\ref{prop:equiv}), so
+the unified treatment given here supersedes that earlier comparison.
 
 \subsection{Anisotropic Process Noise}
 
 Assumption~(ii) fails when the acceleration noise is directional in the inertial
 frame, for instance a target that accelerates predominantly along its track.
 Then $\bm{T}_k\bm{Q}\bm{T}_k^{\top}\neq\bm{Q}$, and the formulation whose frame
-diagonalises $\bm{Q}$ is preferred: the global filter models inertial-frame
+diagonalizes $\bm{Q}$ is preferred: the global filter models inertial-frame
 directional noise correctly, whereas the local filter injects it in the rotating
 frame and is mismatched. With a strongly anisotropic intensity
 ($\sigma_{a,x}=0.6$, $\sigma_{a,y}=\sigma_{a,z}=0.05~\mathrm{m/s^2}$) and a
 platform yawing at $0.6~\mathrm{rad/s}$, the global filter attains an RMSE of
 $0.380$~m against $0.534$~m for the local filter, a $41\%$ degradation
-(Figure~\ref{fig:aniso}). Symmetrically, noise that is diagonal in the body frame
-favours the local formulation. The guiding principle is to carry the state in the
-frame where the process noise is naturally uncorrelated.
+(Figure~\ref{fig:aniso}). This along-track-dominant case is in fact the common
+one for real vehicles, whose acceleration noise is typically larger in the
+direction of travel than laterally, and which is often modeled with a
+speed-dependent intensity such as $\sigma_a^2 \propto v^2$. Symmetrically, noise
+that is diagonal in the body frame favors the local formulation. In short, the
+state should be carried in the frame in which the process noise is uncorrelated.
 
 \begin{figure}[H]
   \centering
@@ -383,10 +401,12 @@ frame where the process noise is naturally uncorrelated.
 
 Assumption~(i) is the most consequential in practice. When the platform pose is
 \emph{estimated} rather than known, $(\bm{R}_k,\bm{p}^{p}_k)$ carry their own
-uncertainty, which enters the global measurement equation \eqref{eq:hglobal} and
-the local reorientation \eqref{eq:reor_pos} differently. The innovation covariance
-\eqref{eq:gSK} must then be augmented with a term that propagates the pose
-covariance, and the two formulations are no longer equivalent. This is the
+covariance, and this affects \emph{both} formulations: the pose enters the global
+measurement equation \eqref{eq:hglobal} and the local reorientation
+\eqref{eq:reor_pos}, so in either frame the innovation covariance \eqref{eq:gSK}
+must be augmented with a term that propagates the pose covariance. The two
+formulations cease to be equivalent because the pose error enters these two
+equations through different Jacobians, so the augmenting terms differ. This is the
 setting of Chapter~\ref{cha:monocular}, where the monocular tracker explicitly propagates the
 six-degree-of-freedom camera-pose uncertainty into the filter.
 
@@ -416,8 +436,8 @@ remains at or above the bound at every step (the filter is near-optimal),
 and the two grow together over time: as the object recedes from the
 platform, the range $\rho$ increases and the heteroscedastic term
 $\sigma_{\rho}^{2}=\alpha_{\rho}\rho^{2}$ in \eqref{eq:rangenoise} inflates the
-measurement uncertainty. This growth is benign for sense-and-avoid: a distant
-object poses a lower collision threat, so larger uncertainty at range is
+measurement uncertainty. This growth is of limited concern for sense-and-avoid: a
+distant object poses a lower collision threat, so larger uncertainty at range is
 acceptable.
 
 \begin{figure}[H]

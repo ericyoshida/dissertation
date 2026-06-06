@@ -5,7 +5,7 @@
 % Bayesian estimation (the tracker) and deep networks (the detector).
 % =====================================================================
 
-This chapter collects the mathematical tools used throughout the dissertation
+This chapter introduces the mathematical tools used throughout the dissertation
 and fixes the notation reused in the later chapters. It rests on two pillars:
 recursive Bayesian estimation, which underpins the tracking stage
 (Chapters~\ref{cha:tracking} and \ref{cha:monocular}), and convolutional neural
@@ -36,7 +36,7 @@ through the process model (the Chapman--Kolmogorov equation), and an
 linear-Gaussian special case, with $\bm{f}(\bm{x})=\bm{F}\bm{x}$ and
 $\bm{h}(\bm{x})=\bm{H}\bm{x}$, these integrals admit a closed form, the
 \emph{Kalman filter} (KF) \cite{barshalom2001,brookner1998}: the posterior
-remains Gaussian and is summarised by its mean $\hat{\bm{x}}_{k|k}$ and covariance
+remains Gaussian and is summarized by its mean $\hat{\bm{x}}_{k|k}$ and covariance
 $\bm{P}_{k|k}$, propagated by
 \begin{align}
   \hat{\bm{x}}_{k|k-1} &= \bm{F}\,\hat{\bm{x}}_{k-1|k-1}, &
@@ -53,17 +53,17 @@ optimal (minimum mean-square-error) estimator in the linear-Gaussian case.
 
 The tracking models of this work are nonlinear, since the platform rotates and the
 measurements are spherical or projective, so the linear KF does not apply
-directly. The Extended Kalman Filter (EKF) retains the Gaussian parameterisation
-but linearises the nonlinear models about the current estimate
+directly. The Extended Kalman Filter (EKF) retains the Gaussian parameterization
+but linearizes the nonlinear models about the current estimate
 \cite{terejanu2008,barshalom2001}.
 
-\subsection{Linearisation}
+\subsection{Linearization}
 
 Let
 \begin{equation}
-  \bm{F}_k = \left.\frac{\partial \bm{f}}{\partial \bm{x}}\right|_{\hat{\bm{x}}_{k-1|k-1}},
-  \qquad
-  \bm{H}_k = \left.\frac{\partial \bm{h}}{\partial \bm{x}}\right|_{\hat{\bm{x}}_{k|k-1}}
+  \bm{F}_k = \left.\frac{\partial \bm{f}(\bm{x})}{\partial \bm{x}}\right|_{\bm{x}=\hat{\bm{x}}_{k-1|k-1}},
+  \qquad \mbox{and} \qquad
+  \bm{H}_k = \left.\frac{\partial \bm{h}(\bm{x})}{\partial \bm{x}}\right|_{\bm{x}=\hat{\bm{x}}_{k|k-1}}
   \label{eq:ekf_jac}
 \end{equation}
 be the Jacobians of the process and measurement models evaluated at the predicted
@@ -72,7 +72,7 @@ approximations.
 
 \subsection{Prediction and Update}
 
-The recursion mirrors \eqref{eq:kf_predict}--\eqref{eq:kf_update}, with the
+The EKF's recursion mirrors \eqref{eq:kf_predict}--\eqref{eq:kf_update}, with the
 nonlinear models used for the means and their Jacobians for the covariances:
 \begin{align}
   \hat{\bm{x}}_{k|k-1} &= \bm{f}(\hat{\bm{x}}_{k-1|k-1}), &
@@ -83,10 +83,10 @@ nonlinear models used for the means and their Jacobians for the covariances:
   \hat{\bm{x}}_{k|k} &= \hat{\bm{x}}_{k|k-1} + \bm{K}_k\bm{\nu}_k, \label{eq:ekf_gain}
 \end{align}
 and $\bm{P}_{k|k} = (\bm{I}-\bm{K}_k\bm{H}_k)\,\bm{P}_{k|k-1}$. Unlike the linear
-KF, the EKF is neither optimal nor unbiased: the linearisation
+KF, the EKF is neither optimal nor unbiased: the linearization
 \eqref{eq:ekf_jac} discards higher-order terms, and the magnitude of the
-resulting error depends on how nonlinear the models are over the support of the
-state covariance. This caveat matters in Chapter~\ref{cha:tracking}, where two
+resulting error depends on how nonlinear the process and measurement models are
+over the support of the state covariance. This caveat matters in Chapter~\ref{cha:tracking}, where two
 algebraically distinct EKF formulations are compared.
 
 \section{Coordinate Frames and Rigid-Body Transformations}
@@ -120,8 +120,16 @@ with the elementary rotations
 where $c_\bullet=\cos$ and $s_\bullet=\sin$. With this convention $\bm{R}$ maps
 body coordinates to world coordinates, and a point transforms as
 $\bm{p}^{\mathcal{W}}=\bm{R}\,\bm{p}^{\mathcal{B}}+\bm{t}$; the inverse map is
-$\bm{p}^{\mathcal{B}}=\bm{R}^{\top}(\bm{p}^{\mathcal{W}}-\bm{t})$. A pose is
-compactly written as a homogeneous transform $\bm{T}=\left[\begin{smallmatrix}\bm{R}&\bm{t}\\\bm{0}&1\end{smallmatrix}\right]\in SE(3)$.
+$\bm{p}^{\mathcal{B}}=\bm{R}^{\top}(\bm{p}^{\mathcal{W}}-\bm{t})$. Equivalently, in
+homogeneous coordinates,
+\begin{equation}
+  \begin{bmatrix} \bm{p}^{\mathcal{W}} \\ 1 \end{bmatrix}
+  = \underbrace{\begin{bmatrix} \bm{R} & \bm{t} \\ \bm{0} & 1 \end{bmatrix}}_{\bm{T}\,\in\, SE(3)}
+    \begin{bmatrix} \bm{p}^{\mathcal{B}} \\ 1 \end{bmatrix},
+  \label{eq:se3_transform}
+\end{equation}
+which compactly writes the world point as a function of the body point through the
+pose $\bm{T}\in SE(3)$.
 
 \subsection{Pose Perturbations}
 
@@ -137,7 +145,7 @@ order a point in the camera frame perturbs as
   \label{eq:se3_pert}
 \end{equation}
 where $[\,\cdot\,]_\times$ is the skew-symmetric (cross-product) matrix
-\cite{sola2018microlie}. This linearisation is the basis of the extrinsic
+\cite{sola2018microlie}. This linearization is the basis of the extrinsic
 Jacobian derived in Chapter~\ref{cha:monocular}.
 
 \section{Motion Models}
@@ -161,7 +169,7 @@ represented as process noise rather than as a state variable.
 \subsection{Process Noise}
 
 Modelling the unknown acceleration as a continuous white noise of intensity
-$\sigma_a^2$ yields, after discretisation, the per-axis process-noise covariance
+$\sigma_a^2$ yields, after discretization, the per-axis process-noise covariance
 \begin{equation}
   \bm{Q}_{\text{axis}} = \sigma_a^{2}
   \begin{bmatrix} \Delta t^{3}/3 & \Delta t^{2}/2 \\[2pt] \Delta t^{2}/2 & \Delta t \end{bmatrix}.
@@ -205,30 +213,34 @@ $\bm{X}^{\mathcal{O}}=[X,Y,Z]^{\top}$ in the optical frame projects to
 \end{equation}
 where $\bm{K}$ is the intrinsic matrix ($f_x,f_y$ focal lengths, $(c_x,c_y)$
 principal point). Real lenses introduce radial and tangential (plumb-bob)
-distortion, parameterised by coefficients $(k_1,k_2,k_3,p_1,p_2)$, which must be
+distortion, parameterized by coefficients $(k_1,k_2,k_3,p_1,p_2)$, which must be
 removed from each pixel measurement before it enters the filter; the procedure is
 detailed in Chapter~\ref{cha:monocular}.
 
 \section{Performance and Consistency Metrics}
 
 Several families of metrics are used across the dissertation: the first three
-evaluate the estimator, and the last evaluates the detection and tracking chain.
+evaluate the estimator, in terms of tracking accuracy, consistency, and
+optimality, and the last evaluates the detection and tracking chain.
 
 \subsection{Accuracy}
 The root-mean-square error (RMSE) of the position estimate,
-averaged over $M$ Monte~Carlo runs, summarises accuracy:
-$\mathrm{RMSE}(k)=\big(\frac1M\sum_{i=1}^{M}\lVert \bm{p}_k^{(i)}-\hat{\bm{p}}_k^{(i)}\rVert^2\big)^{1/2}$.
+averaged over $M$ Monte~Carlo runs, summarizes accuracy:
+\begin{equation}
+  \mathrm{RMSE}(k)=\left(\frac1M\sum_{i=1}^{M}\big\lVert \bm{p}_k^{(i)}-\hat{\bm{p}}_k^{(i)}\big\rVert^2\right)^{1/2}.
+  \label{eq:rmse}
+\end{equation}
 
 \subsection{Consistency}
 A filter is \emph{consistent} when its reported
-covariance matches its actual error. With ground truth available, the normalised
+covariance matches its actual error. With ground truth available, the normalized
 estimation error squared (NEES) of an $n$-dimensional state,
 \begin{equation}
   \epsilon_k = (\bm{x}_k-\hat{\bm{x}}_{k|k})^{\top}\,\bm{P}_{k|k}^{-1}\,(\bm{x}_k-\hat{\bm{x}}_{k|k}),
   \label{eq:nees}
 \end{equation}
 follows a $\chi^2_n$ distribution (mean $n$) for a consistent filter. When ground
-truth is unavailable, the normalised innovation squared (NIS),
+truth is unavailable, the normalized innovation squared (NIS),
 $\eta_k=\bm{\nu}_k^{\top}\bm{S}_k^{-1}\bm{\nu}_k\sim\chi^2_m$ for $m$-dimensional
 measurements, provides an analogous, measurement-only check \cite{barshalom2001}.
 
@@ -241,24 +253,36 @@ obtained from the Fisher information recursion
               + \mathbb{E}\!\big[\bm{H}_{k+1}^{\top}\bm{R}_{k+1}^{-1}\bm{H}_{k+1}\big],
   \label{eq:pcrb}
 \end{equation}
-with the bound on the state error given by $\bm{J}_k^{-1}$ \cite{tichavsky1998}.
-This bound is used to assess near-optimality of the tracker in
-Chapter~\ref{cha:tracking}.
+where $\bm{J}_k$ is the Fisher information matrix. Its inverse lower-bounds the
+estimation-error covariance of any unbiased estimator,
+$\mathbb{E}[(\bm{x}_k-\hat{\bm{x}}_k)(\bm{x}_k-\hat{\bm{x}}_k)^{\top}]\succeq\bm{J}_k^{-1}$,
+so the diagonal of $\bm{J}_k^{-1}$ bounds the per-component error variance from
+below \cite{tichavsky1998}. This bound is used to assess near-optimality of the
+tracker in Chapter~\ref{cha:tracking}.
 
 \subsection{Detection and Multi-Object-Tracking Metrics}
 \label{sec:detmetrics}
 
 The detection front-end (Chapter~\ref{cha:airsim}) is evaluated with the standard
-detection and tracking measures. A detection is counted correct when it matches a
-ground-truth object under an overlap or distance gate; \emph{precision} is the
-fraction of detections that are correct, \emph{recall} the fraction of objects
-detected, and $F_1$ their harmonic mean. Sweeping the detector's confidence
-threshold traces a precision--recall curve whose area is the average precision,
-averaged over classes and gates to give the mean average precision (mAP). For the
-temporal chain, multi-object-tracking accuracy (MOTA) aggregates false positives,
+detection and tracking measures. A detection that matches a ground-truth object
+under an overlap or distance gate is a true positive (TP) and otherwise a false
+positive (FP); a ground-truth object with no matching detection is a false
+negative (FN). \emph{Precision} ($P$), \emph{recall} ($R$), and their harmonic
+mean $F_1$ are then
+\begin{equation}
+  P = \frac{\mathrm{TP}}{\mathrm{TP}+\mathrm{FP}}, \qquad
+  R = \frac{\mathrm{TP}}{\mathrm{TP}+\mathrm{FN}}, \qquad
+  F_1 = \frac{2\,P\,R}{P+R}.
+  \label{eq:prf1}
+\end{equation}
+Sweeping the detector's confidence threshold traces a precision--recall curve
+whose area is the average precision; averaging it over classes and overlap gates
+gives the mean average precision (mAP), as standardized by the COCO benchmark
+\cite{lin2014coco}.
+For the temporal chain, multi-object-tracking accuracy (MOTA) aggregates false positives,
 misses, and identity switches at one operating point, and the identity score
 (IDF1) measures how consistently tracks preserve object identity. Because MOTA is
-read at a single threshold, the driving community favours its integral over recall,
+read at a single threshold, the driving community favors its integral over recall,
 the average MOTA (AMOTA) \cite{weng2020ab3dmot}, which characterizes the
 detector--tracker chain independently of a particular threshold; its companion
 AMOTP averages the localization error of matched tracks. These measures are used
@@ -267,7 +291,7 @@ throughout Chapter~\ref{cha:airsim}.
 \section{Deep Learning for Perception}
 
 The detection front-end of the pipeline is built from neural networks; this
-section summarises the building blocks used in Chapters~\ref{cha:pipeline} and
+section summarizes the building blocks used in Chapters~\ref{cha:pipeline} and
 \ref{cha:airsim}.
 
 \subsection{Convolutional Neural Networks}
@@ -276,19 +300,21 @@ A convolutional neural network (CNN) applies learned convolutional filters acros
 an image, sharing weights spatially and stacking layers to build a hierarchy of
 features, from edges and textures to object parts and whole objects. Weight
 sharing makes CNNs parameter-efficient and translation-equivariant, which is why
-they dominate image perception.
+they are the standard tool for image perception \cite{lecun2015deeplearning}.
 
 \subsection{Two-Dimensional Object Detection}
 
-Object detection localises and classifies objects within an image. One-stage
+Object detection localizes and classifies objects within an image. One-stage
 detectors such as YOLO \cite{redmon2016yolo} pose detection as a single regression
 from image to a dense set of bounding boxes and class scores, achieving the
-real-time throughput required onboard a UAV. The 2D detector forms the first stage
+real-time throughput required onboard a UAV; recent versions of the family
+augment the convolutional backbone with attention mechanisms while preserving
+this single-pass design. The 2D detector forms the first stage
 of the pipeline and seeds the frustum used for 3D detection. Because a detector's
 accuracy depends on the match between its training distribution and the
 deployment scene, a network intended to operate in an environment unseen during
 training is commonly trained on a diverse union of datasets to widen its
-generalisation; this strategy is applied to the aerial person detector of
+generalization; this strategy is applied to the aerial person detector of
 Chapter~\ref{cha:monocular}.
 
 \subsection{Point-Cloud Processing and PointNet}
@@ -309,17 +335,18 @@ The frustum approach is a \emph{two-stage} detector: a 2D network proposes
 regions and a point-cloud network refines them in 3D, so its recall is bounded by
 the 2D stage. The complementary \emph{single-stage} family detects directly in
 the point cloud over the whole scene. Because raw points are irregular, these
-methods first impose a regular structure: VoxelNet and SECOND
-\cite{yan2018second} quantize space into 3D voxels and apply (sparse) 3D
+methods first impose a regular structure: VoxelNet and the SECOND network
+\cite{yan2018second} (a method name) quantize space into 3D voxels and apply (sparse) 3D
 convolutions, while PointPillars \cite{lang2019pointpillars} collapses the
 vertical axis into a bird's-eye-view (BEV) grid of \emph{pillars}, encodes each
 pillar with a small PointNet, and runs an ordinary 2D convolutional backbone on
 the resulting pseudo-image, trading a little vertical resolution for real-time
-speed. Detection heads are increasingly \emph{centre-based}: rather than
+speed. Detection heads are increasingly \emph{center-based}: rather than
 classifying anchor boxes, the network predicts a heatmap whose peaks are object
-centres and regresses the box parameters at each peak \cite{zhou2019objects}.
-Chapter~\ref{cha:airsim} contrasts this single-stage voxel paradigm with the
-two-stage frustum pipeline on aerial data.
+centers and regresses the box parameters at each peak \cite{zhou2019objects}.
+This single-stage voxel paradigm is not part of the proposed pipeline; it is
+included as the comparison baseline against which the two-stage frustum design is
+evaluated on aerial data in Chapter~\ref{cha:airsim}.
 
 \subsection{Training Losses for Detection}
 

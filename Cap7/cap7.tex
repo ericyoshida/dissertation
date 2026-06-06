@@ -46,18 +46,20 @@ the related work (Section~\ref{cha:relatedwork}) leaves untested on UAVs.
 Data were generated with the AirSim plugin for Unreal Engine
 \cite{shah2018airsim}, driven over its remote-procedure-call (RPC) interface from
 a Python client. Three urban environments span the operational envelope of Urban
-Air Mobility: a low-rise residential neighbourhood (\textsc{AirSimNH}), a dense
+Air Mobility: a low-rise residential neighborhood (\textsc{AirSimNH}), a dense
 high-rise downtown (\textsc{City}), and a vegetated coastal scene
 (\textsc{Coastline}). Each carries an ego platform equipped with a
 forward-looking RGB camera, a planar-depth camera, and a $64$-beam LiDAR, all
 rigidly co-located ($0.35$~m forward, $0.5$~m below the body origin) and pitched
 $-15^\circ$ so that their fields of view overlap and share a single optical frame
-$\mathcal{O}$ (Chapter~\ref{cha:background}). The camera is modelled as an ideal
+$\mathcal{O}$ (Chapter~\ref{cha:background}). The camera is modeled as an ideal
 pinhole at $1280\times720$ with a $90^\circ$ horizontal field of view, giving
 focal lengths $f_x=f_y=640$~px and principal point $(c_x,c_y)=(640,360)$~px;
-empirical calibration against the simulator's relative-pose readout confirmed
-square pixels, correcting an initial $f_y$ estimate based on the vertical field of
-view. AirSim operates internally in a North--East--Down world convention; all point
+the simulated camera introduces no lens distortion, so the pinhole projection of
+Eq.~\eqref{eq:pinhole} is exact and no undistortion step is needed (unlike the
+real camera of Chapter~\ref{cha:monocular}). Empirical calibration against the
+simulator's relative-pose readout confirmed square pixels, correcting an initial
+$f_y$ estimate based on the vertical field of view. AirSim operates internally in a North--East--Down world convention; all point
 clouds and detections in this chapter are expressed in the optical frame
 $\mathcal{O}$ and lifted to the world frame with the platform pose using the
 $Z$--$Y$--$X$ rotation of Eq.~\eqref{eq:euler}.
@@ -74,7 +76,7 @@ retaining returns with $0.1\le z<250$~m.
 
 To make the simulator's image and its reported poses mutually consistent, the
 scene is frozen with \texttt{simPause} during the per-frame acquisition of image,
-depth, detections, and poses; without it, the targets drift by about one metre in
+depth, detections, and poses; without it, the targets drift by about one meter in
 the half-second spanned by the successive RPC queries, misaligning the rendered
 object from its annotation. Targets and ego are re-teleported to their planned
 poses at the start of every frame, since the simulator's hovering controller does
@@ -83,16 +85,17 @@ not hold position to the required tolerance.
 \subsection{Visual-Mesh Augmentation and Geometric 3D Annotation}
 \label{sec:visquad}
 
-The native multirotor mesh is too small (sub-metre envelope) to be detected
+The native multirotor mesh is too small (sub-meter envelope) to be detected
 reliably by a 2D detector or sampled densely by the depth camera at the
 $20$--$100$~m ranges of interest. Each target therefore carries a rigidly
-attached visual quadrotor mesh scaled by a factor of four (denoted
-\emph{VisQuad}), re-pose-synchronized to its carrier at $30$~Hz; the 2D detector
-is trained on this mesh and the same mesh is assumed at inference. Its
-axis-aligned extents, measured in-simulator, are $3.01\times3.93\times2.79$~m;
-a $1.38\times$ margin accounts for the spinning rotors that the simulator's
-bounding box omits, giving the half-extents
-$\bm{e}=[2.08,\,2.71,\,1.93]^\top$~m used for annotation.
+attached visual quadrotor mesh, enlarged by a factor of four relative to the
+native mesh (denoted \emph{VisQuad}) so that it is both visible to the detector
+and struck by enough depth pixels at those ranges, and re-pose-synchronized to
+its carrier at $30$~Hz; the 2D detector is trained on this mesh and the same mesh
+is assumed at inference. Its axis-aligned full extents, measured in-simulator, are
+$3.01\times3.93\times2.79$~m; multiplying each by a $1.38$ margin that accounts
+for the spinning rotors omitted from the simulator's bounding box, and halving,
+gives the half-extents $\bm{e}=[2.08,\,2.71,\,1.93]^\top$~m used for annotation.
 
 Importantly, the ground-truth 3D box is \emph{not} read from the simulator's
 detection API, whose relative-pose output carries a systematic $\approx 5$~m pitch
@@ -111,8 +114,8 @@ localization at test time.
 Training the 2D detector requires bounding-box labels at scale, and three
 automatic routes through the simulator were attempted and abandoned, each for a
 concrete reason. \emph{(i)~Semantic segmentation.} AirSim maps object identifiers
-to colours, but in the version used the drone blueprints were not assigned unique
-stencil identifiers, so every target shared a colour with the background or with
+to colors, but in the version used the drone blueprints were not assigned unique
+stencil identifiers, so every target shared a color with the background or with
 each other; recovering boxes from the masks would have required recompiling the
 Unreal environments to set the identifiers, which the pre-built binaries did not
 permit. A fallback heuristic (small dark blobs) produced too many false positives
@@ -126,9 +129,10 @@ validate them.
 
 The adopted solution decouples labeling from the simulator entirely by
 \emph{synthetic composition}, illustrated in Figure~\ref{fig:dataset}. A library
-of $196$ drone sprites is captured once, spanning $12$ yaw $\times$ $3$ pitch
-$\times$ $3$ roll orientations at five ranges; each sprite is segmented from the
-sky by a brightness threshold and stored as an RGBA patch with its capture range.
+of $196$ drone \emph{sprites} (cropped 2D image patches of the drone, in the
+sense used in computer graphics) is captured once, spanning $12$ yaw $\times$ $3$
+pitch $\times$ $3$ roll orientations at five ranges; each sprite is segmented from
+the sky by a brightness threshold and stored as an RGBA patch with its capture range.
 The VisQuad mesh is near-black against a bright sky, so a single grayscale cut
 separates it cleanly, whereas an RGB difference (which requires two synchronized
 captures) or segmentation (route~(i)) would not. Drone-free backgrounds are
@@ -190,13 +194,17 @@ every target. Table~\ref{tab:dataset} summarizes the data.
 
 \subsection{Two-Dimensional Detection}
 
-The first stage is a YOLOv11-small detector \cite{redmon2016yolo}, a one-stage
-network that regresses boxes and class scores in a single pass and meets the
-real-time budget of an onboard system. It is trained for the single class
-\emph{drone} on the synthetic frames of Section~\ref{sec:labeling} at
-$1280$-pixel input resolution with standard mosaic, HSV, and scale augmentation.
-Its output for each frame is a set of boxes $\{b_i\}$ with confidences
-$\{s^{\mathrm{2D}}_i\}$ that seed the frustum stage.
+The first stage is a YOLOv11-small detector
+\cite{redmon2016yolo,ultralytics2024yolo11} ($\approx 10$~M parameters), a
+one-stage network that regresses boxes and class scores in a single pass and
+meets the real-time budget of an onboard system. It is trained for the single
+class \emph{drone} on the synthetic frames of Section~\ref{sec:labeling} at
+$1280$-pixel input resolution with standard mosaic, HSV, and scale augmentation,
+for $80$ epochs using the default Ultralytics training recipe (SGD with Nesterov
+momentum, weight decay, and a cosine learning-rate schedule). Its output for each
+frame is a set of boxes $\{b_i\}$ with confidences $\{s^{\mathrm{2D}}_i\}$ that
+seed the frustum stage; on an RTX-class GPU the detector runs at roughly
+$5$~ms per frame.
 
 \subsection{Frustum Proposal and the Normalization Problem}
 \label{sec:frustum}
@@ -204,12 +212,12 @@ $\{s^{\mathrm{2D}}_i\}$ that seed the frustum stage.
 Each 2D box $b_i=(u_1,v_1,u_2,v_2)$, enlarged by $25\%$, defines a viewing frustum;
 the points whose pinhole projection $\big(u,v\big)=\big(f_x x^{\mathcal{O}}/z+c_x,\,
 f_y y^{\mathcal{O}}/z+c_y\big)$ falls inside it are gathered and resampled to a
-fixed cardinality of $N=4096$. The point set is centred on its centroid and
+fixed cardinality of $N=4096$. The point set is centered on its centroid and
 scaled to a unit ball before being fed to the network, the standard PointNet
 normalization. This is where a subtle but decisive failure arises. When the
 frustum contains background surface behind the target (foliage, a fa\c{c}ade, or
 the ground), those far points dominate the scale, compressing the drone into a small
-fraction of the normalized volume; the classifier becomes timid and, more
+fraction of the normalized volume; the classifier becomes under-confident and, more
 importantly, the regressed centroid is pulled toward the background, inflating the
 3D localization error to roughly $3$~m. Figure~\ref{fig:depthband} shows the
 effect on a real frustum: the target occupies a tight cluster near $30$~m while a
@@ -232,10 +240,24 @@ ranges rather than the maximum) was found to be insufficient: clipping the scale
 does not remove the background points, so the regressed centroid remains biased
 (Section~\ref{sec:results-norm}). The effective remedy is to \emph{remove} the
 background: a \emph{depth band} anchors on the nearest surface
-($z_0$, the $5$th percentile of frustum range) and discards everything beyond
-$z_0+\Delta$, isolating the target before normalization. This heuristic is simple
+($z_0$, the $5$th percentile of frustum range) and discards every point beyond
+$z_0+\Delta$, where $\Delta$ is a fixed band depth (a few meters, set to comfortably
+contain a drone) that defines how far behind the nearest surface points are kept;
+this isolates the target before normalization (Figure~\ref{fig:depthband_diag}).
+This heuristic is simple
 and effective but brittle to a frontal occluder; it is therefore replaced, below,
 by a learned foreground segmentation.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.92\linewidth]{Cap7/depthband_diagram.pdf}
+  \caption{The depth band, viewed from above. The 2D box defines a viewing
+  frustum; the foreground drone forms a tight cluster near the nearest surface
+  $z_0$, while a long background tail (a fa\c{c}ade or foliage) extends behind it.
+  Keeping only the points within $[z_0,\,z_0+\Delta]$ removes the background that
+  would otherwise dominate the point-cloud normalization scale.}
+  \label{fig:depthband_diag}
+\end{figure}
 
 \subsection{Three-Dimensional Detection with PointNet}
 \label{sec:pointnet}
@@ -245,20 +267,34 @@ set-abstraction levels (sampling $512$ then $128$ centroids with ball-query radi
 $0.2$ and $0.4$~m and per-level multilayer perceptrons of widths
 $[64,64,128]$, $[128,128,256]$, and $[256,512,1024]$), followed by a shared
 fully-connected head that branches into three outputs: an objectness logit
-(drone vs. false positive), the box centre offset $\in\mathbb{R}^3$, and the box
-size $\in\mathbb{R}^3$. The objectness branch is trained with the focal loss
-\cite{lin2017focal} to counter the foreground/background imbalance, and the centre
+(drone vs. false positive), the box center offset $\in\mathbb{R}^3$, and the box
+size $\in\mathbb{R}^3$. Figure~\ref{fig:pn_topology} shows this topology.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{Cap7/pointnet_topology.pdf}
+  \caption{Topology of the frustum 3D detector: a PointNet\texttt{++} with three
+  hierarchical set-abstraction (SA) levels that progressively subsample the
+  $N{=}4096$ frustum points and aggregate local geometry, a shared fully-connected
+  trunk, and three heads (objectness, box center, box size). The learned
+  foreground segmentation (Section~\ref{sec:segnet}) masks the SA features before
+  the box head.}
+  \label{fig:pn_topology}
+\end{figure} The objectness branch is trained with the focal loss
+\cite{lin2017focal} to counter the foreground/background imbalance, and the center
 and size branches with the smooth-$L_1$ loss restricted to positive samples,
 \begin{equation}
   \mathcal{L} = \mathcal{L}_{\mathrm{focal}}(\hat{s},\,s^{\star})
-              + \lambda_c\,\mathbb{1}[s^{\star}{=}1]\,\mathrm{smooth}_{L_1}(\hat{\bm{c}},\bm{c}^{\star})
-              + \lambda_s\,\mathbb{1}[s^{\star}{=}1]\,\mathrm{smooth}_{L_1}(\hat{\bm{d}},\bm{d}^{\star}),
+              + \lambda_c\,\mathbf{1}[s^{\star}{=}1]\,\mathrm{smooth}_{L_1}(\hat{\bm{c}},\bm{c}^{\star})
+              + \lambda_s\,\mathbf{1}[s^{\star}{=}1]\,\mathrm{smooth}_{L_1}(\hat{\bm{d}},\bm{d}^{\star}),
   \label{eq:pn_loss}
 \end{equation}
-with $\lambda_c=5$, $\lambda_s=1$. The network is optimized with Adam
+where $\mathbf{1}[\cdot]$ is the indicator function (equal to $1$ when its
+argument holds and $0$ otherwise), so the regression terms act only on positive
+samples ($s^{\star}{=}1$), with $\lambda_c=5$, $\lambda_s=1$. The network is optimized with Adam
 ($10^{-3}$, weight decay $10^{-4}$) under a cosine schedule, with a
 class-balanced sampler and yaw-rotation/jitter augmentation. The detector
-estimates one object per frustum; its centre, lifted to the world frame, is the
+estimates one object per frustum; its center, lifted to the world frame, is the
 position measurement, and its range, azimuth, and elevation
 (Eq.~\eqref{eq:spherical}) are precisely the spherical measurement
 $\bm{z}=[\rho,\alpha,\beta,r]^\top$ that the EKF of
@@ -297,7 +333,7 @@ dependence we also implement the single-stage paradigm that the related work
 PointPillars encoder \cite{lang2019pointpillars} voxelizes the \emph{whole} scene
 into a bird's-eye-view pillar grid ($1.25$~m cells over a
 $80\times88$~m region) and a two-dimensional convolutional backbone with a
-centre-based detection head \cite{zhou2019objects} predicts a target heatmap and
+center-based detection head \cite{zhou2019objects} predicts a target heatmap and
 box regression, detecting directly in 3D without a 2D proposal. Three variants
 probe what drives its accuracy: hand-crafted pillar features
 (occupancy, mean height, maximum return); \emph{learned} pillar features (a
@@ -316,11 +352,13 @@ The two parts separate \emph{which detection belongs to which track} (a 2D probl
 solved on the reliable image boxes) from \emph{where the track is in 3D} (estimated
 by the recursive filter of Chapter~\ref{cha:tracking}).
 
-\paragraph*{Identity association (2D).} At frame $k$ the detector returns a set of
-boxes with fused confidences. Non-maximum suppression (IoU threshold $0.4$) first
-removes duplicates, so each object yields a single box (the deduplication of
-Figure~\ref{fig:qual}). Each surviving box $\bm{b}_i$ is then assigned to an active
-track $j$ by minimising the cost
+\paragraph*{Identity association (2D).} The association follows the ideas of the
+SORT tracker \cite{bewley2016sort}: a per-track motion prediction, an
+intersection-over-union cost, and a Hungarian assignment. At frame $k$ the
+detector returns a set of boxes with fused confidences. Non-maximum suppression
+(IoU threshold $0.4$) first removes duplicates, so each object yields a single box
+(the deduplication of Figure~\ref{fig:qual}). Each surviving box $\bm{b}_i$ is then assigned to an active
+track $j$ by minimizing the cost
 \begin{equation}
   C_{ij} \;=\; 1 - \mathrm{IoU}\!\big(\bm{b}_i,\,\hat{\bm{b}}_j\big),
   \qquad
@@ -361,10 +399,13 @@ supplies a 3D position through the detection gaps. The track's reported
 three-dimensional position --- and hence the localization error of
 Section~\ref{sec:results} --- is the \emph{filtered} estimate $\hat{\bm{p}}_{k|k}$,
 together with the covariance $\bm{P}_{k|k}$ that quantifies its uncertainty for the
-avoidance layer. The detection front-end of this chapter thus feeds the very tracker
-validated in Chapters~\ref{cha:tracking} and~\ref{cha:monocular}, realising the
-end-to-end pipeline of Chapter~\ref{cha:pipeline}. Table~\ref{tab:tracker} lists the
-parameters of both parts.
+avoidance layer. The detection front-end of this chapter thus feeds the same
+range--bearing filter developed and validated in Chapter~\ref{cha:tracking}; the
+monocular tracker of Chapter~\ref{cha:monocular} is a variant of the same
+framework, adapted to a bearing-only measurement and a different state, rather
+than this identical filter. Together these realize the end-to-end pipeline of
+Chapter~\ref{cha:pipeline}. Table~\ref{tab:tracker} lists the parameters of both
+parts.
 
 \begin{table}[H]
   \centering
@@ -409,16 +450,21 @@ the filter \cite{weng2020ab3dmot}.
 
 \subsection{Metrics}
 
-Detection is reported with precision, recall, and $F_1$ at a fixed operating
-point. Tracking is reported with the metrics standard in 3D multi-object tracking
-\cite{weng2020ab3dmot}: the average multi-object tracking accuracy and precision
-(AMOTA, AMOTP), which integrate the CLEAR-MOT accuracy over the full recall range
-and are therefore largely detector-threshold independent; the single-operating-point
-MOTA at a $0.5$ association threshold; the identity score IDF1; and the number of
-identity switches. Localization is reported as the root-mean-square error (RMSE)
-and mean absolute error of the 3D centroid against ground truth, stratified by
-range, with ground-truth/track association by 3D distance under a gate of a few
-metres. AMOTA is the headline tracking number because, by sweeping the detection
+Three families of metrics are reported, following the 3D multi-object-tracking
+practice of \cite{weng2020ab3dmot}:
+\begin{itemize}
+  \item \textbf{Detection:} precision, recall, and $F_1$ at a fixed operating
+  point.
+  \item \textbf{Tracking:} the average multi-object tracking accuracy and
+  precision (AMOTA, AMOTP), which integrate the CLEAR-MOT accuracy over the full
+  recall range and are therefore largely detector-threshold independent; the
+  single-operating-point MOTA at a $0.5$ association threshold; the identity score
+  IDF1; and the number of identity switches.
+  \item \textbf{Localization:} the root-mean-square error (RMSE) and mean
+  absolute error of the 3D centroid against ground truth, stratified by range,
+  with ground-truth/track association by 3D distance under a gate of a few meters.
+\end{itemize}
+AMOTA is the headline tracking number because, by sweeping the detection
 threshold, it measures the quality of the detector--tracker chain rather than a
 single tuned point.
 
@@ -433,7 +479,7 @@ this does not inflate their numbers, all voxel results were recomputed on the
 $12$ held-out sequences alone and agree with the full-campaign figures to within
 $0.02$ AMOTA and $0.02$~m RMSE (e.g., the best voxel model scores AMOTA $0.67$ and
 RMSE $0.85$~m held-out, against $0.68$ and $0.87$~m on the full set), confirming
-that the comparison below is not an artefact of in-sample evaluation. Inference
+that the comparison below is not an artifact of in-sample evaluation. Inference
 runs offline: one heavy pass per sequence dumps detections, from which all metrics
 are recomputed cheaply while sweeping the detection threshold.
 
@@ -471,7 +517,7 @@ AMOTA of $0.04$: the background-dominated frustum cripples both localization and
 classification. Replacing the scale by a robust $95$th-percentile estimate barely
 helps (RMSE $2.87$~m, AMOTA $0.05$), confirming that clipping the scale is the
 wrong fix: the centroid is still pulled by the background. Removing the
-background with the depth band collapses the error to $1.20$~m and lifts precision
+background with the depth band reduces the error to $1.20$~m and lifts precision
 to $0.90$ and AMOTA to $0.81$; the learned T-Net segmentation does better still,
 $1.05$~m, while recovering the foreground without a manual cut. The dominant lever
 in the frustum pipeline is thus foreground extraction, not the regressor.
@@ -500,7 +546,7 @@ the target is seen, whereas MOTA at a single threshold is dragged down by the mi
 detections. Second, the localization error is essentially flat with range
 (Figure~\ref{fig:mainresults}, right: $1.25$~m at $0$--$30$~m, $1.16$~m at $30$--$50$~m,
 $1.30$~m at $50$--$90$~m), which is the property a sense-and-avoid system needs
-and which mirrors the range-bounded behaviour of the tracker's Cram\'er--Rao
+and which mirrors the range-bounded behavior of the tracker's Cram\'er--Rao
 analysis in Chapter~\ref{cha:tracking}. The recall ($0.31$--$0.58$, lowest in the
 tree-cluttered \textsc{AirSimNH} and under fog) is inherited almost entirely from
 the 2D stage and is the principal limitation of the two-stage design.
@@ -541,8 +587,24 @@ the 2D stage and is the principal limitation of the two-stage design.
 \subsection{Architectural Comparison: Frustum, Voxel, and Fusion}
 \label{sec:results-arch}
 
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{Cap7/approaches_diagram.pdf}
+  \caption{The three detection paradigms compared in this chapter.
+  (a)~Two-stage frustum: the YOLO detector gates a frustum that a
+  PointNet\texttt{++} refines into a 3D box, precise but recall-limited by the 2D
+  stage. (b)~Single-stage voxel: the whole point cloud is pillarized and a 2D
+  convolutional backbone with a center-based head detects directly in 3D, higher
+  recall but noisier. (c)~Late fusion: voxel detections complement the precise
+  frustum tracks.}
+  \label{fig:approaches}
+\end{figure}
+
 Table~\ref{tab:arch} and Figure~\ref{fig:arch} compare the frustum variants
-against the single-stage voxel detectors and a late fusion of the two. The two
+against the single-stage voxel detectors and a late fusion of the two. The three
+paradigms are contrasted side by side in Figure~\ref{fig:approaches}: the
+two-stage frustum pipeline, the single-stage voxel detector, and their late
+fusion. The two
 paradigms occupy opposite regimes (Figure~\ref{fig:regimes}). The frustum methods
 are precise but recall-limited: the T-Net segmentation and the depth band attain
 the highest frustum AMOTA ($0.81$) and precision ($0.90$), but their recall is
@@ -617,7 +679,7 @@ Figure~\ref{fig:qual} shows a representative campaign frame from the
 \textsc{AirSimNH} suburban scene, with three drones at forward ranges of about
 $33$--$48$~m. After non-maximum suppression the detector returns one tight box per
 target (left). In the bird's-eye view (right) all three estimates coincide with
-their ground-truth positions to within about a metre --- the residual error
+their ground-truth positions to within about a meter --- the residual error
 connectors are too short to be visible --- with the platform at the origin and its
 field of view shaded. This is the calibrated, metric output that the avoidance
 layer consumes.
@@ -629,16 +691,31 @@ layer consumes.
   (a)~First-person view: one detection box per drone (after non-maximum
   suppression), with the fused confidence. (b)~Bird's-eye view: estimated target
   positions (crosses) coincide with ground truth (squares) to within about a
-  metre, with the moving ego at the origin and its field of view shaded.}
+  meter, with the moving ego at the origin and its field of view shaded.}
   \label{fig:qual}
+\end{figure}
+
+Figure~\ref{fig:pipeline_frames} complements this with the raw camera--point-cloud
+input the pipeline operates on, across three frames as the platform advances and
+the resolved depth range grows.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.92\linewidth]{Cap7/pipeline_frames.pdf}
+  \caption{Camera--point-cloud fusion across three campaign frames (top to bottom,
+  near to far). Left: the RGB camera. Right: the depth-derived point cloud colored
+  by range, the working cloud that the frustum stage crops, with the drone targets
+  visible against the ground. The resolved depth range grows from about $11$~m to
+  $86$~m as the observer moves.}
+  \label{fig:pipeline_frames}
 \end{figure}
 
 \section{Discussion}
 \label{sec:discussion}
 
 The experiments establish three points. First, \emph{the synthetic dataset is
-viable}: pixel-exact composition sidesteps the simulator's annotation defects and
-trains a near-perfect 2D detector, and the geometric 3D annotation supplies
+viable}: pixel-exact composition avoids the simulator's annotation defects and
+trains a highly accurate 2D detector, and the geometric 3D annotation supplies
 trustworthy supervision for the point-cloud stage. Second, \emph{foreground
 extraction, not the regressor, governs frustum localization}: removing or learning
 the background takes the 3D error from $3$~m to about $1$~m, and a learned
@@ -648,6 +725,13 @@ two-stage frustum design is precise and tracks well but inherits the 2D detector
 recall ceiling, whereas the single-stage voxel design, particularly with
 learned pillar features, recalls more targets and localizes them best, at the
 cost of noisier identities; a late fusion captures much of both.
+
+For the detect-and-avoid application this trade-off has a clear resolution: a
+missed obstacle is far more dangerous than a noisier estimate of a detected one,
+so \emph{recall should be favored over localization precision}. This argues for
+the single-stage voxel detector (or the late fusion), which recall many more
+targets at a modest cost in localization noise, rather than the frustum pipeline
+alone, despite the latter's higher AMOTA at low recall.
 
 These results connect directly to the rest of the pipeline. The 3D detections
 produced here are exactly the spherical measurements
@@ -659,5 +743,9 @@ fog, which the single-stage and fusion variants are shown to relieve. The
 remaining gap to deployment is the sim-to-real transfer: the detectors are trained
 purely in simulation, and validating them on real aerial footage, as the
 monocular tracker of Chapter~\ref{cha:monocular} is validated on real
-flights, is the natural next step, alongside the onboard-compute optimization
-that an embedded sense-and-avoid system will require.
+flights, is the natural next step. A second gap is computational: the 2D stage
+runs in about $5$~ms per frame on a desktop GPU, but the end-to-end latency of the
+full pipeline was not benchmarked, and the farthest-point sampling in the
+PointNet\texttt{++} stage scales quadratically with the $N=4096$ frustum points,
+so an onboard-compute optimization (and a measured real-time budget) is required
+before an embedded sense-and-avoid deployment.
