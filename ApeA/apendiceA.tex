@@ -3,14 +3,142 @@
 % Goal: keep the body readable by moving long derivations here.
 % =====================================================================
 
-\section{Spherical Measurement Jacobians}
-% TODO: full analytic entries of d(rho,alpha,beta)/d(x,y,z), local and global.
+This appendix collects the derivations that the body chapters use but do not
+spell out in full, so that the results of Chapters~\ref{cha:tracking}
+and~\ref{cha:monocular} are reproducible. The notation is that of
+Chapter~\ref{cha:background}.
+
+\section{Spherical Measurement Jacobian}
+\label{ap:spherical_jac}
+
+The spherical measurement model maps a relative position in the sensor frame,
+$\bm{p}^{c}=[x^{c},y^{c},z^{c}]^{\top}$, to range, azimuth and elevation,
+\begin{equation}
+  \rho = \sqrt{(x^{c})^{2}+(y^{c})^{2}+(z^{c})^{2}}, \quad
+  \alpha = \operatorname{atan2}(y^{c},x^{c}), \quad
+  \beta = \operatorname{atan2}\!\big(z^{c},\rho_{xy}\big),
+\end{equation}
+with $\rho_{xy}=\sqrt{(x^{c})^{2}+(y^{c})^{2}}$. Differentiating each component
+with respect to the local Cartesian coordinates gives the rows of the
+$3\times3$ Jacobian $\bm{J}_{\mathrm{s}}=\partial(\rho,\alpha,\beta)/\partial\bm{p}^{c}$.
+For the range,
+\begin{equation}
+  \frac{\partial\rho}{\partial x^{c}}=\frac{x^{c}}{\rho},\qquad
+  \frac{\partial\rho}{\partial y^{c}}=\frac{y^{c}}{\rho},\qquad
+  \frac{\partial\rho}{\partial z^{c}}=\frac{z^{c}}{\rho}.
+\end{equation}
+For the azimuth, using $\tfrac{\partial}{\partial u}\operatorname{atan2}(v,u)=-v/(u^2+v^2)$ and
+$\tfrac{\partial}{\partial v}\operatorname{atan2}(v,u)=u/(u^2+v^2)$,
+\begin{equation}
+  \frac{\partial\alpha}{\partial x^{c}}=\frac{-y^{c}}{\rho_{xy}^{2}},\qquad
+  \frac{\partial\alpha}{\partial y^{c}}=\frac{x^{c}}{\rho_{xy}^{2}},\qquad
+  \frac{\partial\alpha}{\partial z^{c}}=0.
+\end{equation}
+For the elevation $\beta=\operatorname{atan2}(z^{c},\rho_{xy})$, with
+$\partial\rho_{xy}/\partial x^{c}=x^{c}/\rho_{xy}$ and similarly for $y^{c}$,
+\begin{equation}
+  \frac{\partial\beta}{\partial x^{c}}=\frac{-x^{c}z^{c}}{\rho^{2}\rho_{xy}},\qquad
+  \frac{\partial\beta}{\partial y^{c}}=\frac{-y^{c}z^{c}}{\rho^{2}\rho_{xy}},\qquad
+  \frac{\partial\beta}{\partial z^{c}}=\frac{\rho_{xy}}{\rho^{2}},
+\end{equation}
+so that, collecting the rows,
+\begin{equation}
+  \bm{J}_{\mathrm{s}} =
+  \begin{bmatrix}
+    \dfrac{x^{c}}{\rho} & \dfrac{y^{c}}{\rho} & \dfrac{z^{c}}{\rho}\\[8pt]
+    \dfrac{-y^{c}}{\rho_{xy}^{2}} & \dfrac{x^{c}}{\rho_{xy}^{2}} & 0\\[8pt]
+    \dfrac{-x^{c}z^{c}}{\rho^{2}\rho_{xy}} & \dfrac{-y^{c}z^{c}}{\rho^{2}\rho_{xy}} & \dfrac{\rho_{xy}}{\rho^{2}}
+  \end{bmatrix},
+\end{equation}
+which is Eq.~\eqref{eq:Jsph}.
+
+\paragraph*{Global- and local-frame measurement Jacobians.}
+In the local formulation the state position is already expressed in the sensor
+frame, so the $4\times7$ measurement Jacobian (with the size reading appended)
+is $\bm{H}^{\mathrm{l}}_k=\big[\begin{smallmatrix}\bm{J}_{\mathrm{s}} & \bm{0}_{3\times3} & \bm{0}_{3\times1}\\ \bm{0}_{1\times3} & \bm{0}_{1\times3} & 1\end{smallmatrix}\big]$,
+Eq.~\eqref{eq:Hlocal}. In the global formulation the predicted position is rotated
+into the sensor frame first, $\bm{p}^{c}=\bm{R}_k^{\top}(\hat{\bm{p}}_{k|k-1}-\bm{p}^{p}_k)$,
+so by the chain rule $\partial\bm{p}^{c}/\partial\bm{p}=\bm{R}_k^{\top}$ and
+$\bm{H}^{\mathrm{g}}_k=\big[\begin{smallmatrix}\bm{J}_{\mathrm{s}}\bm{R}_k^{\top} & \bm{0}_{3\times3} & \bm{0}_{3\times1}\\ \bm{0}_{1\times3} & \bm{0}_{1\times3} & 1\end{smallmatrix}\big]$,
+Eq.~\eqref{eq:Hglobal}. The two are related by $\bm{H}^{\mathrm{g}}_k=\bm{H}^{\mathrm{l}}_k\bm{T}_k$,
+the identity used in the equivalence proof of Section~\ref{sec:equiv}.
 
 \section{Rotation-Matrix Derivatives}
-% TODO: dR/dphi, dR/dtheta, dR/dpsi (Z-Y-X convention).
+\label{ap:rot_jac}
 
-\section{Recursive CRLB / Fisher Information Derivation}
-% TODO: full derivation of the recursive posterior CRLB.
+For the $Z$--$Y$--$X$ convention $\bm{R}=\bm{R}_z(\psi)\bm{R}_y(\theta)\bm{R}_x(\phi)$
+of Eq.~\eqref{eq:euler}, the derivative with respect to each Euler angle is
+obtained by differentiating the corresponding elementary rotation and leaving the
+others unchanged:
+\begin{align}
+  \frac{\partial\bm{R}}{\partial\phi} &= \bm{R}_z(\psi)\,\bm{R}_y(\theta)\,\bm{R}_x'(\phi), &
+  \bm{R}_x'(\phi) &= \begin{bmatrix}0&0&0\\0&-s_\phi&-c_\phi\\0&c_\phi&-s_\phi\end{bmatrix},\\
+  \frac{\partial\bm{R}}{\partial\theta} &= \bm{R}_z(\psi)\,\bm{R}_y'(\theta)\,\bm{R}_x(\phi), &
+  \bm{R}_y'(\theta) &= \begin{bmatrix}-s_\theta&0&c_\theta\\0&0&0\\-c_\theta&0&-s_\theta\end{bmatrix},\\
+  \frac{\partial\bm{R}}{\partial\psi} &= \bm{R}_z'(\psi)\,\bm{R}_y(\theta)\,\bm{R}_x(\phi), &
+  \bm{R}_z'(\psi) &= \begin{bmatrix}-s_\psi&-c_\psi&0\\c_\psi&-s_\psi&0\\0&0&0\end{bmatrix},
+\end{align}
+with $c_\bullet=\cos$ and $s_\bullet=\sin$. These are needed whenever the platform
+attitude is itself a state or an uncertain quantity; for the uncertain-pose
+analysis of Chapter~\ref{cha:monocular} the more compact $SE(3)$ tangent-space
+form of Section~\ref{ap:extrinsic_jac} is used instead.
 
-\section{Extrinsic Jacobian Derivation}
-% TODO: full derivation of the 2x6 extrinsic Jacobian (Ch.6).
+\section{Recursive Posterior Cram\'er--Rao Bound}
+\label{ap:crlb}
+
+The posterior Cram\'er--Rao bound (PCRB) lower-bounds the error covariance of any
+estimator of $\bm{x}_k$ from the measurements $\bm{z}_{1:k}$:
+$\mathbb{E}\!\big[(\bm{x}_k-\hat{\bm{x}}_k)(\bm{x}_k-\hat{\bm{x}}_k)^{\top}\big]\succeq\bm{J}_k^{-1}$,
+where $\bm{J}_k$ is the Bayesian (posterior) Fisher information matrix. For the
+discrete-time system \eqref{eq:ss_process}--\eqref{eq:ss_meas} with additive
+Gaussian process noise $\bm{Q}$ and measurement noise $\bm{R}_k$, Tichavsk\'y
+\textit{et al.}\ \cite{tichavsky1998} show that $\bm{J}_k$ obeys the recursion
+\begin{equation}
+  \bm{J}_{k+1} = \big(\bm{Q}+\bm{F}\,\bm{J}_k^{-1}\,\bm{F}^{\top}\big)^{-1}
+              + \mathbb{E}\!\big[\bm{H}_{k+1}^{\top}\bm{R}_{k+1}^{-1}\bm{H}_{k+1}\big],
+  \label{ap:fim_rec}
+\end{equation}
+which is Eq.~\eqref{eq:fim}. The first term is the \emph{prediction} of the
+information through the dynamics: it is the inverse of the predicted covariance
+$\bm{Q}+\bm{F}\bm{J}_k^{-1}\bm{F}^{\top}$, exactly mirroring the Kalman time
+update, and it can only \emph{reduce} the information, since the process noise
+$\bm{Q}$ adds uncertainty. The second term is the \emph{information gain} from the
+new measurement, the expected value of $\bm{H}^{\top}\bm{R}^{-1}\bm{H}$ over the
+state trajectory; the expectation is what distinguishes the \emph{posterior} bound
+from a single linearization, and is evaluated by Monte~Carlo over true
+trajectories (Section~\ref{sec:crlb}), with $\bm{H}_{k+1}$ the measurement Jacobian
+of Section~\ref{ap:spherical_jac} evaluated along each trajectory and $\bm{R}_{k+1}$
+the range-dependent noise \eqref{eq:Rmatrix}. The position bound reported in
+Chapter~\ref{cha:tracking} is the leading $3\times3$ block of $\bm{J}_k^{-1}$.
+
+\section{Extrinsic Jacobian}
+\label{ap:extrinsic_jac}
+
+The monocular tracker of Chapter~\ref{cha:monocular} needs the sensitivity of the
+predicted pixel to a perturbation of the camera pose. Write the on-plane target
+point in the optical frame as $\bm{p}^{\mathcal{O}}=\bm{R}^{wo}_k\bm{X}^{\mathcal{W}}+\bm{t}^{wo}_k$,
+and the pixel as $\bm{u}=\pi(\bm{K}\bm{p}^{\mathcal{O}})$. The Jacobian of the
+projection with respect to the optical-frame point is
+\begin{equation}
+  \bm{J}_{\pi}=\frac{\partial\pi(\bm{K}\,\cdot)}{\partial\bm{p}^{\mathcal{O}}}
+  = \begin{bmatrix}
+      f_x/Z^{\mathcal{O}} & 0 & -f_x X^{\mathcal{O}}/(Z^{\mathcal{O}})^{2}\\[2pt]
+      0 & f_y/Z^{\mathcal{O}} & -f_y Y^{\mathcal{O}}/(Z^{\mathcal{O}})^{2}
+    \end{bmatrix},
+\end{equation}
+obtained by differentiating $\pi([X,Y,Z]^{\top})=[X/Z,\,Y/Z]^{\top}$ and scaling by
+the focal lengths. A small pose perturbation is represented in the tangent space of
+$SE(3)$ by $\bm{\xi}=[\bm{\delta\theta}^{\top}\ \bm{\delta t}^{\top}]^{\top}$, and
+to first order it displaces the optical-frame point by
+$\delta\bm{p}^{\mathcal{O}}\approx-[\bm{p}^{\mathcal{O}}]_\times\bm{\delta\theta}+\bm{\delta t}$
+(Eq.~\eqref{eq:se3_pert}): a rotation error $\bm{\delta\theta}$ moves the point
+along $-[\bm{p}^{\mathcal{O}}]_\times\bm{\delta\theta}$, and a translation error
+$\bm{\delta t}$ moves it rigidly. Composing the two by the chain rule gives the
+$2\times6$ extrinsic Jacobian of the pixel with respect to the pose,
+\begin{equation}
+  \bm{J}_{\mathrm{ext}}=\bm{J}_{\pi}\big[\,-[\bm{p}^{\mathcal{O}}]_\times \;\; \bm{I}_3\,\big],
+\end{equation}
+which is Eq.~\eqref{eq:Jext}. Modeling the navigation pose error as zero-mean
+Gaussian with covariance $\bm{\Sigma}$, the first-order propagation
+$\bm{J}_{\mathrm{ext}}\bm{\Sigma}\bm{J}_{\mathrm{ext}}^{\top}$ is the additive term
+that inflates the innovation covariance \eqref{eq:Smono}.

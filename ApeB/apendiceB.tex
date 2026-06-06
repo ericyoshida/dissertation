@@ -2,11 +2,131 @@
 % Appendix B --- Dataset Details and Additional Results
 % =====================================================================
 
+This appendix records the configuration, training, and filter parameters needed
+to reproduce the experiments of Chapters~\ref{cha:monocular} and~\ref{cha:airsim}.
+
 \section{AirSim Dataset Configuration}
-% TODO: scenarios, sensor parameters, collection protocol.
+\label{ap:airsim_cfg}
+
+\paragraph*{Environments and sensors.} The synthetic data of
+Chapter~\ref{cha:airsim} were generated in three Unreal/AirSim environments,
+\textsc{AirSimNH} (low-rise residential), \textsc{City} (dense downtown), and
+\textsc{Coastline} (vegetated coastal). The ego platform carries an RGB camera, a
+planar-depth camera, and a $64$-beam LiDAR, rigidly co-located ($0.35$~m forward,
+$0.5$~m below the body origin) and pitched $-15^\circ$ so that they share one
+optical frame. The camera is an ideal pinhole at $1280\times720$ with a
+$90^\circ$ horizontal field of view ($f_x=f_y=640$~px, principal point
+$(640,360)$~px, no lens distortion). Depth returns are kept for
+$0.1\le z<250$~m, yielding $10^{5}$--$3\times10^{5}$ points per frame; the depth
+camera, not the LiDAR, is the primary cloud, because at altitude the targets are
+seen against the sky where the LiDAR returns nothing.
+
+\paragraph*{Targets and 3D annotation.} Each target carries a visual quadrotor
+mesh (\emph{VisQuad}) enlarged $\times4$ so as to be visible and densely sampled
+at $20$--$100$~m; its axis-aligned full extents are $3.01\times3.93\times2.79$~m,
+which after a $1.38$ margin (for the omitted spinning rotors) and halving give the
+annotation half-extents $\bm{e}=[2.08,2.71,1.93]^{\top}$~m. The ground-truth 3D box
+is built geometrically from the true global pose (not from the simulator's
+detection API, which carries a systematic vertical offset). Per-frame acquisition
+is performed with the scene frozen (\texttt{simPause}) and targets/ego
+re-teleported to their planned poses, to keep image and reported poses consistent.
+
+\paragraph*{Training and evaluation subsets.} The 2D detector is trained on
+$\approx2{,}500$ pixel-exact synthetic-composition frames ($196$ drone sprites
+spanning $12$~yaw~$\times$~$3$~pitch~$\times$~$3$~roll orientations at five ranges,
+$1$--$5$ drones per frame). The point-cloud networks are trained on the collected
+multimodal set ($3$ scenes $\times\,1{,}000$ frames). Evaluation uses a disjoint
+campaign of $60$ video sequences ($20$ per environment, $75$--$110$ frames at
+${\approx}5$~Hz) that randomizes the range regime (near $18$--$32$~m, mid
+$32$--$50$~m, far $50$--$78$~m), time of day ($07$h--$18$h), weather (clear, light
+fog, light rain), and number of targets ($2$--$3$), with a \emph{moving} observer.
+
+\section{Network Training Hyperparameters}
+\label{ap:train_hyper}
+
+Table~\ref{tab:hyper_yolo} lists the 2D-detector training settings and
+Table~\ref{tab:hyper_3d} the point-cloud--network settings, for reproducibility.
+
+\begin{table}[H]
+  \centering
+  \footnotesize
+  \caption{YOLOv11-small training (Ultralytics defaults unless noted): SGD with
+  Nesterov momentum, weight decay, and a cosine learning-rate schedule.}
+  \label{tab:hyper_yolo}
+  \begin{tabular}{@{}lll@{}}
+    \toprule
+    Setting & Synthetic (production) & Real-urban (reference) \\
+    \midrule
+    Backbone        & YOLOv11s ($\approx 10$~M) & YOLOv11s \\
+    Input size      & $1280$~px & $640$~px \\
+    Epochs          & $80$ & $100$ \\
+    Batch           & $16$ & $16$ \\
+    Patience        & default & $30$ \\
+    Augmentation    & mosaic, HSV, scale & mosaic, HSV, scale \\
+    Result          & $\mathrm{mAP}_{50}=0.994$ & $\mathrm{mAP}_{50}=0.731$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{table}[H]
+  \centering
+  \footnotesize
+  \caption{Point-cloud detector training. All use Adam ($10^{-3}$, weight decay
+  $10^{-4}$) with a cosine schedule; frustum nets sample $N{=}4096$ points from
+  the $25\%$-enlarged frustum and normalize by centroid subtraction and a scale.}
+  \label{tab:hyper_3d}
+  \begin{tabular}{@{}lll@{}}
+    \toprule
+    Network & Architecture (key) & Loss / schedule \\
+    \midrule
+    Frustum PointNet\texttt{++}
+      & SA $[64,64,128]/[128,128,256]/[256,512,1024]$, FC $[512,256,128]$
+      & Focal ($\alpha{=}0.5,\gamma{=}2$) $+\,5\,\mathrm{SL}_1(\text{ctr})+\mathrm{SL}_1(\text{size})$; $30$ ep., batch $8$ \\
+    T-Net segmentation
+      & $+$ per-point fg/bg head ($1088{\to}256{\to}128{\to}1$)
+      & $+\,\mathrm{BCE}(\text{seg})$; $20$ ep., batch $32$ \\
+    Frustum ConvNet
+      & $16$ depth slices, per-slice mini-PointNet, $1$D conv
+      & same heads; $30$ ep., batch $8$ \\
+    PointPillars (PFN)
+      & BEV $1.25$~m grid, per-pillar mini-PointNet $[64,64]$, 2D CNN
+      & center heatmap (focal) $+$ box reg.; $15$ ep., batch $8$ \\
+    Dense 3D voxel
+      & $2.0$~m grid, Conv3D $1{\to}16{\to}32{\to}32{\to}64$
+      & center heatmap $+$ box reg.; $15$ ep., batch $4$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
 \section{Filter Parameter Settings}
-% TODO: tables of EKF parameters (Q, R, initial covariance) for each experiment.
+\label{ap:filter_params}
 
-\section{Additional Plots}
-% TODO: supplementary figures not included in the main results chapter.
+\paragraph*{3D range--bearing EKF (Chapters~\ref{cha:tracking} and~\ref{cha:airsim}).}
+Acceleration intensity $\sigma_a=0.5~\mathrm{m/s^2}$; bearing noise
+$\sigma_\alpha=\sigma_\beta=5~\mathrm{mrad}$; range noise $\sigma_\rho=0.05\,\rho$
+(floored at $0.5$~m); size noise $\sigma_r=0.5$~m; initial position/velocity
+standard deviations $5$~m / $10~\mathrm{m/s}$; gating at the $\chi^2$ $99\%$ level
+($13.28$ for four degrees of freedom). The SORT-style association uses
+non-maximum-suppression IoU $0.4$, association-gate IoU $0.3$, minimum hits $3$,
+coasting horizon $4$, and maximum age $8$ frames (reproduced from
+Table~\ref{tab:tracker}).
+
+\paragraph*{Monocular ground-plane EKF (Chapter~\ref{cha:monocular}).}
+Planar constant-velocity model with acceleration intensity $\sigma_a$; pixel
+measurement noise $\bm{R}_{\mathrm{cam}}=\sigma_{\mathrm{cam}}^2\bm{I}_2$; the
+$6$-DoF pose covariance is modeled as isotropic,
+$\bm{\Sigma}=\sigma_{\mathrm{pose}}^2\bm{I}_6$, with $\sigma_{\mathrm{pose}}$ tuned
+by the NIS consistency analysis of Section~\ref{sec:mono_consistency} to
+$\sigma_{\mathrm{pose}}\approx10^{-3}$, the value at which the mean NIS crosses the
+consistent value $\bar\eta=2$. The first detection is initialized by ray--plane
+intersection with a large initial covariance so that early measurements dominate.
+
+\section{Code and Data Availability}
+\label{ap:code}
+
+The dissertation source is maintained at
+\url{https://github.com/ericyoshida/dissertation}. The supporting code (the AirSim
+dataset-generation and detection pipeline, and the TU~Berlin monocular tracker)
+and the datasets are kept in separate repositories; their public release is
+planned, and the links will be provided in the final version.
+% TODO-REV: replace the line above with the actual public repository URLs (and a Zenodo DOI for the dataset, if released).
