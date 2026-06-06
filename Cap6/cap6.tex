@@ -421,36 +421,44 @@ $1.6$ laps of the mat perimeter, as observed in the video.
 The tracker produced a continuous ground-plane estimate over the flight, active
 in $626$ frames. Comparing it to the manual ground truth at the annotated instants
 (matched by timestamp to within $0.5$~s, $128$ paired samples) gives the
-horizontal localization error reported in Figure~\ref{fig:mono_result}. The
+horizontal localization error reported in Figures~\ref{fig:mono_traj}
+and~\ref{fig:mono_errors}. The
 estimate is the \emph{raw} filter output: no post-hoc alignment, bias removal, or
 trajectory registration of any kind is applied, so the numbers reflect the
 end-to-end accuracy an onboard consumer would actually receive.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=\linewidth]{Cap6/tracking_result_raw.pdf}
-  \caption{Monocular tracking accuracy against the LiDAR-referenced ground truth,
-  raw filter output. (a) Estimated track (time-colored) over the top-down LiDAR
-  map, with the surveyed mat outline (dashed) and the manual ground-truth samples
-  (green); the estimate follows the perimeter walk but is distorted during the
-  platform's aggressive rotations. (b) Horizontal error over time. (c) Empirical
-  CDF of the error. Across the $128$ matched samples the RMSE is $6.18$~m, the
-  mean is $4.88$~m, and the median is $4.31$~m.}
-  \label{fig:mono_result}
+  \includegraphics[width=0.82\linewidth]{Cap6/tracking_traj.pdf}
+  \caption{Estimated track against the LiDAR-referenced ground truth, raw filter
+  output. The EKF estimate is colored by flight time (brighter is later); the
+  surveyed tatami perimeter is dashed and the manual ground-truth samples are
+  green. The estimate follows the perimeter walk but is rotated and stretched
+  during the platform's aggressive rotations.}
+  \label{fig:mono_traj}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{Cap6/tracking_errors.pdf}
+  \caption{Localization error against the ground truth. (a) Horizontal error over
+  flight time. (b) Empirical CDF of the error. Across the $128$ matched samples
+  the RMSE is $6.18$~m, the mean is $4.88$~m, and the median is $4.31$~m.}
+  \label{fig:mono_errors}
 \end{figure}
 
 Over the matched samples the tracker attains a root-mean-square error of
 $6.18$~m, a mean of $4.88$~m, and a median of $4.31$~m, with a $90$th percentile
-of $10.1$~m and a worst case of $15.6$~m. These figures are best read against the
+of $10.3$~m and a worst case of $15.6$~m. These figures are best read against the
 scale and difficulty of the task: a single uninstrumented camera, recovering
 metric position through a ground-plane lift, on a platform undergoing full
 rotations, with a navigation pose that is itself estimated. The median error of
 $4.3$~m over a $\sim 12$~m working area, with the target $10$--$20$~m from the
 camera, is a meaningful localization from monocular cues alone, and it is of the
 same order as the accuracy of consumer GNSS, which this pipeline does not use.
-The spatial plot (Figure~\ref{fig:mono_result}a) shows that the estimated track
+The spatial plot (Figure~\ref{fig:mono_traj}) shows that the estimated track
 reproduces the perimeter shape of the walk but is rotated and stretched relative
-to the ground truth. The error time series (Figure~\ref{fig:mono_result}b) shows
+to the ground truth. The error time series (Figure~\ref{fig:mono_errors}a) shows
 that the largest excursions are concentrated in time rather than uniform, and
 that they coincide with the platform's fastest rotations; this link is made
 quantitative in Section~\ref{sec:mono_consistency}.

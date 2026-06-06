@@ -15,6 +15,14 @@ Status: ✅ feito · 🟡 decisão/dado seu · 🖼️ figura nova · ♻️ já
 - ✅ **Cap.7** [153-210]: métricas em lista estruturada (#189), termo "sprite" definido (#164), **recomendação explícita de favorecer recall p/ D&A** (#199), topologia/abordagens já com figuras (#174/175/197/198).
 - ✅ **Cap.8**: a futura-obra já recomenda a fusão de alto recall (#214); contribuições recapituladas como concluding remarks (#223/#226).
 
+## Figuras corrigidas a partir dos dados reais (sessão 4)
+- ✅ **Cap.6** (dados do repo `tub`/tracker, output/e1b + flying_1/tracking_results.npz):
+  - `tracking_result_raw.pdf` QUEBRADA em `tracking_traj.pdf` (trajetória ampliada, EKF colorido por tempo c/ colorbar, "Tatami perimeter" rotulado) + `tracking_errors.pdf` (erro no tempo + CDF) — #140/#141/#142/#143/#144.
+  - `nis_consistency.pdf` EMPILHADA (a) sweep / (b) NIS no tempo, aumentada — #145.
+  - Texto: 90th pct corrigido para **10.3 m** (cap6_stats.json p90=10.33; o "10.1" da figura antiga é que estava errado).
+- ✅ **Cap.7** `tracking_stage.pdf` (editei `airsim/make_dissertation_figs.py::fig_tracker`): subcaptions encurtadas e movidas para ABAIXO de cada painel (a)/(b) — #186.
+- 🟡 **#95** (Cap.5 `ekf_equivalence.pdf`, cor do global EKF) → fica para a **máquina principal** (simulação tracking-comparison; não está aqui).
+
 ## Ainda em aberto (decisão sua / precisa de fonte)
 - ✅ **#225** (Cap.8): contribuições convertidas em `enumerate` e **reordenadas pela sequência do pipeline** (SLR → detecção → tracking → generalidade). Intro ajustada; parágrafo Synthesis é temático, sem conflito.
 - 🖼️ **Regenerar plots** (preciso dos scripts/dados originais): #95 (cor do EKF global em `ekf_equivalence`), #140 (quebrar a Fig.6.3 em duas), #145/#186 (empilhar figuras / subcaptions).
