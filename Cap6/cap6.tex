@@ -240,9 +240,12 @@ Figure~\ref{fig:footpoint_err} shows two frames of the (correctly detected)
 walker in which this offset is $26$--$32$~px. Because the ray--plane lift turns a
 vertical pixel offset into a ground-range error that grows with distance, this is
 a real, if modest, error source, distinct from the platform-pose uncertainty; it
-sets a floor on the achievable accuracy even with a perfect navigation solution,
-whereas the larger excursions of Section~\ref{sec:mono_accuracy} are dominated by
-the pose error during fast rotations.
+sets a floor on the achievable accuracy even with a perfect navigation solution.
+This foot-point geometry, evaluated frame by frame against the ground truth, is in
+fact what governs the \emph{typical} accuracy of the tracker
+(Section~\ref{sec:mono_accuracy}); the larger excursions there are a separate
+phenomenon, dominated by detector false positives during the fast-yaw intervals
+when the target leaves the field of view.
 
 \begin{figure}[H]
   \centering
@@ -293,6 +296,20 @@ covariance so that the first measurements dominate and the filter converges
 quickly. Subsequent frames are handled by the standard EKF predict--update
 recursion rather than by re-intersection, so that the temporal model
 \eqref{eq:mono_process} smooths the inevitably noisy single-frame lift.
+
+A practical caveat governs how long the recursion may coast on prediction alone.
+The detector does not fire on every frame: during the platform's full-circle yaw
+sweeps the target repeatedly leaves and re-enters the field of view, so the
+measurement stream contains long gaps. Propagating the constant-velocity model
+\eqref{eq:mono_process} unchecked across such a gap is unsafe, because any
+nonzero velocity estimate is extrapolated for the whole gap and the position
+diverges. We therefore bound the open-loop horizon: if no detection has been
+associated for longer than a hold time $\tau_{\mathrm{gap}}$, the track is
+\emph{re-initialized} by ray--plane intersection \eqref{eq:rayplane} on the next
+detection instead of being predicted forward, which discards the stale velocity
+and re-anchors the state to the current measurement. This re-initialization is
+what keeps the ground-plane lift, rather than the motion model, in control of the
+estimate when the target reappears after a yaw sweep.
 
 \subsection{Extrinsic-Aware Innovation Covariance}
 \label{sec:mono_extrinsic}
@@ -469,14 +486,31 @@ estimate is the \emph{raw} filter output: no post-hoc alignment, bias removal, o
 trajectory registration of any kind is applied, so the numbers reflect the
 end-to-end accuracy an onboard consumer would actually receive.
 
+It is worth separating two questions that the single error figure conflates: how
+accurate the geometric lift is when the target is correctly detected, and how
+robust the end-to-end track is across the whole flight, detector failures
+included. We report both. To isolate the geometry, the foot pixel of each
+manually annotated frame is lifted through the time-synchronized pose by the
+ray--plane intersection \eqref{eq:rayplane} and compared directly to the ground
+truth, with no filtering; this per-frame projection attains a median error of
+$1.05$~m, an RMSE of $1.36$~m, and a worst case of $3.1$~m. This is the intrinsic
+accuracy of the monocular ground-plane method on this flight, and it confirms that
+the projective formulation of Section~\ref{sec:mono_method} is sound: with a
+correct foot pixel and the recorded pose, the metric position is recovered to
+about a meter despite the grazing $\sim 6^\circ$ depression angle at which the
+low-altitude platform viewed the target.
+
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.82\linewidth]{Cap6/tracking_traj.pdf}
   \caption{Estimated track against the LiDAR-referenced ground truth, raw filter
-  output. The EKF estimate is colored by flight time (brighter is later); the
-  surveyed tatami perimeter is dashed and the manual ground-truth samples are
-  green. The estimate follows the perimeter walk but is rotated and stretched
-  during the platform's aggressive rotations.}
+  output. The EKF estimate (continuous track colored by flight time, yellow early
+  to red late) reproduces the perimeter walk and overlays the manual ground-truth
+  samples (green); the surveyed tatami perimeter is dashed. The grey points are
+  detector false positives, isolated by a physical speed test ($>4$~m/s from the
+  preceding estimate) and excluded from the track: they occur during the fastest
+  yaw sweeps, when the target leaves the field of view and the detector fires on
+  background structure (Figure~\ref{fig:mono_errors}).}
   \label{fig:mono_traj}
 \end{figure}
 
@@ -485,31 +519,45 @@ end-to-end accuracy an onboard consumer would actually receive.
   \includegraphics[width=\linewidth]{Cap6/tracking_errors.pdf}
   \caption{Localization error against the ground truth. (a) Horizontal error
   (red) over flight time, with the platform's yaw rate overlaid (blue, right
-  axis): the largest errors coincide with the fastest rotations, while the
-  low-error opening of the flight is nearly rotation-free. (b) Empirical CDF of
-  the error. Across the $128$ matched samples the RMSE is $6.18$~m, the mean is
-  $4.88$~m, and the median is $4.31$~m.}
+  axis): the error stays near $1$--$2$~m for most of the flight and spikes only in
+  the two intervals of fastest yaw, where the target leaves the field of view and
+  the detector briefly locks onto background objects. (b) Empirical CDF of the
+  error. Across the $128$ matched samples the median is $1.75$~m and the mean is
+  $3.67$~m; the upper tail (RMSE $6.27$~m) is set by those two false-positive
+  episodes, and excluding them the RMSE falls to $2.07$~m.}
   \label{fig:mono_errors}
 \end{figure}
 
-Over the matched samples the tracker attains a root-mean-square error of
-$6.18$~m, a mean of $4.88$~m, and a median of $4.31$~m, with a $90$th percentile
-of $10.3$~m and a worst case of $15.6$~m. These figures are best read against the
-scale and difficulty of the task: a single uninstrumented camera, recovering
-metric position through a ground-plane lift, on a platform undergoing full
-rotations, with a navigation pose that is itself estimated. The median error of
-$4.3$~m over a $\sim 12$~m working area, with the target $10$--$20$~m from the
-camera, is a meaningful localization from monocular cues alone, and it is of the
-same order as the accuracy of consumer GNSS, which this pipeline does not use.
+Over the same matched samples the full end-to-end tracker attains a median error
+of $1.75$~m and a mean of $3.67$~m, with a $90$th percentile of $7.75$~m. The
+median is within $0.7$~m of the geometric floor established above, which shows that
+the filter, for the bulk of the flight, preserves the accuracy of the underlying
+lift rather than degrading it. The root-mean-square error, $6.27$~m, is by
+contrast set almost entirely by the upper tail: two short intervals account for
+nearly all of it, and removing them brings the RMSE down to $2.07$~m and the
+median to $1.28$~m. These figures are best read against the scale and difficulty
+of the task: a single uninstrumented camera, recovering metric position through a
+ground-plane lift, on a platform undergoing full rotations, with a navigation pose
+that is itself estimated. A median of $1.75$~m over a $\sim 12$~m working area,
+with the target $10$--$20$~m from the camera and the line of sight grazing the
+floor at about $6^\circ$, is an accurate localization from monocular cues alone,
+and it improves on consumer GNSS, which this pipeline does not use.
+
 The spatial plot (Figure~\ref{fig:mono_traj}) shows that the estimated track
-reproduces the perimeter shape of the walk but is rotated and stretched relative
-to the ground truth. The error time series (Figure~\ref{fig:mono_errors}a) shows
-that the largest excursions are concentrated in time rather than uniform: overlaying
-the platform's yaw rate on the same axis makes the cause visible, as the error
-peaks track the rotation peaks (the largest errors fall in the
-$30$--$50$~s window of fastest yaw, while the rotation-free opening of the flight
-is accurate), with a sample correlation of about $0.5$ between error and yaw rate.
-The mechanism behind this link is examined in Section~\ref{sec:mono_consistency}.
+reproduces the perimeter of the walk and overlays the ground truth for most of the
+flight, with a handful of straight strays into the interior. The error time series
+(Figure~\ref{fig:mono_errors}a) explains both the strays and the heavy RMSE tail:
+the error stays near $1$--$2$~m throughout, except for two spikes that coincide
+exactly with the platform's two fastest yaw sweeps. During those sweeps the target
+crosses out of the field of view, the person detector momentarily fires on
+background structure instead, and the resulting false-positive foot pixel lifts to
+a position several meters away. This is a \emph{detector-precision} failure during
+loss of view, not an error of the geometry or of the filter: the per-frame
+geometric projection on the correctly detected frames never exceeds $3.1$~m, and
+the filter's own re-initialization (Section~\ref{sec:mono_groundplane}) recovers
+the track as soon as the true target is re-detected. The role of the platform
+rotation, and of the pose uncertainty it induces, is examined next through the
+filter's consistency rather than its point error.
 
 Figure~\ref{fig:mono_frames} shows the system in operation, with the trained
 detector's measurement and the projected estimate overlaid on two frames of the
@@ -587,9 +635,12 @@ Chapter~\ref{cha:tracking} framework, and the result is affirmative with one
 caveat. The same constant-velocity EKF, with the spherical measurement replaced
 by a ground-constrained pinhole projection, tracks a walking person from a real,
 freely maneuvering UAV using a single camera and an estimated platform pose. The
-end-to-end accuracy, a median horizontal error of $4.3$~m over a $\sim 12$~m arena
-from monocular cues and without GNSS, shows that the estimator survives the
-transition from simulation to the real world.
+typical end-to-end accuracy, a median horizontal error of $1.75$~m over a
+$\sim 12$~m arena from monocular cues and without GNSS, and a geometric floor of
+$1.05$~m on the correctly detected frames, shows that the estimator survives the
+transition from simulation to the real world and recovers metric position to about
+a meter even at the grazing $\sim 6^\circ$ depression angle of this low-altitude
+flight.
 
 The caveat is the platform pose, and it ties this chapter back to the theory of
 Chapter~\ref{cha:tracking}. There, the global and local EKF formulations were
@@ -605,22 +656,23 @@ filter is what makes the estimate consistent, and the framework generalizes to
 this real-world setting provided that term is included.
 
 The error analysis also delineates the limits of monocular ground-plane tracking
-and points to the remedies. The largest errors are concentrated during the
-platform's fastest rotations, where two effects compound: the navigation pose is
-least accurate when it changes fastest, and any residual camera--navigation
-desynchronization (Section~\ref{sec:mono_sync}) is most damaging when the scene
-sweeps quickly across the image. Both effects follow from relying on an estimated
-pose under aggressive motion, and both are what the covariance term
-\eqref{eq:Smono} is designed to absorb into the filter's uncertainty instead of
-its point estimate. A second, structural limitation is the ground-plane
-assumption itself: the monocular lift trades the unobservable depth for the known
-target height, so any violation of that assumption, or any error in the
-foot-point detection that stands in for the ground contact, maps directly to a
-planar error that grows with range. This is the fundamental reason a single
-camera cannot match a true range sensor, and it motivates the camera--point-cloud
-fusion that the full pipeline (Chapter~\ref{cha:pipeline}) restores through the 3D
-detection front-end of Chapter~\ref{cha:airsim}, where the depth need not be
-assumed because a point cloud is available.
+and points to the remedies. The largest errors are not a failure of the geometry
+or the filter but of the \emph{detector under loss of view}: during the platform's
+fastest yaw sweeps the target leaves the field of view, the person detector
+momentarily fires on background structure, and the false-positive foot pixel lifts
+to a position several meters off. The remedy is at the detection and
+track-management level, more selective detection and explicit track-coasting or
+re-acquisition logic during loss of view, rather than in the projection. A second
+limitation is structural and sets the accuracy floor even when detection is
+correct: the monocular lift trades the unobservable depth for the known target
+height, so any error in the foot-point pixel that stands in for the ground contact
+maps to a planar error that grows with range, and this sensitivity is amplified at
+the shallow depression angle of a low-altitude platform, where the viewing ray
+grazes the floor. This is the fundamental reason a single camera cannot match a
+true range sensor, and it motivates the camera--point-cloud fusion that the full
+pipeline (Chapter~\ref{cha:pipeline}) restores through the 3D detection front-end
+of Chapter~\ref{cha:airsim}, where the depth need not be assumed because a point
+cloud is available.
 
 Read alongside Chapter~\ref{cha:tracking}, the two tracking studies bracket the
 same estimator from opposite ends, a controlled range-sensing known-pose

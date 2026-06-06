@@ -92,9 +92,10 @@ consumes them and its real-world generalization.
   recovered through a ground-plane constraint), and the platform pose became an
   on-board estimate rather than a known quantity. Tracking a freely walking person
   during flights with full $360^\circ$ yaw rotations, the system attained a median
-  horizontal error of $4.3$~m over a ${\sim}12$~m arena from monocular cues alone
+  horizontal error of $1.75$~m over a ${\sim}12$~m arena from monocular cues alone
   and without GNSS, against a LiDAR-referenced ground truth and with no post-hoc
-  alignment. More important than the accuracy was the consistency result: this is
+  alignment, with the per-frame ground-plane lift accurate to about $1$~m on the
+  correctly detected frames. More important than the accuracy was the consistency result: this is
   exactly the uncertain-pose regime that Chapter~\ref{cha:tracking} predicted would
   break the frame equivalence, and propagating the six-degree-of-freedom camera-pose
   covariance into the innovation through an extrinsic Jacobian proved
