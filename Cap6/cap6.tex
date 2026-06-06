@@ -231,6 +231,27 @@ does not lie on the plane. Figure~\ref{fig:footpoint} illustrates the geometry.
   \label{fig:footpoint}
 \end{figure}
 
+The accuracy of this heuristic is bounded by the quality of the detector's box:
+whenever the 2D box is mis-sized, in particular when it does not reach the
+person's feet, its mid-bottom sits above the true ground contact and the
+ray--plane lift lands short. Figure~\ref{fig:footpoint_err} shows three such
+frames from the flight, in which the box bottom misses the true contact by
+$50$--$80$~px; because the lift amplifies a vertical pixel error into a
+ground-range error that grows with distance, these box-sizing errors are a
+distinct source of the localization error analyzed in
+Section~\ref{sec:mono_accuracy}, separate from the platform-pose uncertainty.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{Cap6/footpoint_error.pdf}
+  \caption{Foot-point error from imperfect detection boxes. In each frame the
+  detector's box (red) does not reach the person's feet, so its mid-bottom foot
+  pixel (red $\times$) sits above the manually annotated true ground contact
+  (green), the discrepancy (yellow) being $52$--$77$~px. The ground-plane lift
+  turns this pixel error into a metric localization error.}
+  \label{fig:footpoint_err}
+\end{figure}
+
 \subsection{Ground-Plane Constraint and Ray--Plane Initialization}
 \label{sec:mono_groundplane}
 
