@@ -203,6 +203,18 @@ immediate to the most ambitious.
   the uncertain-pose divergent regime of Chapter~\ref{cha:tracking} for the 3D
   case and yielding a tracker that is consistent under the real navigation
   solution rather than an assumed-known pose.
+  \item \textbf{A range-adaptive, mode-switching tracker.} The two tracking
+  studies are complementary in range. An active depth or LiDAR sensor gives a
+  metric range--bearing measurement at close range (Chapter~\ref{cha:tracking}),
+  but its ranging saturates and returns nothing once the obstacle is far enough
+  away or the return is too weak; at that point only the camera still resolves the
+  target, and the monocular, ground-constrained estimator of
+  Chapter~\ref{cha:monocular} takes over. A natural integration is therefore a
+  single tracker that \emph{switches modes} with range, fusing the metric 3D
+  detection while the depth sensor is in range and falling back to the
+  bearing-only monocular update beyond it, so that the obstacle is tracked
+  continuously across the whole approach. This unifies the two studies into one
+  estimator and is, in our view, the most promising way to combine them.
   \item \textbf{Collaborative multi-UAV perception.} Because the tracker consumes
   an abstract measurement with a calibrated covariance, tracks estimated by
   several platforms can in principle be fused into a shared situational picture,

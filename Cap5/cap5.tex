@@ -24,6 +24,15 @@ revises the local-frame filter of the original article, which omitted the
 inter-frame state reorientation (Section~\ref{sec:diverge}) and so reported a
 difference between the frames that does not in fact exist.
 
+This chapter treats the estimation of a \emph{single} target, which is where the
+reference-frame question lives. Tracking several targets at once requires, in
+addition, a data-association layer that decides which measurement updates which
+track. The filter was designed from the outset to support this: in the full
+pipeline it is instantiated once per track and fed by a SORT-style association
+stage \cite{bewley2016sort}, so that multi-target tracking reduces to running one
+of the per-target filters derived here behind that association. The association
+and track lifecycle are detailed in Chapter~\ref{cha:airsim}.
+
 \section{Selection of the Reference Frame}
 
 Consider an aerial platform carrying a sensor (a depth or stereo camera, or a

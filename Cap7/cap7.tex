@@ -301,10 +301,44 @@ $\bm{z}=[\rho,\alpha,\beta,r]^\top$ that the EKF of
 Chapter~\ref{cha:tracking} ingests. This is the formal point of contact between
 the detector of this chapter and the tracker.
 
-A whole-cloud variant in the spirit of PointPainting \cite{vora2020pointpainting},
-which paints every point with the 2D confidence rather than cropping, was also
-trained but reached a lower validation $F_1$ ($0.50$ vs. $0.73$ for the frustum
-crop) and is not pursued.
+\subsection{Networks Tested and the Path to the Final Detector}
+\label{sec:netzoo}
+
+The frustum PointNet\texttt{++} above was not the first design tried; it is the
+end of a short sequence of experiments, and the reasoning behind each step is
+worth recording, since it explains \emph{why} the final detector is built the way
+it is.
+
+\paragraph*{Plain PointNet (classification baseline).} The first attempt fed each
+candidate point set to a plain PointNet \cite{qi2017pointnet} (a per-point shared
+MLP followed by a global max-pool, Chapter~\ref{cha:background}) with a
+classification head (drone vs.\ random crop) and a box-regression head. It
+\emph{classified} almost perfectly (accuracy $0.97$: deciding whether a crop
+contains a drone is easy) but \emph{regressed} the box poorly (normalized center
+error $\approx 3.6$), because a single global max-pool collapses the cloud into one
+descriptor and discards the spatial detail needed to place the box.
+
+\paragraph*{PointPainting (whole-cloud, 2D-painted).} To inject spatial context,
+the next variant followed PointPainting \cite{vora2020pointpainting}: instead of
+cropping, it keeps the whole cloud and \emph{paints} every point with a fourth
+channel equal to the YOLO confidence of the 2D box it projects into (zero
+otherwise), so the input is $[x,y,z,\text{score}]$. The painted channel acts as a
+soft spatial attention and dramatically improved regression (normalized center
+error from $3.6$ to $0.003$), confirming that the network needs to know
+\emph{where} in the cloud to look. Its weakness is classification: on the strongly
+foreground/background-imbalanced whole cloud the objectness head is hard to train,
+and on a held-out split it reached a validation $F_1$ of only $0.50$.
+
+\paragraph*{Frustum crop (the adopted design).} Cropping the cloud to the viewing
+frustum of each 2D box (Section~\ref{sec:frustum}) gives the network the same
+``where'' information as the painted channel, but in a cleaner form: the input is
+already restricted to the candidate region, so the classifier sees a balanced
+problem. The frustum crop reached a validation $F_1$ of $0.73$, against $0.50$ for
+the painted whole-cloud, and is therefore the design adopted, with the
+hierarchical PointNet\texttt{++} of Section~\ref{sec:pointnet} as its encoder so
+that local geometry (lost by the plain PointNet) is recovered. What remained was
+the normalization failure of Section~\ref{sec:frustum}, which the foreground
+extraction of Section~\ref{sec:segnet} resolves.
 
 \subsection{Learned Foreground Extraction and an Efficient Alternative}
 \label{sec:segnet}
@@ -318,10 +352,19 @@ point-wise classifier supervised by the in-box membership of each point; the box
 head then pools only the foreground-weighted features. This \emph{learns} which
 points belong to the drone; unlike the depth band, it is robust to a foreground
 occluder, and it attains the best localization of any frustum
-variant. A second alternative, a Frustum~ConvNet \cite{wang2019fconvnet} that
-slices the frustum along depth into $16$ bins and applies a one-dimensional
-convolution across slices, was also implemented; it matches the depth band
-without any explicit cropping.
+variant. A second alternative, a Frustum~ConvNet \cite{wang2019fconvnet}, attacks
+the same background problem differently: instead of selecting foreground points,
+it divides the frustum into $16$ slices along the depth (line-of-sight) axis,
+encodes the points of each slice with a small per-slice PointNet into a fixed
+feature vector, and then runs a one-dimensional convolution \emph{across} the
+ordered slices, treating depth like the spatial axis of a 1D image. Because the
+target occupies a contiguous run of slices while the background sits in distant
+slices, the convolution learns to attend to the right depth range natively,
+without any explicit cropping; it matches the depth band in accuracy. The
+trade-off among the three is interpretability versus robustness: the depth band is
+a transparent heuristic, the Frustum~ConvNet handles depth implicitly, and the
+learned segmentation is the most robust (it tolerates a frontal occluder, which
+the depth band does not) and gives the best frustum localization.
 
 \subsection{A Single-Stage Voxel Alternative}
 \label{sec:voxel}
@@ -334,14 +377,26 @@ PointPillars encoder \cite{lang2019pointpillars} voxelizes the \emph{whole} scen
 into a bird's-eye-view pillar grid ($1.25$~m cells over a
 $80\times88$~m region) and a two-dimensional convolutional backbone with a
 center-based detection head \cite{zhou2019objects} predicts a target heatmap and
-box regression, detecting directly in 3D without a 2D proposal. Three variants
-probe what drives its accuracy: hand-crafted pillar features
-(occupancy, mean height, maximum return); \emph{learned} pillar features (a
-per-pillar mini-PointNet, the PFN of \cite{lang2019pointpillars}); and a dense 3D
-voxel backbone with $3$D convolutions in the style of SECOND
-\cite{yan2018second}. Two negative controls are also reported: a finer
-($0.7$~m) grid and a three-frame temporal accumulation with ego-motion
-compensation.
+box regression, detecting directly in 3D without a 2D proposal. The pillar grid
+divides the ground plane into square cells; all points falling in a cell form one
+\emph{pillar}, which is reduced to a fixed-length feature vector, and stacking
+these vectors over the grid yields a pseudo-image that an ordinary 2D CNN
+processes. Three variants probe what drives accuracy, differing only in how a
+pillar is encoded. (i) \emph{Hand-crafted} features summarize each pillar by a few
+fixed statistics, the point count (occupancy), the mean height, and the maximum
+return. (ii) \emph{Learned} features, the pillar feature network (PFN) of
+\cite{lang2019pointpillars}, replace those statistics with a per-pillar
+mini-PointNet that learns its own descriptor from the raw points; this is the
+single change that most improves localization, because the learned encoder
+preserves the fine geometry of the drone that the hand-crafted statistics throw
+away. (iii) A \emph{dense 3D} backbone keeps the vertical axis and applies sparse
+3D convolutions in the style of the SECOND network \cite{yan2018second}, reaching
+the same accuracy as the PFN and confirming that the gain comes from learning the
+local representation, not from added resolution. Two negative controls bound the
+design space: a finer ($0.7$~m) grid (which does not help, since the bottleneck is
+point sparsity on the target, not quantization) and a three-frame temporal
+accumulation with ego-motion compensation (which hurts, since residual motion
+smears the moving target across cells).
 
 \subsection{Tracking Stage: 2D Association and 3D Filtering}
 \label{sec:tracker}

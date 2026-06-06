@@ -39,6 +39,47 @@ the São Paulo Research Foundation (FAPESP), whose mission includes the
 perception and decision-making technologies required for autonomous eVTOL
 operation.
 
+\subsection{Origin and Scope of the Three Studies}
+\label{sec:origin}
+
+This dissertation did not arise from a single monolithic experiment but from
+three connected efforts that share one estimation core and one guiding vision,
+yet differ in sensor, target, and setting. It is worth telling this story plainly
+at the outset, so that the reader sees how the parts fit together rather than
+assuming a single thread.
+
+The starting point, and the result-bearing core of the thesis, is the
+range--bearing Extended Kalman Filter for tracking obstacles from a moving
+platform (Chapter~\ref{cha:tracking}), developed and validated in simulation and
+presented at the IEEE International Conference on Information Fusion (FUSION) in
+2025 \cite{delima2025fusion}.
+
+The second effort grew directly out of that publication. After the tracker was
+presented at FUSION~2025, researchers from the UBADRON team of the Technische
+Universit\"at Berlin (TU~Berlin), led by Prof.~Maarten Uijt de Haag, visited ITA.
+Their team competes in the SPRIND ``Fully Autonomous Flight'' Challenge, in which
+an autonomous UAV must operate without GNSS and locate targets (people) on the
+terrain, a task with a clear search-and-rescue motivation. They had a working
+person-\emph{detection} front-end but lacked a tracker, which is exactly what our
+FUSION work provided. The two groups therefore collaborated: TU~Berlin supplied
+real flight data from their drones, and we adapted our estimator to their setting.
+That setting is genuinely harder than the simulation: the only sensor is a single
+monocular camera, so depth is unobservable and must be recovered from a
+ground-plane assumption, and the platform pose is \emph{estimated} on board rather
+than known, so its uncertainty must be propagated into the filter. The monocular
+person tracker of Chapter~\ref{cha:monocular} is thus a distinct formulation,
+linked to the FUSION tracker but adapted to a different sensor and a different
+target; it was built during a three-month research stay at TU~Berlin.
+
+The third effort addresses a different obstacle: the scarcity of annotated
+three-dimensional aerial data needed to train the detection front-end of the
+full camera--point-cloud pipeline. Chapter~\ref{cha:airsim} builds a synthetic
+dataset in AirSim and trains and compares the detection networks on it.
+
+The three studies are therefore distinct in their data and methods but unified by
+the perception pipeline of Chapter~\ref{cha:pipeline}: \emph{one vision, three
+contributions}.
+
 \section{Detect-and-Avoid and the Sense Problem}
 
 For any aircraft to share the airspace safely, it must be able to perceive
@@ -158,7 +199,7 @@ realize and validate its components:
   International Conference on Information Fusion \cite{delima2025fusion}.
   \item \textbf{Generality of the framework, validated on real data}
   (Chapter~\ref{cha:monocular}). During a three-month research stay with the
-  Control Systems Group at the Technische Universit\"at Berlin (TU Berlin), the
+  UBADRON team at the Technische Universit\"at Berlin (TU Berlin), the
   same estimator was extended to monocular person tracking from a UAV, where the
   platform pose is uncertain and depth is unobservable. A person detector trained on a union of
   complementary aerial datasets (spanning urban, rural near-range, and
@@ -191,8 +232,8 @@ The tracking formulation of Chapter~\ref{cha:tracking} was published as:
 de~Lima, Dias, and M\'aximo, \emph{Extended Kalman Filter-Based Object Tracking
 Using Global and Local Frames}, IEEE International Conference on Information
 Fusion (FUSION), 2025 \cite{delima2025fusion}. The real-data study of
-Chapter~\ref{cha:monocular}, developed with the Intelligent Multi-Robot
-Coordination Lab at TU Berlin, is in preparation for publication.
+Chapter~\ref{cha:monocular}, developed with the UBADRON team of the Chair of
+Flight Guidance and Air Transport at TU~Berlin, is in preparation for publication.
 
 \section{Outline of the Dissertation}
 
@@ -211,3 +252,17 @@ real UAV; and Chapter~\ref{cha:airsim} builds the synthetic dataset and the
 detection front-end. Chapter~\ref{cha:conclusions} synthesizes the three studies,
 revisits the contributions, and outlines future work toward an integrated,
 onboard sense-and-avoid system.
+
+\section{Note on the Use of Artificial-Intelligence Tools}
+\label{sec:ai_disclaimer}
+
+In the interest of transparency, the author discloses the use of
+artificial-intelligence (AI) assistants during the preparation of this
+dissertation. AI-based tools (large language models) were used as a writing aid,
+to improve the clarity, grammar, and flow of the English text, to help structure
+and format \LaTeX{} and to assist with routine plotting and figure-generation
+code. They were \emph{not} used to produce experimental results: every model,
+derivation, experiment, dataset, and numerical result reported here was designed,
+implemented, executed, and verified by the author. All technical claims were
+checked against the underlying data and code, and the author takes full
+responsibility for the content.

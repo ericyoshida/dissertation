@@ -302,32 +302,67 @@ features, from edges and textures to object parts and whole objects. Weight
 sharing makes CNNs parameter-efficient and translation-equivariant, which is why
 they are the standard tool for image perception \cite{lecun2015deeplearning}.
 
-\subsection{Two-Dimensional Object Detection}
+\subsection{Two-Dimensional Object Detection and the YOLO Family}
 
-Object detection localizes and classifies objects within an image. One-stage
-detectors such as YOLO \cite{redmon2016yolo} pose detection as a single regression
-from image to a dense set of bounding boxes and class scores, achieving the
-real-time throughput required onboard a UAV; recent versions of the family
-augment the convolutional backbone with attention mechanisms while preserving
-this single-pass design. The 2D detector forms the first stage
-of the pipeline and seeds the frustum used for 3D detection. Because a detector's
-accuracy depends on the match between its training distribution and the
-deployment scene, a network intended to operate in an environment unseen during
-training is commonly trained on a diverse union of datasets to widen its
-generalization; this strategy is applied to the aerial person detector of
-Chapter~\ref{cha:monocular}.
+Object detection localizes and classifies objects within an image. The decisive
+split is between \emph{two-stage} detectors, such as the R-CNN family, which first
+propose candidate regions and then classify and refine each one, and
+\emph{one-stage} detectors, which predict all boxes and class scores in a single
+forward pass. The You Only Look Once (YOLO) detector \cite{redmon2016yolo}
+introduced the one-stage idea: the image is processed once by a fully
+convolutional network that, over a dense spatial grid, directly regresses box
+coordinates, an objectness score, and class probabilities. Removing the separate
+proposal stage is what gives YOLO its real-time throughput, which is the property
+that an onboard aerial system needs.
 
-\subsection{Point-Cloud Processing and PointNet}
+Architecturally, a modern YOLO network has three parts. A \emph{backbone} (a deep
+convolutional feature extractor, in recent versions built from cross-stage-partial
+blocks that split and merge feature maps to cut redundant computation) produces a
+hierarchy of feature maps. A \emph{neck} (a feature-pyramid / path-aggregation
+network) fuses these maps across scales so that both small and large objects are
+represented. A \emph{detection head} then emits the dense predictions. Relative to
+the original detector, the versions used today (the Ultralytics
+YOLOv8--YOLOv11 line \cite{ultralytics2024yolo11}) introduce three changes that
+matter for small aerial targets: they are \emph{anchor-free}, predicting box
+offsets directly from grid locations instead of from hand-designed anchor boxes;
+they use \emph{decoupled heads}, separating the classification and box-regression
+branches; and they insert lightweight \emph{attention} modules in the backbone,
+which reweight feature channels and spatial locations and improve the detection of
+small, low-contrast objects, while preserving the single-pass design. A practical
+difficulty in the aerial setting is \emph{domain shift}: because a detector's
+accuracy depends on the match between its training distribution and the deployment
+scene, a network meant to operate in an unseen environment is commonly trained on
+a diverse union of datasets to widen its operating envelope.
 
-Three-dimensional detection operates on point clouds, which are unordered sets and
-therefore ill-suited to convolution. PointNet \cite{qi2017pointnet} learns
-directly on raw point sets by applying a shared multilayer perceptron to each
-point and aggregating with a symmetric (max-pooling) function, making the output
-invariant to point ordering. Frustum PointNets \cite{qi2018frustum} combine this
-with a 2D detector: each image detection defines a viewing frustum that crops the
-point cloud, and a PointNet estimates the amodal 3D bounding box within it. This
-camera--point-cloud fusion is the architecture adopted in
-Chapter~\ref{cha:airsim}.
+\subsection{Point-Cloud Processing: PointNet and PointNet\texttt{++}}
+
+Three-dimensional detection operates on point clouds, an \emph{unordered} set of
+$N$ points $\{\bm{p}_i\in\mathbb{R}^3\}$ with no grid structure, so the convolution
+that underpins image CNNs does not apply. PointNet \cite{qi2017pointnet} resolves
+this with a construction that is invariant to the ordering of the points: each
+point is passed independently through a \emph{shared} multilayer perceptron
+$h(\cdot)$, and the resulting per-point features are aggregated by a
+\emph{symmetric} function, max-pooling, into a single global descriptor
+$\bm{g}=\max_i h(\bm{p}_i)$. Because max-pooling does not depend on the order of
+its inputs, the network is permutation-invariant by construction; an optional
+learned input alignment (a small ``T-Net'' that regresses a transformation
+matrix) further canonicalizes the pose of the cloud. The limitation of this design
+is that a single global pooling captures the overall shape but discards
+\emph{local} neighborhood structure, which matters for fine geometry.
+
+PointNet\texttt{++} \cite{qi2017pointnetpp} removes that limitation by applying
+PointNet \emph{hierarchically}. Each \emph{set-abstraction} level (i) samples a
+subset of centroid points by farthest-point sampling, (ii) groups the neighbors of
+each centroid within a query radius (a ``ball query''), and (iii) encodes each
+local group with a small PointNet. Stacking several such levels yields a
+progressively coarser set of points carrying progressively richer local features,
+so the network learns geometry at multiple scales, much as a CNN does on images.
+This hierarchical point-set encoder is the workhorse of the 3D detector built in
+this work. Frustum PointNets \cite{qi2018frustum} fuse it with the 2D detector:
+each image detection defines a viewing frustum that crops the point cloud to a
+small candidate region, and a PointNet\texttt{++} regresses the amodal 3D box
+within that frustum, fusing the two modalities by geometry rather than in a learned
+latent space.
 
 \subsection{Single-Stage Voxel Detection}
 
@@ -356,6 +391,6 @@ negatives. The \emph{focal loss} \cite{lin2017focal} addresses this by
 down-weighting well-classified examples,
 $\mathrm{FL}(p_t)=-\alpha_t\,(1-p_t)^{\gamma}\log p_t$, where $p_t$ is the
 predicted probability of the true class and $\gamma>0$ concentrates the gradient
-on hard examples; it is used for the objectness and heatmap heads in
-Chapter~\ref{cha:airsim}, while box parameters are regressed with a smooth-$L_1$
-(Huber) loss.
+on hard examples. It is well suited to the objectness and heatmap classification
+heads of dense detectors, whereas the continuous box parameters (center and size)
+are regressed with a smooth-$L_1$ (Huber) loss.

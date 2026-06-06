@@ -14,8 +14,14 @@ assumptions are relaxed here at once. The sensor is now a single calibrated
 camera, with no depth and no LiDAR on the target, and the platform pose is
 \emph{estimated} on board and therefore uncertain. The target is a walking person
 rather than a generic obstacle. The study was carried out during a three-month
-research stay with the Control Systems Group at the Technische Universit\"at
-Berlin (TU Berlin), using a custom quadrotor and real flight data. It is the
+research stay with the UBADRON team of the Chair of Flight Guidance and Air
+Transport at the Technische Universit\"at Berlin (TU~Berlin), led by
+Prof.~Maarten Uijt de Haag, using a custom quadrotor and real flight data. The
+collaboration arose after the FUSION~2025 tracker was presented at ITA: the
+UBADRON team, which competes in the SPRIND ``Fully Autonomous Flight'' Challenge
+with a GNSS-denied UAV that must locate people on the terrain for
+search-and-rescue, already had a person detector but needed a tracker, and so the
+two groups joined forces (Section~\ref{sec:origin}). It is the
 empirical counterpart of Chapter~\ref{cha:tracking}, and it operates in the
 regime where the global and local formulations of Chapter~\ref{cha:tracking} stop
 being equivalent: when the platform pose is uncertain, its covariance must be
@@ -383,6 +389,17 @@ streamed by the onboard navigation system as a position--attitude solution
 sequence and motivates the covariance $\bm{\Sigma}$ of \eqref{eq:Smono}. The
 camera intrinsics and plumb-bob coefficients were calibrated offline and held
 fixed throughout.
+
+A note on compute is in order, since it frames what ``real-time'' means for this
+application. In the TU~Berlin search-and-rescue setting the detector and tracker
+are not required to run embedded on the drone: the platform streams its imagery
+and navigation solution to a companion ground computer that runs the perception
+stack, which is the operating model the team adopts. The CNN detector therefore
+runs on a desktop-class GPU rather than a constrained onboard board, so its
+throughput is comfortable, and the recursive filter itself is negligible in cost.
+Real-time operation in the intended scenario is thus feasible; embedded, fully
+onboard inference remains the harder target discussed in
+Chapter~\ref{cha:conclusions}.
 
 \section{Results}
 \label{sec:mono_results}
