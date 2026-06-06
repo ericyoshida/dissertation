@@ -977,19 +977,21 @@
 }
 
 \newcommand{\@memberslist}{%
+   \noindent\resizebox{\linewidth}{!}{%
    \begin{tabular}{l l l l}
-      \@ifundefined{metitlea}{}    {\metitlea\@         & \menamea\@       & \hspace{1cm} \merolea\@ & - \hspace{0.5cm} \meinsta\@ } \\
-                                 \itaadvisortitle   & \itaadvisorname  & \hspace{1cm} \itaadvisorwordbabelll & - \hspace{0.5cm} ITA
+      \@ifundefined{metitlea}{}    {\metitlea\@         & \menamea\@       & \hspace{0.5cm} \merolea\@ & - \hspace{0.3cm} \meinsta\@ } \\
+                                 \itaadvisortitle   & \itaadvisorname  & \hspace{0.5cm} \itaadvisorwordbabelll & - \hspace{0.3cm} ITA
 
-      \@ifundefined{@coadvisor}{}  {\\ \@itacoadvisortitle   & \@itacoadvisorname  & \hspace{1cm} \itacoadvisorwordbabelll & - \hspace{0.5cm} \@itacoadvisorinst }
-      \@ifundefined{metitleb}{}    {\\ \metitleb\@ & \menameb\@ & \hspace{1cm} \meroleb\@ & - \hspace{0.5cm} \meinstb\@ } \\
-      \@ifundefined{metitlec}{}    {\metitlec\@ & \menamec\@ & \hspace{1cm} \merolec\@ & - \hspace{0.5cm} \meinstc\@ } \\
-      \@ifundefined{metitled}{}    {\metitled\@ & \menamed\@ & \hspace{1cm} \meroled\@ & - \hspace{0.5cm} \meinstd\@ } \\
-      \@ifundefined{metitlee}{}    {\metitlee\@ & \menamee\@ & \hspace{1cm} \merolee\@ & - \hspace{0.5cm} \meinste\@ } \\
-      \@ifundefined{metitlef}{}    {\metitlef\@ & \menamef\@ & \hspace{1cm} \merolef\@ & - \hspace{0.5cm} \meinstf\@ } \\
-      \@ifundefined{metitleg}{}    {\metitleg\@ & \menameg\@ & \hspace{1cm} \meroleg\@ & - \hspace{0.5cm} \meinstg\@ } \\
-      \@ifundefined{metitleh}{}    {\metitleh\@ & \menameh\@ & \hspace{1cm} \meroleh\@ & - \hspace{0.5cm} \meinsth\@ }
-        \end{tabular}
+      \@ifundefined{@coadvisor}{}  {\\ \@itacoadvisortitle   & \@itacoadvisorname  & \hspace{0.5cm} \itacoadvisorwordbabelll & - \hspace{0.3cm} \@itacoadvisorinst }
+      \@ifundefined{metitleb}{}    {\\ \metitleb\@ & \menameb\@ & \hspace{0.5cm} \meroleb\@ & - \hspace{0.3cm} \meinstb\@ } \\
+      \@ifundefined{metitlec}{}    {\metitlec\@ & \menamec\@ & \hspace{0.5cm} \merolec\@ & - \hspace{0.3cm} \meinstc\@ } \\
+      \@ifundefined{metitled}{}    {\metitled\@ & \menamed\@ & \hspace{0.5cm} \meroled\@ & - \hspace{0.3cm} \meinstd\@ } \\
+      \@ifundefined{metitlee}{}    {\metitlee\@ & \menamee\@ & \hspace{0.5cm} \merolee\@ & - \hspace{0.3cm} \meinste\@ } \\
+      \@ifundefined{metitlef}{}    {\metitlef\@ & \menamef\@ & \hspace{0.5cm} \merolef\@ & - \hspace{0.3cm} \meinstf\@ } \\
+      \@ifundefined{metitleg}{}    {\metitleg\@ & \menameg\@ & \hspace{0.5cm} \meroleg\@ & - \hspace{0.3cm} \meinstg\@ } \\
+      \@ifundefined{metitleh}{}    {\metitleh\@ & \menameh\@ & \hspace{0.5cm} \meroleh\@ & - \hspace{0.3cm} \meinsth\@ }
+        \end{tabular}%
+   }
 }
 
 %==============================================================================
