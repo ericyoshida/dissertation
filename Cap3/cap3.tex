@@ -104,38 +104,34 @@ and high-altitude regimes (Section~\ref{sec:slr_datasets}), broadening the
 detector's operating envelope so that it generalizes to a deployment environment
 absent from any one of them.
 
-\section{Frustum-Based 3D Detection in Autonomous Driving}
+\section{Camera--LiDAR 3D Object Detection in Autonomous Driving}
+\label{sec:slr_driving}
 
-The core of the proposed pipeline descends from Frustum PointNets
-\cite{qi2018frustum}, which lifts each 2D detection into a viewing frustum, crops
-the corresponding point cloud, and applies a PointNet \cite{qi2017pointnet,
-qi2017pointnetpp} to estimate an amodal 3D box. The idea spawned a rich lineage
-in the driving domain: Frustum ConvNet \cite{wang2019fconvnet} replaces the
-point-wise network with sliding-frustum convolutions, and Frustum-PointPillars
-\cite{paigwar2021fpp} substitutes a pillar encoding for the PointNet backbone.
-All of these methods are benchmarked on ground-vehicle datasets and have not been
-applied to aerial platforms.
+Three-dimensional detection by camera--LiDAR fusion is most developed in the
+autonomous-driving domain, where it follows two broad designs. The first, and the
+lineage the proposed pipeline descends from, is the \emph{two-stage frustum}
+design: Frustum PointNets \cite{qi2018frustum} lift each 2D detection into a
+viewing frustum, crop the corresponding point cloud, and apply a PointNet
+\cite{qi2017pointnet,qi2017pointnetpp} to estimate an amodal 3D box; Frustum
+ConvNet \cite{wang2019fconvnet} replaces the point-wise network with
+sliding-frustum convolutions, and Frustum-PointPillars \cite{paigwar2021fpp}
+substitutes a pillar encoding for the PointNet backbone. Related region-level
+fusion methods, such as AVOD \cite{ku2018avod} and PointFusion
+\cite{xu2018pointfusion}, combine image and point features without an explicit
+frustum, and transformer- or bird's-eye-view-based detectors such as DETR3D
+\cite{wang2022detr3d} and BEVFusion \cite{liu2023bevfusion} operate on
+multi-camera or unified BEV representations.
 
-\section{Camera--LiDAR Fusion and Multi-View 3D Detection}
-
-Beyond the frustum family, a broad literature fuses camera and LiDAR for 3D
-detection. Region-level fusion methods such as AVOD \cite{ku2018avod} and
-PointFusion \cite{xu2018pointfusion} combine image and point features without an
-explicit frustum stage, while transformer- and bird's-eye-view-based detectors
-such as DETR3D \cite{wang2022detr3d} and BEVFusion \cite{liu2023bevfusion}
-operate on multi-camera or unified BEV representations. These approaches achieve
-state-of-the-art accuracy on driving benchmarks but are LiDAR- or
-multi-camera-centric and, again, are not deployed on UAVs.
-
-Orthogonal to the two-stage frustum design is the \emph{single-stage} voxel
-paradigm, which detects directly in the point cloud without a 2D proposal:
-VoxelNet/SECOND \cite{yan2018second} apply 3D convolutions over a voxel grid,
-PointPillars \cite{lang2019pointpillars} encodes a bird's-eye-view pillar grid for
-real-time inference, and center-based heads \cite{zhou2019objects} predict object
-centers as heatmap peaks. This paradigm removes the recall ceiling imposed by the
-2D detector at the cost of detecting in the whole, cluttered scene; it is the
-alternative against which the frustum pipeline is empirically compared on aerial
-data in Chapter~\ref{cha:airsim}.
+The second design is the \emph{single-stage voxel} paradigm, which detects
+directly in the point cloud without any 2D proposal: VoxelNet/SECOND
+\cite{yan2018second} apply 3D convolutions over a voxel grid, PointPillars
+\cite{lang2019pointpillars} encodes a bird's-eye-view pillar grid for real-time
+inference, and center-based heads \cite{zhou2019objects} predict object centers as
+heatmap peaks. It removes the recall ceiling that the 2D detector imposes on the
+frustum design, at the cost of detecting in the whole, cluttered scene, and is the
+alternative against which the frustum pipeline is compared on aerial data in
+Chapter~\ref{cha:airsim}. All of these methods, of both designs, are benchmarked
+on ground-vehicle datasets and have not been applied to aerial platforms.
 
 \section{3D Perception and Sense-and-Avoid for UAVs}
 
