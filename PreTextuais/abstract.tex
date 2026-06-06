@@ -1,3 +1,23 @@
 % Abstract (English).
-% TODO: write the abstract (~150--250 words) once results are consolidated.
-[Abstract to be written: context (sense-and-avoid / situational awareness for urban eVTOLs), problem (3D obstacle detection and tracking from a moving aerial platform), approach (a modular camera--point-cloud perception pipeline; an EKF-based tracker validated in simulation and on real data), and main results.]
+
+Safe autonomous flight in low-altitude urban airspace requires an aircraft to
+build, on board and in real time, a calibrated picture of the obstacles around
+it. This dissertation develops the perception (\emph{Sense}) layer of urban UAV
+detect-and-avoid, structured as a single modular camera--point-cloud pipeline in
+which a convolutional detector seeds a viewing frustum, a point-cloud network
+lifts each detection into a metric three-dimensional box, and a recursive
+Bayesian filter turns the stream of detections into calibrated tracks. The
+pipeline is validated through three self-contained studies. First, the tracking
+stage is formulated for a moving platform in global and local reference frames;
+the two formulations are proven mathematically equivalent under a known platform
+pose and isotropic process noise, their divergence regimes are characterized, and
+the filter is shown to be near-optimal against the posterior Cram\'er--Rao bound.
+Second, the same estimator is taken to real flights, tracking a person from a
+monocular UAV whose pose is estimated rather than known, where propagating the
+camera-pose uncertainty into the innovation is shown to be necessary for
+statistical consistency. Third, a purpose-built synthetic AirSim dataset trains
+the detection front-end, and an empirical comparison identifies foreground
+extraction, rather than the box regressor, as the dominant lever on
+three-dimensional localization accuracy. Together, the studies show that one
+recursive estimator, properly instrumented with its uncertainty, serves the Sense
+stage across sensors, targets, and environments.

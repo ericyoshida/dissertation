@@ -1,3 +1,24 @@
 % Resumo (português) --- obrigatório pelo ITA mesmo em dissertações escritas em inglês.
-% TODO: escrever o resumo (~150--250 palavras) ao final, espelhando o Abstract.
-[Resumo a preencher: contexto (sense-and-avoid / consciência situacional para eVTOLs urbanos), problema (detecção e rastreamento 3D a partir de plataforma aérea em movimento), abordagem (pipeline modular câmera--nuvem de pontos; tracker baseado em EKF validado em simulação e em dados reais), e principais resultados.]
+
+O voo autônomo seguro no espaço aéreo urbano de baixa altitude exige que a
+aeronave construa, a bordo e em tempo real, uma representação calibrada dos
+obstáculos ao seu redor. Esta dissertação desenvolve a camada de percepção
+(\emph{Sense}) do detect-and-avoid de VANTs urbanos, estruturada como um único
+pipeline modular câmera--nuvem de pontos no qual um detector convolucional gera um
+tronco de visada (\emph{frustum}), uma rede de nuvem de pontos eleva cada detecção
+a uma caixa tridimensional métrica, e um filtro bayesiano recursivo converte o
+fluxo de detecções em trajetórias calibradas. O pipeline é validado por três
+estudos autocontidos. Primeiro, o estágio de rastreamento é formulado para uma
+plataforma em movimento nos referenciais global e local; as duas formulações são
+provadas matematicamente equivalentes sob pose conhecida e ruído de processo
+isotrópico, seus regimes de divergência são caracterizados, e o filtro mostra-se
+quase ótimo frente ao limite de Cram\'er--Rao posterior. Segundo, o mesmo
+estimador é levado a voos reais, rastreando uma pessoa a partir de um VANT
+monocular cuja pose é estimada, onde propagar a incerteza da pose da câmera para a
+inovação mostra-se necessário para a consistência estatística. Terceiro, um
+conjunto de dados sintético construído no AirSim treina o \emph{front-end} de
+detecção, e uma comparação empírica identifica a extração de \emph{foreground},
+e não o regressor da caixa, como o fator dominante na acurácia de localização 3D.
+Em conjunto, os estudos mostram que um único estimador recursivo, devidamente
+instrumentado com sua incerteza, serve à etapa Sense através de sensores, alvos e
+ambientes distintos.
