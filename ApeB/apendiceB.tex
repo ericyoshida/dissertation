@@ -75,22 +75,22 @@ Table~\ref{tab:hyper_3d} the point-cloud--network settings, for reproducibility.
   $10^{-4}$) with a cosine schedule; frustum nets sample $N{=}4096$ points from
   the $25\%$-enlarged frustum and normalize by centroid subtraction and a scale.}
   \label{tab:hyper_3d}
-  \begin{tabular}{@{}lll@{}}
+  \begin{tabular}{@{}p{2.5cm} p{6.3cm} p{5.3cm}@{}}
     \toprule
     Network & Architecture (key) & Loss / schedule \\
     \midrule
     Frustum PointNet\texttt{++}
-      & SA $[64,64,128]/[128,128,256]/[256,512,1024]$, FC $[512,256,128]$
-      & Focal ($\alpha{=}0.5,\gamma{=}2$) $+\,5\,\mathrm{SL}_1(\text{ctr})+\mathrm{SL}_1(\text{size})$; $30$ ep., batch $8$ \\
+      & SA $[64,64,128]$ / $[128,128,256]$ / $[256,512,1024]$, FC $[512,256,128]$
+      & Focal ($\alpha{=}0.5,\gamma{=}2$) $+\,5\,\mathrm{SL}_1(\text{ctr})+\mathrm{SL}_1(\text{size})$; $30$ ep., batch $8$ \\[2pt]
     T-Net segmentation
       & $+$ per-point fg/bg head ($1088{\to}256{\to}128{\to}1$)
-      & $+\,\mathrm{BCE}(\text{seg})$; $20$ ep., batch $32$ \\
+      & $+\,\mathrm{BCE}(\text{seg})$; $20$ ep., batch $32$ \\[2pt]
     Frustum ConvNet
       & $16$ depth slices, per-slice mini-PointNet, $1$D conv
-      & same heads; $30$ ep., batch $8$ \\
+      & same heads; $30$ ep., batch $8$ \\[2pt]
     PointPillars (PFN)
       & BEV $1.25$~m grid, per-pillar mini-PointNet $[64,64]$, 2D CNN
-      & center heatmap (focal) $+$ box reg.; $15$ ep., batch $8$ \\
+      & center heatmap (focal) $+$ box reg.; $15$ ep., batch $8$ \\[2pt]
     Dense 3D voxel
       & $2.0$~m grid, Conv3D $1{\to}16{\to}32{\to}32{\to}64$
       & center heatmap $+$ box reg.; $15$ ep., batch $4$ \\

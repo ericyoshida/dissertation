@@ -231,24 +231,28 @@ does not lie on the plane. Figure~\ref{fig:footpoint} illustrates the geometry.
   \label{fig:footpoint}
 \end{figure}
 
-The accuracy of this heuristic is bounded by the quality of the detector's box:
-whenever the 2D box is mis-sized, in particular when it does not reach the
-person's feet, its mid-bottom sits above the true ground contact and the
-ray--plane lift lands short. Figure~\ref{fig:footpoint_err} shows three such
-frames from the flight, in which the box bottom misses the true contact by
-$50$--$80$~px; because the lift amplifies a vertical pixel error into a
-ground-range error that grows with distance, these box-sizing errors are a
-distinct source of the localization error analyzed in
-Section~\ref{sec:mono_accuracy}, separate from the platform-pose uncertainty.
+The accuracy of this heuristic is bounded by the quality of the detector's box.
+Even when the person is detected well, the box mid-bottom does not land exactly on
+the ground contact: mid-stride the box encloses both the planted and the trailing
+foot, and a slightly loose or tight box shifts its lower edge, so the foot pixel
+is offset from the true contact by a few tens of pixels.
+Figure~\ref{fig:footpoint_err} shows two frames of the (correctly detected)
+walker in which this offset is $26$--$32$~px. Because the ray--plane lift turns a
+vertical pixel offset into a ground-range error that grows with distance, this is
+a real, if modest, error source, distinct from the platform-pose uncertainty; it
+sets a floor on the achievable accuracy even with a perfect navigation solution,
+whereas the larger excursions of Section~\ref{sec:mono_accuracy} are dominated by
+the pose error during fast rotations.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=\linewidth]{Cap6/footpoint_error.pdf}
-  \caption{Foot-point error from imperfect detection boxes. In each frame the
-  detector's box (red) does not reach the person's feet, so its mid-bottom foot
-  pixel (red $\times$) sits above the manually annotated true ground contact
-  (green), the discrepancy (yellow) being $52$--$77$~px. The ground-plane lift
-  turns this pixel error into a metric localization error.}
+  \includegraphics[width=0.86\linewidth]{Cap6/footpoint_error.pdf}
+  \caption{Foot-point heuristic on two correctly detected frames. The detection
+  box (red) is on the walking person, but its mid-bottom foot pixel (red $\times$)
+  does not coincide exactly with the manually annotated ground contact (green):
+  mid-stride and with a slightly loose box, the lower edge is offset by
+  $26$--$32$~px (yellow). The ground-plane lift turns this pixel offset into a
+  metric localization error that grows with range.}
   \label{fig:footpoint_err}
 \end{figure}
 
