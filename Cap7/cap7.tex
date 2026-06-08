@@ -622,6 +622,27 @@ foreground points rather than hard-cutting them. Foreground
 extraction, rather than the regressor, is thus the dominant factor in the frustum
 pipeline.
 
+This last point deserves to be made precise, because the segmentation does not
+make the band redundant. The depth band plays two roles at once: it discards the
+background \emph{and}, in doing so, it conditions the scale of the point-cloud
+normalization, since the cloud is centered and scaled to a unit ball before the
+network (Section~\ref{sec:frustum}) and a far background tail would otherwise
+shrink the target into a small fraction of that ball. The learned segmentation
+addresses only the first role --- it reweights the points the network pools ---
+and it acts \emph{after} the normalization, so it cannot by itself repair the
+scale. The two interact accordingly. Applied to the full frustum \emph{without}
+the band, the segmentation cannot recover from the corrupted scale and the 3D
+error climbs back to $2.14$~m, \emph{worse} than the depth band alone
+($1.20$~m): once the background sets the normalization scale, no amount of
+foreground reweighting downstream can undo the compression of the target.
+Applied \emph{on top of} the band, the scale is already well conditioned, and the
+soft, learned foreground weighting then improves on the band's hard depth cut ---
+it follows the target's silhouette instead of a fixed slab and tolerates a
+foreground occluder --- lowering the error to $1.05$~m, the best of any frustum
+variant. In short, the band conditions the geometry and the segmentation refines
+it; each addresses a different failure and they are complementary rather than
+interchangeable.
+
 \begin{figure}[H]
   \centering
   \includegraphics[width=\linewidth]{Cap7/normalization_ablation.pdf}
