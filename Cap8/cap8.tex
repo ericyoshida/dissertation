@@ -50,8 +50,9 @@ consumes them and its real-world generalization.
   supplied trustworthy 3D supervision. The study's principal empirical finding is
   that \emph{foreground extraction, not the box regressor, governs frustum
   localization}: removing the background that dominates the point-cloud
-  normalization, whether by a depth-band heuristic or a learned segmentation, took
-  the 3D error from ${\approx}3$~m to ${\approx}1$~m. The chapter also delivered the
+  normalization with a depth-band crop (optionally refined by a learned
+  segmentation on top of it) took the 3D error from ${\approx}3$~m to
+  ${\approx}1$~m. The chapter also delivered the
   first empirical comparison of the two-stage frustum design against the
   single-stage voxel paradigm on aerial data, exposing a clean recall--precision
   trade-off: the frustum pipeline is precise (AMOTA $0.81$, precision $0.90$) but

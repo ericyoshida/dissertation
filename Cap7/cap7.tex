@@ -368,16 +368,21 @@ extraction of Section~\ref{sec:segnet} resolves.
 \subsection{Learned Foreground Extraction and an Efficient Alternative}
 \label{sec:segnet}
 
-To replace the depth-band heuristic with a principled component, a
+To refine the depth-band crop with a learned component, a
 segmentation head is added that classifies each frustum point as
 target or background, in the manner of the original Frustum~PointNets instance
 segmentation \cite{qi2018frustum}. Per-point features (a $64$-dimensional local
 embedding concatenated with a $1024$-dimensional global descriptor) feed a
 point-wise classifier supervised by the in-box membership of each point; the box
 head then pools only the foreground-weighted features. This \emph{learns} which
-points belong to the drone; unlike the depth band, it is robust to a foreground
-occluder, and it attains the best localization of any frustum
-variant. A second alternative, a Frustum~ConvNet \cite{wang2019fconvnet}, attacks
+points belong to the drone and, unlike the hard depth-band cut, is robust to a
+foreground occluder. It is applied \emph{on top of} the band rather than instead
+of it: because the point set is centered and scaled before the network
+(Section~\ref{sec:frustum}), the band crop is still what keeps the background tail
+from corrupting that scale, and the learned segmentation then weights the pooling
+within the band. Used this way it attains the best localization of any frustum
+variant. Normalizing \emph{after} segmentation, which would let the learned mask
+replace the band outright, is left as future work. A second alternative, a Frustum~ConvNet \cite{wang2019fconvnet}, attacks
 the same background problem differently: instead of selecting foreground points,
 it divides the frustum into $16$ slices along the depth (line-of-sight) axis,
 encodes the points of each slice with a small per-slice PointNet into a fixed
@@ -611,8 +616,9 @@ classification. Replacing the scale by a robust $95$th-percentile estimate barel
 helps (RMSE $2.87$~m, AMOTA $0.05$), confirming that clipping the scale is the
 wrong fix: the centroid is still pulled by the background. Removing the
 background with the depth band reduces the error to $1.20$~m and lifts precision
-to $0.90$ and AMOTA to $0.81$; the learned T-Net segmentation does better still,
-$1.05$~m, while recovering the foreground without a manual cut. Foreground
+to $0.90$ and AMOTA to $0.81$; adding the learned T-Net segmentation \emph{on top
+of} that same band crop does better still ($1.05$~m), by softly weighting the
+foreground points rather than hard-cutting them. Foreground
 extraction, rather than the regressor, is thus the dominant factor in the frustum
 pipeline.
 
@@ -848,9 +854,9 @@ The experiments establish three points. First, \emph{the synthetic dataset is
 viable}: pixel-exact composition avoids the simulator's annotation defects and
 trains a highly accurate 2D detector, and the geometric 3D annotation supplies
 trustworthy supervision for the point-cloud stage. Second, \emph{foreground
-extraction, not the regressor, governs frustum localization}: removing or learning
-the background takes the 3D error from $3$~m to about $1$~m, and a learned
-segmentation is the principled successor to the depth-band heuristic. Third,
+extraction, not the regressor, governs frustum localization}: removing the
+background with a depth-band crop takes the 3D error from $3$~m to about $1$~m, and
+a learned segmentation layered on top of that crop refines it further. Third,
 \emph{the choice of detection paradigm is a recall--precision trade-off}: the
 two-stage frustum design is precise and tracks well but inherits the 2D detector's
 recall ceiling, whereas the single-stage voxel design, particularly with
