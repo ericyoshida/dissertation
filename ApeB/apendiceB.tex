@@ -53,20 +53,31 @@ Table~\ref{tab:hyper_3d} the point-cloud--network settings, for reproducibility.
   \caption{YOLOv11-small training (Ultralytics defaults unless noted): SGD with
   Nesterov momentum, weight decay, and a cosine learning-rate schedule.}
   \label{tab:hyper_yolo}
-  \begin{tabular}{@{}lll@{}}
+  \resizebox{\linewidth}{!}{%
+  \begin{tabular}{@{}llll@{}}
     \toprule
-    Setting & Synthetic (production) & Real-urban (reference) \\
+    Setting & Synthetic drone (Ch.~\ref{cha:airsim}) & Real-urban drone (ref.) & Person (Ch.~\ref{cha:monocular}) \\
     \midrule
-    Backbone        & YOLOv11s ($\approx 10$~M) & YOLOv11s \\
-    Input size      & $1280$~px & $640$~px \\
-    Epochs          & $80$ & $100$ \\
-    Batch           & $16$ & $16$ \\
-    Patience        & default & $30$ \\
-    Augmentation    & mosaic, HSV, scale & mosaic, HSV, scale \\
-    Result          & $\mathrm{mAP}_{50}=0.994$ & $\mathrm{mAP}_{50}=0.731$ \\
+    Backbone        & YOLOv11s ($\approx 10$~M) & YOLOv11s & YOLOv11s \\
+    Input size      & $1280$~px & $640$~px & $1280$~px \\
+    Epochs          & $80$ & $100$ & $50$ \\
+    Batch           & $16$ & $16$ & auto \\
+    Patience        & default & $30$ & $100$ \\
+    Pretrained      & COCO & COCO & COCO \\
+    Augmentation    & mosaic, HSV, scale & mosaic, HSV, scale & Ultralytics default \\
+    Result ($\mathrm{mAP}_{50}$) & $0.994$ & $0.731$ & $0.754$ \\
     \bottomrule
-  \end{tabular}
+  \end{tabular}}
 \end{table}
+
+The Chapter~\ref{cha:monocular} person detector (rightmost column) was trained
+through the Ultralytics HUB on the dataset \texttt{visdrone\_sard\_heridal}, the
+union of the VisDrone, SARD, and HERIDAL aerial person-detection sets:
+$14{,}783$ images of a single \texttt{person} class, split $74.1\%/12.4\%/13.5\%$
+into train/validation/test ($10{,}961$, $1{,}829$, and $1{,}993$ images). Beyond
+the $\mathrm{mAP}_{50}=0.754$ in the table, it reaches
+$\mathrm{mAP}_{50\text{--}95}=0.389$, with precision $0.795$ and recall $0.669$ on
+its validation split.
 
 \begin{table}[H]
   \centering

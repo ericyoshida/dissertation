@@ -163,6 +163,21 @@ network is the detector used throughout the tracking experiments of this chapter
 for each frame it outputs the set of person bounding boxes from which the filter's
 measurement is extracted.
 
+The combined corpus comprises $14{,}783$ labeled aerial images of a single
+\emph{person} class. A YOLOv11-small detector was trained on it
+(at $1280$~px for $50$ epochs; full settings in Appendix~\ref{ap:train_hyper}),
+and on a held-out validation split it reaches a mean average precision of
+$\mathrm{mAP}_{50}=0.754$ and $\mathrm{mAP}_{50\text{--}95}=0.389$, with a
+precision of $0.795$ and a recall of $0.669$ at its operating point. These are
+solid numbers for a single small detector required to span urban, rural, and
+wilderness aerial imagery at once: the cross-domain training trades a few points
+of peak accuracy on any single domain for the robustness that lets the same
+network, trained entirely on outdoor public data, generalize to the unseen indoor
+sports hall. The recall of $0.67$ also sets context for the tracking results: the
+target is missed in roughly a third of frames, which is precisely the regime the
+recursive filter and its re-initialization logic (Section~\ref{sec:mono_groundplane})
+are designed to bridge.
+
 \subsection{Monocular Measurement Model and Plumb-Bob Undistortion}
 \label{sec:mono_meas}
 
