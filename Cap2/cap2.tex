@@ -333,6 +333,18 @@ difficulty in the aerial setting is \emph{domain shift}: because a detector's
 accuracy depends on the match between its training distribution and the deployment
 scene, a network meant to operate in an unseen environment is commonly trained on
 a diverse union of datasets to widen its operating envelope.
+Figure~\ref{fig:yolo_arch} summarizes the resulting one-stage architecture.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{Cap2/yolo_architecture.pdf}
+  \caption{One-stage YOLO detection architecture used in this work. A single
+  forward pass through a cross-stage-partial backbone, a path-aggregation
+  feature-pyramid neck, and an anchor-free decoupled head regresses all boxes and
+  class scores; removing the separate region-proposal stage of two-stage detectors
+  is what yields the real-time throughput needed onboard.}
+  \label{fig:yolo_arch}
+\end{figure}
 
 \subsection{Point-Cloud Processing: PointNet and PointNet\texttt{++}}
 
@@ -349,6 +361,20 @@ learned input alignment (a small ``T-Net'' that regresses a transformation
 matrix) further canonicalizes the pose of the cloud. The limitation of this design
 is that a single global pooling captures the overall shape but discards
 \emph{local} neighborhood structure, which matters for fine geometry.
+Figure~\ref{fig:pointnet_arch} shows this construction.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{Cap2/pointnet_architecture.pdf}
+  \caption{PointNet architecture. Each of the $n$ unordered input points is mapped
+  independently by shared multilayer perceptrons, and the per-point features are
+  aggregated by a symmetric max-pooling into a global descriptor; this symmetric
+  pooling is what makes the network invariant to the ordering of the points. Small
+  learned ``T-Net'' alignments canonicalize the input and feature spaces. The
+  global feature feeds a classification head or, concatenated back to the per-point
+  features, a segmentation head.}
+  \label{fig:pointnet_arch}
+\end{figure}
 
 PointNet\texttt{++} \cite{qi2017pointnetpp} removes that limitation by applying
 PointNet \emph{hierarchically}. Each \emph{set-abstraction} level (i) samples a

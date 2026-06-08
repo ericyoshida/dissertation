@@ -548,7 +548,8 @@ $0.02$ AMOTA and $0.02$~m RMSE (e.g., the best voxel model scores AMOTA $0.67$ a
 RMSE $0.85$~m held-out, against $0.68$ and $0.87$~m on the full set), confirming
 that the comparison below is not an artifact of in-sample evaluation. Inference
 runs offline: one heavy pass per sequence dumps detections, from which all metrics
-are recomputed cheaply while sweeping the detection threshold.
+are recomputed cheaply while sweeping the detection threshold. The dataset-generation
+and detection code is released as open source.\footnote{\url{https://github.com/ericyoshida/airsim-uav-3d-detection}}
 
 \section{Results}
 \label{sec:results}
@@ -668,7 +669,11 @@ the 2D stage and is the principal limitation of the two-stage design.
 \end{figure}
 
 Table~\ref{tab:arch} and Figure~\ref{fig:arch} compare the frustum variants
-against the single-stage voxel detectors and a late fusion of the two. The three
+against the single-stage voxel detectors and a \emph{late fusion} of the two ---
+that is, a fusion at the level of the two detectors' \emph{output} 3D boxes
+(here, confirming a frustum detection when a voxel detection agrees with it),
+as opposed to an early fusion that would combine the raw features before
+detection. The three
 paradigms are contrasted side by side in Figure~\ref{fig:approaches}: the
 two-stage frustum pipeline, the single-stage voxel detector, and their late
 fusion. The two

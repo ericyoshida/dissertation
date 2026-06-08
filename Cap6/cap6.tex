@@ -111,8 +111,10 @@ altitude, viewpoint, and background. Training on any one of them in isolation
 yields a detector that overfits that regime and degrades under the domain shift
 of a new environment.
 
-To obtain a detector that generalizes, we trained the one-stage YOLO architecture
-(Chapter~\ref{cha:background}, \cite{redmon2016yolo}) on the \emph{union} of three
+To obtain a detector that generalizes, we trained a modern one-stage YOLO
+detector (Chapter~\ref{cha:background}; the original single-stage idea is due to
+\citen{redmon2016yolo}, and we use the current Ultralytics
+implementation~\cite{ultralytics2024yolo11}) on the \emph{union} of three
 complementary aerial datasets, illustrated in Figure~\ref{fig:datasets}:
 
 \begin{itemize}
@@ -452,11 +454,17 @@ Chapter~\ref{cha:conclusions}.
 The tracker was evaluated on a real flight in an indoor sports hall, in which the
 quadrotor hovered and maneuvered over a matted area ($\approx 11.0\times12.0$~m,
 whose extent was measured on site) while a single person walked along its
-perimeter. The flight lasted
+perimeter.\footnote{A video of the experiment is available at
+\url{https://www.dropbox.com/scl/fo/r9j7sqlwngrz60ltsldpr/AOwC3mAlRbmpuSl3Xv06cKo?rlkey=mygn29ak7c016honkx6jyz1d5&dl=0}.}
+The flight lasted
 about $150$~s. Importantly for the analysis below, the platform executed full
 $360^\circ$ yaw rotations, so the target traversed the entire field of view and
 the platform pose varied over its whole range, which is a demanding test of the
-pose-uncertainty handling.
+pose-uncertainty handling. Although this flight contains a single target, the
+estimator is not restricted to one: exactly as in Chapter~\ref{cha:tracking}, it
+is instantiated once per track behind a SORT-style data-association
+stage~\cite{bewley2016sort}, so multi-target operation reduces to running one of
+these per-target filters per confirmed track.
 
 Obtaining metric ground truth for a freely walking person indoors, without
 instrumenting the subject, is itself non-trivial. We used the room geometry as

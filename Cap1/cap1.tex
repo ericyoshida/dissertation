@@ -60,8 +60,9 @@ Universit\"at Berlin (TU~Berlin), led by Prof.~Maarten Uijt de Haag, visited ITA
 Their team competes in the SPRIND ``Fully Autonomous Flight'' Challenge, in which
 an autonomous UAV must operate without GNSS and locate targets (people) on the
 terrain, a task with a clear search-and-rescue motivation. They had a working
-person-\emph{detection} front-end but lacked a tracker, which is exactly what our
-FUSION work provided. The two groups therefore collaborated: TU~Berlin supplied
+person-\emph{detection} front-end --- the early perception stage that turns raw
+sensor data into per-object detections, before any tracking --- but lacked a
+tracker, which is exactly what our FUSION work provided. The two groups therefore collaborated: TU~Berlin supplied
 real flight data from their drones, and we adapted our estimator to their setting.
 That setting is genuinely harder than the simulation: the only sensor is a single
 monocular camera, so depth is unobservable and must be recovered from a
@@ -150,7 +151,8 @@ independently of the others.
 A CNN detector first localizes objects in the image; each two-dimensional
 detection is lifted into a viewing \emph{frustum} that bounds the corresponding
 region of the point cloud; a point-cloud network estimates an amodal
-three-dimensional bounding box within that frustum; and an Extended Kalman
+three-dimensional bounding box (one that spans the object's full extent, including
+the faces hidden from the sensor) within that frustum; and an Extended Kalman
 Filter (EKF) tracks the resulting detections over time. This frustum-based
 fusion follows the lineage of Frustum PointNets \cite{qi2018frustum}, adapted
 here to the aerial sense-and-avoid setting.
