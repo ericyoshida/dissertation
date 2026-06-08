@@ -192,6 +192,24 @@ every target. Table~\ref{tab:dataset} summarizes the data.
 \section{Detection Methodology}
 \label{sec:method}
 
+The detection front-end follows the two-stage \emph{frustum} paradigm, illustrated
+end-to-end in Figure~\ref{fig:frustum_teaser}: a CNN detects the target in the
+image and the depth channel is back-projected to a point cloud; the 2D box is
+extruded into a three-dimensional viewing frustum that crops the cloud to a
+narrow candidate region; and a PointNet regresses the amodal 3D box within that
+frustum. The remainder of this section develops each stage in turn.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{Cap7/frustum_pipeline_teaser.pdf}
+  \caption{The frustum detection pipeline. From the image captured by the
+  observing UAV, a CNN localizes the target in 2D (red box); the depth channel is
+  converted to a point cloud; the 2D region is extruded into a 3D viewing frustum
+  (red) that crops the cloud; and a PointNet regresses the amodal 3D bounding box
+  of the target within it (green).}
+  \label{fig:frustum_teaser}
+\end{figure}
+
 \subsection{Two-Dimensional Detection}
 
 The first stage is a YOLOv11-small detector
