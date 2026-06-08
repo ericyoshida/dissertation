@@ -16,8 +16,8 @@ artifact: the modular camera--point-cloud pipeline of
 Chapter~\ref{cha:pipeline}, in which a CNN detector seeds a viewing frustum, a
 point-cloud network lifts each detection into a metric box, and a recursive
 Bayesian filter turns the stream of detections into calibrated tracks. The three
-self-contained studies of Chapters~\ref{cha:tracking}--\ref{cha:airsim} are not
-three separate works but three contributions to that one pipeline. This closing
+self-contained studies of Chapters~\ref{cha:tracking}--\ref{cha:airsim} are three
+contributions to that one pipeline. This closing
 chapter revisits what each study established, draws out the threads that bind
 them into one system, states plainly what remains unsolved, and sets the agenda
 for an integrated onboard capability.
@@ -37,8 +37,8 @@ consumes them and its real-world generalization.
   centerpiece, the uniqueness matrix, established that of the nineteen closest
   adjacent works \emph{none} simultaneously targets a UAV, employs a
   frustum-to-PointNet detector with camera--LiDAR fusion, and terminates in an
-  integrated tracker for urban sense-and-avoid. The review thereby substantiated,
-  rather than merely asserted, the gap that the dissertation fills, and explained
+  integrated tracker for urban sense-and-avoid. The review thereby substantiated
+  the gap that the dissertation fills, and explained
   its timing through the recent maturation of light UAV-grade LiDAR, the absence of
   a real aerial 3D benchmark, and the non-trivial domain shift from ground to air.
 
@@ -99,7 +99,7 @@ consumes them and its real-world generalization.
   exactly the uncertain-pose regime that Chapter~\ref{cha:tracking} predicted would
   break the frame equivalence, and propagating the six-degree-of-freedom camera-pose
   covariance into the innovation through an extrinsic Jacobian proved
-  \emph{necessary}, not cosmetic. An ablation showed that omitting this term leaves
+  \emph{necessary}: without it the filter is overconfident. An ablation showed that omitting this term leaves
   the filter overconfident by four orders of magnitude (mean NIS $3.4\times10^{4}$
   against the consistent value of $2$), whereas including it restores statistical
   consistency. The study thus demonstrated both the generality of the estimator
@@ -111,20 +111,20 @@ consumes them and its real-world generalization.
 Read together, the studies make a single claim about \emph{one} system. The
 common thread is calibrated uncertainty: every stage was designed to report not
 only where an obstacle is but how trustworthy that estimate is, because the
-downstream avoidance logic reasons about risk. This is why the pipeline
-terminates in a Bayesian filter rather than a regressor, why
+downstream avoidance logic reasons about risk. For this reason the pipeline
+terminates in a Bayesian filter rather than a regressor,
 Chapter~\ref{cha:tracking} analyzed the filter's \emph{consistency} against the
-Cram\'er--Rao bound and not merely its accuracy, and why the central real-world
+Cram\'er--Rao bound in addition to its accuracy, and the central real-world
 result of Chapter~\ref{cha:monocular} is a consistency result. The second thread
 is geometric, interpretable fusion: the image localizes the search and the point
 cloud supplies the depth, keeping each modality independently trainable and each
-stage independently validatable, which is precisely what let the tracker be
-proven correct in isolation, the detector be evaluated on its own metrics, and
-the same estimator serve both a 3D LiDAR-fused obstacle and a monocular person.
+stage independently validatable, which allowed the tracker to be
+proven correct in isolation, the detector to be evaluated on its own metrics, and
+the same estimator to serve both a 3D LiDAR-fused obstacle and a monocular person.
 Finally, the boundary that
 Chapters~\ref{cha:tracking} and~\ref{cha:monocular} share, known versus uncertain
-platform pose, is not a coincidence of two projects but the single hinge on which
-the framework turns from its equivalent to its divergent regime.
+platform pose, marks where the framework moves from its equivalent to its
+divergent regime, so accounting for the pose-estimate covariance is important.
 
 \section{Limitations}
 
@@ -166,8 +166,10 @@ work does not yet establish.
   \item \textbf{Pose-uncertainty propagation has not been carried into the 3D
   pipeline.} The extrinsic-aware innovation covariance of
   Chapter~\ref{cha:monocular} was derived for the monocular projective
-  measurement; the 3D detection-fed tracker of Chapter~\ref{cha:airsim} still
-  treats the platform pose as known.
+  measurement. The 3D detection-fed tracker of Chapter~\ref{cha:airsim}, by
+  contrast, treats the platform pose as \emph{known} and does not yet propagate
+  the pose-estimate covariance the way the Chapter~\ref{cha:monocular} monocular
+  tracker does; doing so is left as future work.
   \item \textbf{No real-time, embedded demonstration.} All inference was run
   offline; the onboard-compute budget that an embedded sense-and-avoid system
   imposes (Chapter~\ref{cha:relatedwork}) has not yet been met.
@@ -189,10 +191,11 @@ immediate to the most ambitious.
   \item \textbf{End-to-end integration on a single platform.} The stages should be
   composed into one system running the full
   2D~$\rightarrow$~frustum~$\rightarrow$~3D~$\rightarrow$~EKF chain on a real UAV,
-  closing the loop that the modular validation deliberately left open, and
-  deployed on embedded UAV-grade hardware within a real-time budget. The
-  recall ceiling motivates fielding the late frustum--voxel fusion rather than the
-  frustum pipeline alone.
+  closing the loop that the modular validation deliberately left open. A first
+  integration can run on a companion computer; deployment on constrained onboard
+  hardware within a real-time budget, with measured computation times, is a
+  subsequent step. The recall ceiling motivates fielding the late
+  frustum--voxel fusion rather than the frustum pipeline alone.
   \item \textbf{Tighter detector--tracker coupling.} The detector's own
   uncertainty should feed the filter's measurement covariance $\bm{R}$ rather than
   a fixed model, and the heuristic association should give way to an
@@ -241,7 +244,7 @@ operation, provided its pose uncertainty is propagated honestly; and a detection
 front-end, trained on a purpose-built synthetic dataset, whose dominant
 accuracy lever and architectural trade-offs were laid bare. The unifying lesson
 is that a recursive estimator, instrumented with a faithful model of where its
-uncertainty originates, is what carries the \emph{Sense} stage across sensing
+uncertainty originates, carries the \emph{Sense} stage across sensing
 modalities, targets, and environments. Bridging the remaining gap, from
 stage-wise validation to an integrated, embedded, real-time system flying against
 real obstacles, is the work that turns this perception pipeline into a deployable

@@ -2,7 +2,7 @@
 % Chapter 3 --- Related Work and Research Gap                 [cross-cutting]
 % Based on the author's systematic literature review (DEFESA SLR):
 % PRISMA 2020 + Kitchenham 5-criterion QA + Wohlin snowballing.
-% Centrepiece: the uniqueness matrix and the "why nobody did this" argument.
+% Centerpiece: the uniqueness matrix and the "why nobody did this" argument.
 % =====================================================================
 
 This chapter surveys the literature relevant to the perception pipeline of
@@ -242,15 +242,15 @@ A natural question is why, if the transfer is so direct, it has not been done.
 The review identifies six independent reasons:
 
 \begin{enumerate}
-  \item \textbf{LiDAR cost and weight.} Car-grade LiDAR ($\approx 13$~kg,
-  $\sim$\$75k) is prohibitive on small UAVs; light, affordable UAV-grade LiDAR
-  only matured around 2020--2022 (for example, the lightweight Livox Mid-360 used
-  on research UAVs \cite{livox_mid360}), so the sensing side of the problem did
-  not exist before then.
+  \item \textbf{LiDAR cost and weight.} Early survey-grade and car-grade LiDAR
+  units were heavy and costly, prohibitive on small UAVs; light, affordable
+  UAV-grade LiDAR only became available around 2020--2022 (for example, the
+  lightweight Livox Mid-360 used on research UAVs \cite{livox_mid360}), so the
+  sensing side of the problem was not practical before then.
   \item \textbf{Aerial annotation scarcity.} There is no KITTI/nuScenes/Waymo for
-  UAVs; the first large-scale aerial 3D benchmark, UAV3D
-  \cite{ye2024uav3d}, is recent and synthetic, making it hard to train
-  point-cloud networks on aerial data.
+  UAVs; large-scale annotated 3D aerial data remained scarce until recently, with
+  UAV3D \cite{ye2024uav3d} providing the first large-scale aerial 3D benchmark,
+  which makes it hard to train point-cloud networks on real aerial data.
   \item \textbf{Non-trivial domain shift.} Scale, viewpoint, motion model (free
   3D rotation and translation versus a car's 2D motion), sensor noise, and
   obstacle geometry all differ; retraining a driving detector on aerial

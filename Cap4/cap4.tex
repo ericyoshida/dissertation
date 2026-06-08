@@ -7,14 +7,15 @@
 The three studies that form the body of this dissertation address different
 problems: a simulated range--bearing tracker (Chapter~\ref{cha:tracking}), a
 real-world monocular tracker (Chapter~\ref{cha:monocular}), and a synthetic
-dataset with a 3D detector (Chapter~\ref{cha:airsim}). Yet they are not three
-separate works, but three contributions to a single artifact: the perception
-(\emph{Sense}) pipeline that turns onboard sensing into calibrated
-three-dimensional tracks for detect-and-avoid. We use \emph{perception} here in
-the broad sense that includes the temporal state estimation of the tracking
-stage, not only the raw processing of sensor data. This chapter presents that
-pipeline once, as a whole, and shows where each subsequent chapter plugs in, so
-that the rest of the dissertation reads as one system.
+dataset with a 3D detector (Chapter~\ref{cha:airsim}). These are not three
+separate works but three contributions to a single artifact: the perception and
+state-estimation (\emph{Sense}) pipeline that turns onboard sensing into
+calibrated three-dimensional tracks for detect-and-avoid. The term
+\emph{perception} is used here in the broad sense that includes the temporal
+state estimation of the tracking stage, not only the raw processing of sensor
+data. This chapter presents that pipeline once, as a whole, and shows where each
+subsequent chapter fits, so that the rest of the dissertation reads as one
+system.
 
 \section{Overview: A Modular Camera--Point-Cloud Pipeline}
 \label{sec:pipeline-overview}
@@ -26,7 +27,7 @@ two-dimensional object detections; each detection is lifted into a viewing
 frustum that bounds the corresponding volume of the point cloud; a point-cloud
 network estimates an amodal three-dimensional box, one that spans the object's
 full extent including parts hidden from the sensor, within that frustum; and a
-recursive Bayesian filter tracks the resulting detections over time, emitting a
+recursive Bayesian filter tracks the resulting detections over time, outputting a
 state estimate together with its covariance. The design follows the
 camera--point-cloud fusion lineage of Frustum~PointNets \cite{qi2018frustum},
 adapted to the aerial sense-and-avoid setting and terminated by the tracking stage
@@ -38,7 +39,7 @@ learned latent space, the image detection geometrically constrains the
 point-cloud search through the camera model of Chapter~\ref{cha:background},
 keeping each modality interpretable and each stage independently trainable. The
 second is \emph{calibrated output}: the pipeline does not merely report where an
-obstacle is, but how uncertain that estimate is, because the downstream avoidance
+obstacle is, but how uncertain that estimate is, since the downstream avoidance
 logic must reason about collision risk. This is why the final
 stage is a Bayesian filter rather than a regressor, and why its consistency, not
 just its accuracy, is analyzed in Chapters~\ref{cha:tracking}
@@ -49,7 +50,7 @@ and~\ref{cha:monocular}.
   \includegraphics[width=\linewidth]{Cap4/pipeline_architecture.pdf}
   \caption{The modular camera--point-cloud perception pipeline. A 2D detector
   seeds a viewing frustum that crops the point cloud; a point-cloud network
-  regresses a 3D box; and a recursive filter tracks the detections, emitting
+  regresses a 3D box; and a recursive filter tracks the detections, outputting
   calibrated 3D tracks for the avoidance layer. The three self-contained studies
   of this dissertation contribute the stages annotated above each block.}
   \label{fig:pipeline}
@@ -59,8 +60,8 @@ and~\ref{cha:monocular}.
 \label{sec:pipeline-stages}
 
 Each stage is summarized conceptually here, with its inputs, method, and
-outputs; the detailed methodology is developed in the project chapters, to avoid
-duplication.
+outputs; the detailed methodology is developed in the chapters that follow, to
+avoid duplication.
 
 \subsection{Two-Dimensional Detection}
 The first stage maps the RGB image to a set of object bounding boxes with
@@ -97,8 +98,8 @@ The final stage is an Extended Kalman Filter
 into a temporally coherent state (position, velocity, and size) with an
 explicit covariance. It rejects spurious detections through gating, bridges
 missed detections through prediction, and reports a calibrated
-uncertainty. Because the sensor rides a moving platform, the filter must account
-for the observer's own motion; this is the problem analyzed in depth in
+uncertainty. Since the sensor belongs to a moving platform, the filter must
+account for the observer's own motion; this is the problem analyzed in depth in
 Chapters~\ref{cha:tracking} and~\ref{cha:monocular}.
 
 \section{Modularity and Cross-Domain Generality}
@@ -118,7 +119,7 @@ evaluated on detection and localization metrics (Chapter~\ref{cha:airsim})
 independently of the filter. The tracking stage thus receives the
 mathematical scrutiny it warrants in isolation.
 
-Second, \emph{cross-domain generality}: because the tracker consumes an abstract
+Second, \emph{cross-domain generality}: since the tracker consumes an abstract
 range--bearing measurement with a covariance, it does not care whether that
 measurement came from a camera--LiDAR fusion detecting a drone or from a monocular
 detector localizing a person. The same estimator therefore serves both the 3D

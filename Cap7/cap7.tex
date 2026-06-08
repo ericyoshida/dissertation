@@ -88,14 +88,17 @@ not hold position to the required tolerance.
 The native multirotor mesh is too small (sub-meter envelope) to be detected
 reliably by a 2D detector or sampled densely by the depth camera at the
 $20$--$100$~m ranges of interest. Each target therefore carries a rigidly
-attached visual quadrotor mesh, enlarged by a factor of four relative to the
-native mesh (denoted \emph{VisQuad}) so that it is both visible to the detector
-and struck by enough depth pixels at those ranges, and re-pose-synchronized to
-its carrier at $30$~Hz; the 2D detector is trained on this mesh and the same mesh
-is assumed at inference. Its axis-aligned full extents, measured in-simulator, are
-$3.01\times3.93\times2.79$~m; multiplying each by a $1.38$ margin that accounts
-for the spinning rotors omitted from the simulator's bounding box, and halving,
-gives the half-extents $\bm{e}=[2.08,\,2.71,\,1.93]^\top$~m used for annotation.
+attached visual quadrotor mesh whose linear dimensions are scaled up by a factor
+of four relative to the native mesh (denoted \emph{VisQuad}); the enlargement
+makes the target both visible to the detector and struck by enough depth pixels
+at those ranges. The mesh is pose-synchronized to its carrier at $30$~Hz, and the
+2D detector is trained on it and assumes the same mesh at inference. Its
+axis-aligned full extents, measured in-simulator, are
+$3.01\times3.93\times2.79$~m. Multiplying each extent by a $1.38$ margin that
+accounts for the spinning rotors omitted from the simulator's bounding box, and
+halving, gives the box half-extents $\bm{e}=[2.08,\,2.71,\,1.93]^\top$~m (the
+half-widths of the ground-truth box along the $x$, $y$, and $z$ axes, in meters)
+used as the annotated target size.
 
 Importantly, the ground-truth 3D box is \emph{not} read from the simulator's
 detection API, whose relative-pose output carries a systematic $\approx 5$~m pitch
@@ -104,8 +107,8 @@ constructed geometrically from the true global pose. The eight corners of the
 target's axis-aligned box, rotated by the target yaw, are transformed into the
 optical frame by the inverse platform rotation, the camera lever arm, and the
 $-15^\circ$ pitch, and the amodal box is read off the transformed corners; a
-corner behind the image plane ($z<0.5$~m) rejects the sample. This manual
-construction is what makes the 3D supervision trustworthy and is reused to score
+sample is rejected if any corner falls behind the image plane ($z<0.5$~m). This
+geometric construction provides reliable 3D supervision and is reused to score
 localization at test time.
 
 \subsection{The Automatic-Labeling Problem and the Synthetic Solution}
@@ -219,10 +222,14 @@ meets the real-time budget of an onboard system. It is trained for the single
 class \emph{drone} on the synthetic frames of Section~\ref{sec:labeling} at
 $1280$-pixel input resolution with standard mosaic, HSV, and scale augmentation,
 for $80$ epochs using the default Ultralytics training recipe (SGD with Nesterov
-momentum, weight decay, and a cosine learning-rate schedule). Its output for each
+momentum, weight decay, a cosine learning-rate schedule, and early stopping on the
+validation metric), with all optimizer hyperparameters left at their default
+values. Its output for each
 frame is a set of boxes $\{b_i\}$ with confidences $\{s^{\mathrm{2D}}_i\}$ that
-seed the frustum stage; on an RTX-class GPU the detector runs at roughly
-$5$~ms per frame.
+seed the frustum stage; on an RTX-class desktop GPU the detector runs at roughly
+$5$~ms per frame. The point-cloud 3D stage adds further latency; in this work it
+was run offline (Section~\ref{sec:setup}), so the end-to-end per-frame budget is
+not yet established.
 
 \subsection{Frustum Proposal and the Normalization Problem}
 \label{sec:frustum}
@@ -232,7 +239,8 @@ the points whose pinhole projection $\big(u,v\big)=\big(f_x x^{\mathcal{O}}/z+c_
 f_y y^{\mathcal{O}}/z+c_y\big)$ falls inside it are gathered and resampled to a
 fixed cardinality of $N=4096$. The point set is centered on its centroid and
 scaled to a unit ball before being fed to the network, the standard PointNet
-normalization. This is where a subtle but decisive failure arises. When the
+normalization. This step introduces a failure mode that strongly affects
+localization. When the
 frustum contains background surface behind the target (foliage, a fa\c{c}ade, or
 the ground), those far points dominate the scale, compressing the drone into a small
 fraction of the normalized volume; the classifier becomes under-confident and, more
@@ -316,16 +324,15 @@ estimates one object per frustum; its center, lifted to the world frame, is the
 position measurement, and its range, azimuth, and elevation
 (Eq.~\eqref{eq:spherical}) are precisely the spherical measurement
 $\bm{z}=[\rho,\alpha,\beta,r]^\top$ that the EKF of
-Chapter~\ref{cha:tracking} ingests. This is the formal point of contact between
-the detector of this chapter and the tracker.
+Chapter~\ref{cha:tracking} ingests, which is where the detector of this chapter
+connects to the tracker.
 
 \subsection{Networks Tested and the Path to the Final Detector}
 \label{sec:netzoo}
 
 The frustum PointNet\texttt{++} above was not the first design tried; it is the
-end of a short sequence of experiments, and the reasoning behind each step is
-worth recording, since it explains \emph{why} the final detector is built the way
-it is.
+result of a short sequence of experiments, each of which motivates one feature of
+the final detector.
 
 \paragraph*{Plain PointNet (classification baseline).} The first attempt fed each
 candidate point set to a plain PointNet \cite{qi2017pointnet} (a per-point shared
@@ -333,7 +340,7 @@ MLP followed by a global max-pool, Chapter~\ref{cha:background}) with a
 classification head (drone vs.\ random crop) and a box-regression head. It
 \emph{classified} almost perfectly (accuracy $0.97$: deciding whether a crop
 contains a drone is easy) but \emph{regressed} the box poorly (normalized center
-error $\approx 3.6$), because a single global max-pool collapses the cloud into one
+error $\approx 3.6$), because a single global max-pool reduces the cloud to one
 descriptor and discards the spatial detail needed to place the box.
 
 \paragraph*{PointPainting (whole-cloud, 2D-painted).} To inject spatial context,
@@ -341,7 +348,7 @@ the next variant followed PointPainting \cite{vora2020pointpainting}: instead of
 cropping, it keeps the whole cloud and \emph{paints} every point with a fourth
 channel equal to the YOLO confidence of the 2D box it projects into (zero
 otherwise), so the input is $[x,y,z,\text{score}]$. The painted channel acts as a
-soft spatial attention and dramatically improved regression (normalized center
+soft spatial attention and sharply improved regression (normalized center
 error from $3.6$ to $0.003$), confirming that the network needs to know
 \emph{where} in the cloud to look. Its weakness is classification: on the strongly
 foreground/background-imbalanced whole cloud the objectness head is hard to train,
@@ -403,12 +410,12 @@ processes. Three variants probe what drives accuracy, differing only in how a
 pillar is encoded. (i) \emph{Hand-crafted} features summarize each pillar by a few
 fixed statistics, the point count (occupancy), the mean height, and the maximum
 return. (ii) \emph{Learned} features, the pillar feature network (PFN) of
-\cite{lang2019pointpillars}, replace those statistics with a per-pillar
+\citen{lang2019pointpillars}, replace those statistics with a per-pillar
 mini-PointNet that learns its own descriptor from the raw points; this is the
 single change that most improves localization, because the learned encoder
 preserves the fine geometry of the drone that the hand-crafted statistics throw
 away. (iii) A \emph{dense 3D} backbone keeps the vertical axis and applies sparse
-3D convolutions in the style of the SECOND network \cite{yan2018second}, reaching
+3D convolutions in the style of the SECOND network \citen{yan2018second}, reaching
 the same accuracy as the PFN and confirming that the gain comes from learning the
 local representation, not from added resolution. Two negative controls bound the
 design space: a finer ($0.7$~m) grid (which does not help, since the bottleneck is
@@ -445,7 +452,7 @@ An unmatched detection spawns a tentative track; a track is \emph{confirmed} onc
 reaches $H_{\min}=3$ hits, is \emph{coasted} --- propagated by prediction with no
 measurement --- through up to $C_{\max}=4$ consecutive misses, and is deleted after
 $A_{\max}=8$ frames without a hit. Performing the association on the 2D boxes rather
-than on the noisier 3D positions is what keeps identities stable. This multi-object
+than on the noisier 3D positions keeps identities stable. This multi-object
 association and lifecycle are precisely the part of the tracker that the
 single-target filter of Chapter~\ref{cha:tracking} does not address.
 
@@ -467,8 +474,8 @@ seven-state object model $[x,y,z,\dot x,\dot y,\dot z,r]$, the constant-velocity
 transition with white-acceleration process noise, and the spherical measurement
 model with its Jacobian --- reused here without modification, one filter per track.
 At every frame the filter predicts; on a frame with an associated detection it
-updates with $\bm{z}_k$, and during coasting it predicts only, which is what
-supplies a 3D position through the detection gaps. The track's reported
+updates with $\bm{z}_k$, and during coasting it predicts only, supplying a 3D
+position through the detection gaps. The track's reported
 three-dimensional position --- and hence the localization error of
 Section~\ref{sec:results} --- is the \emph{filtered} estimate $\hat{\bm{p}}_{k|k}$,
 together with the covariance $\bm{P}_{k|k}$ that quantifies its uncertainty for the
@@ -536,7 +543,7 @@ future work.
 \subsection{Metrics}
 
 Three families of metrics are reported, following the 3D multi-object-tracking
-practice of \cite{weng2020ab3dmot}:
+practice of \citen{weng2020ab3dmot}:
 \begin{itemize}
   \item \textbf{Detection:} precision, recall, and $F_1$ at a fixed operating
   point.
@@ -599,14 +606,15 @@ pipeline.
 Figure~\ref{fig:norm} isolates the normalization problem of
 Section~\ref{sec:frustum}. The baseline maximum-distance normalization yields a
 $3$D RMSE of $2.94$~m, a detection precision of only $0.21$, and a near-zero
-AMOTA of $0.04$: the background-dominated frustum cripples both localization and
+AMOTA of $0.04$: the background-dominated frustum degrades both localization and
 classification. Replacing the scale by a robust $95$th-percentile estimate barely
 helps (RMSE $2.87$~m, AMOTA $0.05$), confirming that clipping the scale is the
 wrong fix: the centroid is still pulled by the background. Removing the
 background with the depth band reduces the error to $1.20$~m and lifts precision
 to $0.90$ and AMOTA to $0.81$; the learned T-Net segmentation does better still,
-$1.05$~m, while recovering the foreground without a manual cut. The dominant lever
-in the frustum pipeline is thus foreground extraction, not the regressor.
+$1.05$~m, while recovering the foreground without a manual cut. Foreground
+extraction, rather than the regressor, is thus the dominant factor in the frustum
+pipeline.
 
 \begin{figure}[H]
   \centering
@@ -626,7 +634,7 @@ extraction) on the campaign. The system localizes targets to a global RMSE of $1
 and tracks them with an AMOTA of $0.75$--$0.88$ across the three
 environments, with very high precision ($0.83$--$0.99$). Two patterns emerge.
 First, AMOTA is high while the single-point MOTA at $0.5$ is modest
-($0.25$--$0.56$): the gap is the signature of a strong tracker fed by a
+($0.25$--$0.56$): this gap is characteristic of a strong tracker fed by a
 recall-limited detector. AMOTA, integrating over recall, rewards the chain when
 the target is seen, whereas MOTA at a single threshold is dragged down by the missed
 detections. Second, the localization error is essentially flat with range
@@ -701,7 +709,7 @@ the highest frustum AMOTA ($0.81$) and precision ($0.90$), but their recall is
 capped near $0.49$ by the 2D detector. The voxel methods, detecting in the whole
 scene without a 2D proposal, reach a far higher recall ($0.76$--$0.80$) and
 detection $F_1$ ($0.79$--$0.83$); among them, replacing the hand-crafted pillar
-features by a learned encoder (PFN) is the decisive change, cutting the
+features by a learned encoder (PFN) is the main driver of accuracy, cutting the
 localization error from $1.19$~m to $0.87$~m, the best of \emph{any} method,
 frustum or voxel. A dense 3D backbone matches it ($0.92$~m) and confirms that the
 gain comes from the learned local representation rather than grid resolution. The
@@ -799,7 +807,7 @@ range.
   the sensor frame and colored by height. The simulated LiDAR resolves the
   quadrotor's body and rotor arms clearly at close range; as range grows the target
   is captured by progressively fewer returns and degrades to a sparse cluster. This
-  degradation, rather than the regressor, is what ultimately limits 3D localization
+  degradation, rather than the regressor, ultimately limits 3D localization
   at range.}
   \label{fig:pipeline_frames}
 \end{figure}

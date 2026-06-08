@@ -66,9 +66,10 @@ Let
   \bm{H}_k = \left.\frac{\partial \bm{h}(\bm{x})}{\partial \bm{x}}\right|_{\bm{x}=\hat{\bm{x}}_{k|k-1}}
   \label{eq:ekf_jac}
 \end{equation}
-be the Jacobians of the process and measurement models evaluated at the predicted
-state. The EKF propagates the covariance through these first-order
-approximations.
+be the process and measurement Jacobians, that is, the Jacobians of $\bm{f}$ and
+$\bm{h}$ evaluated, respectively, at the previous estimate
+$\hat{\bm{x}}_{k-1|k-1}$ and at the predicted state $\hat{\bm{x}}_{k|k-1}$. The EKF
+propagates the covariance through these first-order approximations.
 
 \subsection{Prediction and Update}
 
@@ -82,7 +83,9 @@ nonlinear models used for the means and their Jacobians for the covariances:
   \bm{K}_k &= \bm{P}_{k|k-1}\bm{H}_k^{\top}\bm{S}_k^{-1}, &
   \hat{\bm{x}}_{k|k} &= \hat{\bm{x}}_{k|k-1} + \bm{K}_k\bm{\nu}_k, \label{eq:ekf_gain}
 \end{align}
-and $\bm{P}_{k|k} = (\bm{I}-\bm{K}_k\bm{H}_k)\,\bm{P}_{k|k-1}$. Unlike the linear
+and $\bm{P}_{k|k} = (\bm{I}-\bm{K}_k\bm{H}_k)\,\bm{P}_{k|k-1}$, where the
+innovation $\bm{\nu}_k$ is the vector difference between the measurement and its
+prediction and $\bm{S}_k$ is its covariance. Unlike the linear
 KF, the EKF is neither optimal nor unbiased: the linearization
 \eqref{eq:ekf_jac} discards higher-order terms, and the magnitude of the
 resulting error depends on how nonlinear the process and measurement models are
@@ -134,10 +137,12 @@ pose $\bm{T}\in SE(3)$.
 \subsection{Pose Perturbations}
 
 When the platform pose is uncertain (Chapter~\ref{cha:monocular}), its
-uncertainty must be propagated through the geometry. A small pose perturbation is
-represented in the tangent space of $SE(3)$ by a six-vector
-$\bm{\xi}=[\bm{\delta\theta}^{\top}\;\bm{\delta t}^{\top}]^{\top}$, and to first
-order a point in the camera frame perturbs as
+uncertainty must be propagated through the geometry. A small perturbation of the
+pose is described by a six-vector
+$\bm{\xi}=[\bm{\delta\theta}^{\top}\;\bm{\delta t}^{\top}]^{\top}$ in the tangent
+space of $SE(3)$, where $\bm{\delta\theta}$ collects the three infinitesimal
+rotation angles and $\bm{\delta t}$ the three translation increments. To first
+order, this perturbation displaces a point expressed in the camera frame by
 \begin{equation}
   \delta\bm{p}^{\mathcal{O}} \approx -[\bm{p}^{\mathcal{O}}]_\times\,\bm{\delta\theta} + \bm{\delta t},
   \qquad
@@ -168,7 +173,7 @@ represented as process noise rather than as a state variable.
 
 \subsection{Process Noise}
 
-Modelling the unknown acceleration as a continuous white noise of intensity
+Modeling the unknown acceleration as a continuous white noise of intensity
 $\sigma_a^2$ yields, after discretization, the per-axis process-noise covariance
 \begin{equation}
   \bm{Q}_{\text{axis}} = \sigma_a^{2}
@@ -224,12 +229,15 @@ evaluate the estimator, in terms of tracking accuracy, consistency, and
 optimality, and the last evaluates the detection and tracking chain.
 
 \subsection{Accuracy}
-The root-mean-square error (RMSE) of the position estimate,
-averaged over $M$ Monte~Carlo runs, summarizes accuracy:
+Accuracy is summarized by the root-mean-square error (RMSE) of the position
+estimate at time step $k$, averaged over $M$ Monte~Carlo runs:
 \begin{equation}
-  \mathrm{RMSE}(k)=\left(\frac1M\sum_{i=1}^{M}\big\lVert \bm{p}_k^{(i)}-\hat{\bm{p}}_k^{(i)}\big\rVert^2\right)^{1/2}.
+  \mathrm{RMSE}(k)=\left(\frac1M\sum_{i=1}^{M}\big\lVert \bm{p}_k^{(i)}-\hat{\bm{p}}_k^{(i)}\big\rVert^2\right)^{1/2},
   \label{eq:rmse}
 \end{equation}
+where $M$ is the number of Monte~Carlo runs, $\bm{p}_k^{(i)}$ is the true target
+position at step $k$ in run $i$, and $\hat{\bm{p}}_k^{(i)}$ is the corresponding
+estimate.
 
 \subsection{Consistency}
 A filter is \emph{consistent} when its reported
@@ -253,11 +261,12 @@ obtained from the Fisher information recursion
               + \mathbb{E}\!\big[\bm{H}_{k+1}^{\top}\bm{R}_{k+1}^{-1}\bm{H}_{k+1}\big],
   \label{eq:pcrb}
 \end{equation}
-where $\bm{J}_k$ is the Fisher information matrix. Its inverse lower-bounds the
-estimation-error covariance of any unbiased estimator,
-$\mathbb{E}[(\bm{x}_k-\hat{\bm{x}}_k)(\bm{x}_k-\hat{\bm{x}}_k)^{\top}]\succeq\bm{J}_k^{-1}$,
-so the diagonal of $\bm{J}_k^{-1}$ bounds the per-component error variance from
-below \cite{tichavsky1998}. This bound is used to assess near-optimality of the
+where $\bm{J}_k$ is the Fisher information matrix. The inverse of the Fisher
+information lower-bounds the error covariance of any unbiased estimator: the
+covariance minus $\bm{J}_k^{-1}$ is positive semidefinite,
+$\mathbb{E}[(\bm{x}_k-\hat{\bm{x}}_k)(\bm{x}_k-\hat{\bm{x}}_k)^{\top}]\succeq\bm{J}_k^{-1}$.
+In particular, the variance of each state component is bounded below by the
+corresponding diagonal entry of $\bm{J}_k^{-1}$ \cite{tichavsky1998}. This bound is used to assess near-optimality of the
 tracker in Chapter~\ref{cha:tracking}.
 
 \subsection{Detection and Multi-Object-Tracking Metrics}
@@ -312,8 +321,8 @@ forward pass. The You Only Look Once (YOLO) detector \cite{redmon2016yolo}
 introduced the one-stage idea: the image is processed once by a fully
 convolutional network that, over a dense spatial grid, directly regresses box
 coordinates, an objectness score, and class probabilities. Removing the separate
-proposal stage is what gives YOLO its real-time throughput, which is the property
-that an onboard aerial system needs.
+proposal stage gives YOLO the real-time throughput that an onboard aerial system
+needs.
 
 Architecturally, a modern YOLO network has three parts. A \emph{backbone} (a deep
 convolutional feature extractor, in recent versions built from cross-stage-partial
@@ -342,7 +351,7 @@ Figure~\ref{fig:yolo_arch} summarizes the resulting one-stage architecture.
   forward pass through a cross-stage-partial backbone, a path-aggregation
   feature-pyramid neck, and an anchor-free decoupled head regresses all boxes and
   class scores; removing the separate region-proposal stage of two-stage detectors
-  is what yields the real-time throughput needed onboard.}
+  yields the real-time throughput needed onboard.}
   \label{fig:yolo_arch}
 \end{figure}
 
@@ -369,7 +378,7 @@ Figure~\ref{fig:pointnet_arch} shows this construction.
   \caption{PointNet architecture. Each of the $n$ unordered input points is mapped
   independently by shared multilayer perceptrons, and the per-point features are
   aggregated by a symmetric max-pooling into a global descriptor; this symmetric
-  pooling is what makes the network invariant to the ordering of the points. Small
+  pooling makes the network invariant to the ordering of the points. Small
   learned ``T-Net'' alignments canonicalize the input and feature spaces. The
   global feature feeds a classification head or, concatenated back to the per-point
   features, a segmentation head.}
@@ -397,7 +406,7 @@ regions and a point-cloud network refines them in 3D, so its recall is bounded b
 the 2D stage. The complementary \emph{single-stage} family detects directly in
 the point cloud over the whole scene. Because raw points are irregular, these
 methods first impose a regular structure: VoxelNet and the SECOND network
-\cite{yan2018second} (a method name) quantize space into 3D voxels and apply (sparse) 3D
+\cite{yan2018second} quantize space into 3D voxels and apply (sparse) 3D
 convolutions, while PointPillars \cite{lang2019pointpillars} collapses the
 vertical axis into a bird's-eye-view (BEV) grid of \emph{pillars}, encodes each
 pillar with a small PointNet, and runs an ordinary 2D convolutional backbone on

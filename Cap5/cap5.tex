@@ -108,27 +108,45 @@ with
   \label{eq:Fmatrix}
 \end{equation}
 Acceleration is not part of the state; it is modeled as the zero-mean white
-process noise that excites the velocity. Using the continuous white-noise
-acceleration model with intensity $\sigma_a^2$ on each axis and a small
-random-walk term $\sigma_r^2$ on the size, and following the state ordering of
-\eqref{eq:obj_state} (the three positions, then the three velocities, then the
-size), the full $7\times7$ process-noise covariance is
+process noise that excites the velocity. We start from the standard
+continuous white-noise acceleration model on a single axis, with intensity
+$\sigma_a^2$, whose discrete-time covariance over a step $\Delta t$ is the
+$2\times2$ block
+\begin{equation}
+  \bm{Q}_i = \sigma_a^{2}
+  \begin{bmatrix}
+    \tfrac{\Delta t^{3}}{3} & \tfrac{\Delta t^{2}}{2}\\[4pt]
+    \tfrac{\Delta t^{2}}{2} & \Delta t
+  \end{bmatrix},
+  \qquad i\in\{x,y,z\},
+  \label{eq:Qaxis}
+\end{equation}
+acting on the position--velocity pair of that axis. The size carries a small
+random walk with covariance $Q_{rr}=\sigma_r^{2}$. With the three axes sharing
+the same intensity $\sigma_a^2$ and the state ordered as in \eqref{eq:obj_state}
+(the three positions, then the three velocities, then the size), the three
+axis blocks $\bm{Q}_x,\bm{Q}_y,\bm{Q}_z$ are interleaved into a $6\times6$
+position--velocity block and the size term is appended, giving the full
+$7\times7$ covariance
 \begin{equation}
   \bm{Q} =
   \begin{bmatrix}
     \tfrac{\Delta t^{3}}{3}\sigma_a^{2}\,\bm{I}_3 & \tfrac{\Delta t^{2}}{2}\sigma_a^{2}\,\bm{I}_3 & \bm{0}_{3\times1}\\[4pt]
     \tfrac{\Delta t^{2}}{2}\sigma_a^{2}\,\bm{I}_3 & \Delta t\,\sigma_a^{2}\,\bm{I}_3 & \bm{0}_{3\times1}\\[4pt]
-    \bm{0}_{1\times3} & \bm{0}_{1\times3} & \sigma_r^{2}
+    \bm{0}_{1\times3} & \bm{0}_{1\times3} & Q_{rr}
   \end{bmatrix},
   \label{eq:Qfull}
 \end{equation}
-where $\bm{I}_3$ is the $3\times3$ identity. The position--velocity coupling
-($\Delta t^2/2$ off-diagonal blocks) reflects that the same acceleration noise
-drives both, consistent with the constant-velocity transition $\bm{F}$ of
-\eqref{eq:Fmatrix}. The isotropy of $\bm{Q}$ (equal
-$\sigma_a$ on every axis) matters for what follows: it is what makes the two
-formulations of Section~\ref{sec:equiv} coincide, and relaxing it is one of the
-ways they diverge (Section~\ref{sec:diverge}).
+where $\bm{I}_3$ is the $3\times3$ identity. The $3\times3$ block layout of
+\eqref{eq:Qfull} matches the ``positions, then velocities, then size'' ordering of
+$\bm{x}_k$ and of the transition $\bm{F}$ in \eqref{eq:Fmatrix}: the diagonal
+position and velocity blocks collect the $\tfrac{\Delta t^{3}}{3}\sigma_a^2$ and
+$\Delta t\,\sigma_a^2$ terms of \eqref{eq:Qaxis} across the three axes, and the
+$\tfrac{\Delta t^{2}}{2}\sigma_a^2$ off-diagonal blocks carry the
+position--velocity coupling, reflecting that the same acceleration noise drives
+both. The isotropy of $\bm{Q}$ (equal $\sigma_a$ on every axis) matters for what
+follows: it is what makes the two formulations of Section~\ref{sec:equiv}
+coincide, and relaxing it makes them diverge (Section~\ref{sec:diverge}).
 
 \begin{remark}
 The original description of this model in \citen{delima2025fusion} refers to it as
@@ -254,9 +272,12 @@ $\bm{A}_k = \bm{R}_k^{\top}\bm{R}_{k-1}$,
 \begin{equation}
   \bm{M}_k = \operatorname{blkdiag}\!\big(\bm{A}_k,\,\bm{A}_k,\,1\big),
   \qquad
-  \bm{P} \leftarrow \bm{M}_k\,\bm{P}\,\bm{M}_k^{\top}.
+  \bm{P} \leftarrow \bm{M}_k\,\bm{P}\,\bm{M}_k^{\top},
   \label{eq:reor_cov}
 \end{equation}
+where $\operatorname{blkdiag}(\cdot)$ assembles its arguments as the diagonal
+blocks of an otherwise zero matrix, and $\bm{P}$ denotes the posterior covariance
+carried into the reorientation.
 The deterministic translation $\bm{R}_k^{\top}(\bm{p}^{p}_{k-1}-\bm{p}^{p}_k)$
 shifts the mean but, being noise-free, leaves the covariance unchanged, so
 only the rotation $\bm{A}_k$ appears in \eqref{eq:reor_cov}. After reorientation,
@@ -376,7 +397,7 @@ missing from the local filter of the original article \citen{delima2025fusion}:
 there the local formulation reported a larger error than the global one, which
 was read as an advantage of the global frame, when in fact it was an artifact of
 the omitted reorientation. With the reorientation restored, the local filter
-recovers the global filter's accuracy exactly (Proposition~\ref{prop:equiv}), so
+reproduces the global filter's accuracy exactly (Proposition~\ref{prop:equiv}), so
 the unified treatment given here supersedes that earlier comparison.
 
 \subsection{Anisotropic Process Noise}
@@ -408,7 +429,7 @@ state should be carried in the frame in which the process noise is uncorrelated.
 
 \subsection{Uncertain Platform Pose}
 
-Assumption~(i) is the most consequential in practice. When the platform pose is
+Assumption~(i) often dominates in practice. When the platform pose is
 \emph{estimated} rather than known, $(\bm{R}_k,\bm{p}^{p}_k)$ carry their own
 covariance, and this affects \emph{both} formulations: the pose enters the global
 measurement equation \eqref{eq:hglobal} and the local reorientation

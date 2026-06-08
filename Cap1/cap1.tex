@@ -42,11 +42,9 @@ operation.
 \subsection{Origin and Scope of the Three Studies}
 \label{sec:origin}
 
-This dissertation did not arise from a single monolithic experiment but from
-three connected efforts that share one estimation core and one guiding vision,
-yet differ in sensor, target, and setting. It is worth telling this story plainly
-at the outset, so that the reader sees how the parts fit together rather than
-assuming a single thread.
+This dissertation arose from three connected efforts that share one estimation
+core and one guiding vision, yet differ in sensor, target, and setting. This
+section describes how the three parts fit together.
 
 The starting point, and the result-bearing core of the thesis, is the
 range--bearing Extended Kalman Filter for tracking obstacles from a moving
@@ -64,7 +62,7 @@ person-\emph{detection} front-end --- the early perception stage that turns raw
 sensor data into per-object detections, before any tracking --- but lacked a
 tracker, which is exactly what our FUSION work provided. The two groups therefore collaborated: TU~Berlin supplied
 real flight data from their drones, and we adapted our estimator to their setting.
-That setting is genuinely harder than the simulation: the only sensor is a single
+That setting is harder than the simulation: the only sensor is a single
 monocular camera, so depth is unobservable and must be recovered from a
 ground-plane assumption, and the platform pose is \emph{estimated} on board rather
 than known, so its uncertainty must be propagated into the filter. The monocular
@@ -105,8 +103,8 @@ requirement that Sense places on Avoid goes beyond the obstacle's current
 position. Avoid needs a \emph{calibrated} estimate of the obstacle's full state,
 its position, velocity, and size, together with a trustworthy measure of the
 uncertainty of that estimate, so that the avoidance logic can reason about
-collision risk and time-to-conflict. The velocity estimate is what lets Avoid
-anticipate a conflict rather than react to the present position, and it is the
+collision risk and time-to-conflict. The velocity estimate lets Avoid
+anticipate a conflict rather than react to the present position, which is the
 main reason the perception output must include a temporal tracking stage and not
 per-frame detections alone; the size estimate, in turn, bounds the spatial extent
 that the maneuver must clear. This emphasis on calibrated uncertainty recurs
@@ -133,11 +131,12 @@ avoidance module. Three characteristics make this difficult:
   platform that is itself translating and rotating, so the obstacle's apparent
   motion in the sensor frame is not inertial and the sensor pose must be
   explicitly accounted for.
-  \item \textbf{Sensing is noisy, especially in depth.} Every measurement
-  carries noise, bearing as well as range, but depth is the most problematic
-  component: monocular images are depth-ambiguous, and even active range sensors
-  degrade with distance, so the range noise is strongly range-dependent and must
-  be modeled as such rather than assumed constant like the bearing noise.
+  \item \textbf{Sensing is noisy, and depth is hard to recover.} Every
+  measurement carries noise in both range and bearing. Depth is the harder
+  component: it is unobservable from a single monocular view and must be recovered
+  from additional assumptions or sensors, and even active range sensors degrade
+  with distance, so the range noise is strongly range-dependent and must be modeled
+  as such rather than assumed constant.
   \item \textbf{Aerial data are scarce and computational resources are limited.} Unlike ground
   autonomy, there is no abundance of annotated three-dimensional aerial
   datasets, and the perception stack must ultimately run on constrained onboard
@@ -162,15 +161,16 @@ here to the aerial sense-and-avoid setting.
 \subsection{General Objective}
 
 To develop and validate the perception (\emph{Sense}) stack for UAV
-detect-and-avoid in urban environments, structured as a modular
+detect-and-avoid in urban environments, designed as a structured modular
 camera--point-cloud fusion pipeline whose tracking stage is
-formulated, analyzed, and validated with mathematical rigor.
+formulated, analyzed, and validated.
 
 \subsection{Specific Objectives}
 
 \begin{enumerate}
   \item To formulate the obstacle-tracking problem from a moving platform as a
-  nonlinear Bayesian filtering problem, solved with an EKF, and to analyze
+  nonlinear Bayesian filtering problem, for which the EKF is the solution
+  evaluated here, and to analyze
   rigorously the two natural choices of reference frame
   (global inertial versus local sensor), establishing their relationship and
   benchmarking the filter against the Cram\'er--Rao bound.

@@ -21,7 +21,7 @@ collaboration arose after the FUSION~2025 tracker was presented at ITA: the
 UBADRON team, which competes in the SPRIND ``Fully Autonomous Flight'' Challenge
 with a GNSS-denied UAV that must locate people on the terrain for
 search-and-rescue, already had a person detector but needed a tracker, and so the
-two groups joined forces (Section~\ref{sec:origin}). It is the
+two groups joined forces. It is the
 empirical counterpart of Chapter~\ref{cha:tracking}, and it operates in the
 regime where the global and local formulations of Chapter~\ref{cha:tracking} stop
 being equivalent: when the platform pose is uncertain, its covariance must be
@@ -153,7 +153,7 @@ space instead of a single corner of it. Training on the combined corpus yields a
 detector whose decision boundary is shaped by the full range of scales and
 appearances, and this generalization lets the network, trained entirely on
 external data, detect the person reliably in the TU Berlin sports hall, a scene
-present in none of the training sets. It is worth noting that the three datasets
+present in none of the training sets. The three datasets
 are all \emph{outdoor}, whereas the deployment scene is an \emph{indoor} sports
 hall; the cross-domain training is precisely what bridges this gap, since no
 indoor aerial person-detection benchmark of comparable scale exists, and the
@@ -193,10 +193,12 @@ Chapter~\ref{cha:tracking}. The target is propagated with the constant-velocity,
 white-acceleration model \eqref{eq:cv}--\eqref{eq:cwna}: with sampling interval
 $\Delta t$ and acceleration intensity $\sigma_a$,
 \begin{equation}
-  \bm{x}_{k} = \bm{F}\,\bm{x}_{k-1} + \bm{w}_{k-1},\quad
-  \bm{F} = \begin{bmatrix} \bm{I}_2 & \Delta t\,\bm{I}_2 \\ \bm{0} & \bm{I}_2 \end{bmatrix},\quad
-  \bm{Q} = \bm{G}\,\sigma_a^2\bm{I}_2\,\bm{G}^{\!\top},\quad
-  \bm{G} = \begin{bmatrix} \tfrac{\Delta t^2}{2}\bm{I}_2 \\ \Delta t\,\bm{I}_2 \end{bmatrix},
+  \begin{gathered}
+  \bm{x}_{k} = \bm{F}\,\bm{x}_{k-1} + \bm{w}_{k-1},\qquad
+  \bm{F} = \begin{bmatrix} \bm{I}_2 & \Delta t\,\bm{I}_2 \\ \bm{0} & \bm{I}_2 \end{bmatrix},\\[4pt]
+  \bm{Q} = \bm{G}\,\sigma_a^2\bm{I}_2\,\bm{G}^{\!\top},\qquad
+  \bm{G} = \begin{bmatrix} \tfrac{\Delta t^2}{2}\bm{I}_2 \\ \Delta t\,\bm{I}_2 \end{bmatrix}.
+  \end{gathered}
   \label{eq:mono_process}
 \end{equation}
 
@@ -208,10 +210,10 @@ Let $\bm{T}_{\mathcal{W}\to\mathcal{O},k}=(\bm{R}^{wo}_k,\bm{t}^{wo}_k)$ be the
 rigid transform from world to optical frame at time $k$, composed from the
 platform pose and the fixed camera mounting (Section~\ref{sec:mono_platform}). A
 world point $\bm{X}^{\mathcal{W}}$ maps to the optical frame as
-$\bm{X}^{\mathcal{O}}=\bm{R}^{wo}_k\bm{X}^{\mathcal{W}}+\bm{t}^{wo}_k$ and projects
+$\bm{p}^{\mathcal{O}}=\bm{R}^{wo}_k\bm{X}^{\mathcal{W}}+\bm{t}^{wo}_k$ and projects
 to the normalized pixel through the pinhole model \eqref{eq:pinhole},
 \begin{equation}
-  \bm{h}(\bm{X}^{\mathcal{W}}) = \pi\!\big(\bm{K}\,\bm{X}^{\mathcal{O}}\big)
+  \bm{h}(\bm{X}^{\mathcal{W}}) = \pi\!\big(\bm{K}\,\bm{p}^{\mathcal{O}}\big)
   = \begin{bmatrix} f_x\,X^{\mathcal{O}}/Z^{\mathcal{O}} + c_x \\[2pt]
                     f_y\,Y^{\mathcal{O}}/Z^{\mathcal{O}} + c_y \end{bmatrix}.
   \label{eq:mono_h}
@@ -337,8 +339,8 @@ Chapter~\ref{cha:tracking} the pose was assumed known and this dependence was
 deterministic; on the real platform the pose is an \emph{estimate} delivered by
 the navigation system, and its error feeds directly into the predicted pixel. A
 filter that ignores this and treats the pose as exact underestimates its own
-innovation covariance, becomes overconfident, and diverges when the pose error is
-largest, that is, during aggressive platform motion. This is the
+innovation covariance and so becomes overconfident, and it diverges when the pose
+error is largest, that is, during aggressive platform motion. This is the
 ``uncertain platform pose'' regime identified in Chapter~\ref{cha:tracking} as
 the setting where the global and local formulations cease to be equivalent.
 
@@ -387,7 +389,7 @@ whose rotational block $-\bm{J}_{\pi}[\bm{p}^{\mathcal{O}}]_\times$ and
 translational block $\bm{J}_{\pi}$ map, respectively, an attitude error and a
 position error of the platform into a pixel displacement of the target.
 
-\textbf{Augmented innovation covariance.} Modelling the navigation pose error as
+\textbf{Augmented innovation covariance.} Modeling the navigation pose error as
 zero-mean Gaussian with $6\times6$ covariance $\bm{\Sigma}$, the innovation
 covariance gains a third additive term beyond the state and sensor contributions:
 \begin{equation}
@@ -493,7 +495,8 @@ yields a paired image/world ground-truth sample per annotated frame. The
 annotation uses neither the camera pose nor the detector, so it is independent of
 the tracker and provides an unbiased reference. A consistency check confirms its
 validity: the annotated trajectory spans $11.9\times12.8$~m, matching the
-surveyed mat; the implied walking speed averages $1.04$~m/s with a maximum of
+surveyed mat (here and below, ``surveyed'' means measured on site from the
+LiDAR map); the implied walking speed averages $1.04$~m/s with a maximum of
 $3.8$~m/s, consistent with a walking person; and the path forms approximately
 $1.6$ laps of the mat perimeter, as observed in the video.
 
@@ -529,7 +532,7 @@ low-altitude platform viewed the target.
   \caption{Estimated track against the LiDAR-referenced ground truth, raw filter
   output. The EKF estimate (continuous track colored by flight time, yellow early
   to red late) reproduces the perimeter walk and overlays the manual ground-truth
-  samples (green); the surveyed tatami perimeter is dashed. The grey points are
+  samples (green); the surveyed tatami perimeter is dashed. The gray points are
   detector false positives, isolated by a physical speed test ($>4$~m/s from the
   preceding estimate) and excluded from the track: they occur during the fastest
   yaw sweeps, when the target leaves the field of view and the detector fires on
@@ -617,7 +620,7 @@ re-running the filter on the recorded detections and poses; Figure~\ref{fig:mono
 reports the result. With the extrinsic term switched off
 ($\bm{\Sigma}=\bm{0}$), which treats the platform pose as exact, the mean NIS is
 $3.4\times10^{4}$, four orders of magnitude above the consistent value of $2$.
-The filter is grossly \emph{overconfident}: it reports a tiny innovation
+The filter is severely \emph{overconfident}: it reports a tiny innovation
 covariance while the actual innovations, driven by the unmodeled pose error, are
 large. As $\sigma_{\mathrm{pose}}$ increases, the mean NIS falls monotonically and
 crosses the consistent value $\bar\eta=2$ near
@@ -701,5 +704,5 @@ Read alongside Chapter~\ref{cha:tracking}, the two tracking studies bracket the
 same estimator from opposite ends, a controlled range-sensing known-pose
 simulation and an uncertain-pose bearing-only real-world deployment, and together
 they substantiate the dissertation's claim that one recursive estimator, properly
-instrumented with its uncertainty model, serves the sense stage across sensing
-modalities.
+instrumented with its uncertainty model, serves the tracking stage across
+perception modalities.
