@@ -271,8 +271,9 @@ $z_0+\Delta$, where $\Delta$ is a fixed band depth (a few meters, set to comfort
 contain a drone) that defines how far behind the nearest surface points are kept;
 this isolates the target before normalization (Figure~\ref{fig:depthband_diag}).
 This heuristic is simple
-and effective but brittle to a frontal occluder; it is therefore replaced, below,
-by a learned foreground segmentation.
+and effective but brittle to a frontal occluder; it is therefore refined, below,
+by a learned foreground segmentation layered on top of it
+(Section~\ref{sec:segnet}).
 
 \begin{figure}[H]
   \centering
