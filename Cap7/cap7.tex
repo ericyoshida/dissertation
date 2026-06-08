@@ -786,6 +786,27 @@ the ground truth, on a moving observer --- is available
 online.\footnote{AirSim pipeline video (first-person detection and tracking,
 with the synchronized bird's-eye view):
 \url{https://www.dropbox.com/scl/fo/665o9u6026loamv5zvyf0/AOadJSNcQxjmVcMP6ukwRik?rlkey=r4ntjbobv05dox48f0kfwx1kp&dl=0}.}
+Figure~\ref{fig:pipeline_live} shows two synchronized frames from that video. The
+configuration is the highest-tracking-accuracy pipeline of
+Table~\ref{tab:arch}: the YOLO detector feeding a depth-band frustum crop and a
+PointNet\texttt{++} regressor, associated across frames by SORT (the
+\emph{depth-band frustum} row, AMOTA $0.81$). In the first-person view the
+detector and tracker hold four drones simultaneously, each with a stable
+identity and a fused confidence; in the bird's-eye view the tracked boxes sit on
+their ground-truth markers across the $10$--$50$~m range rings, on a moving ego.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{Cap7/pipeline_live.pdf}
+  \caption{The pipeline in operation (frames from the supplementary video), using
+  the highest-tracking-accuracy configuration: YOLO $\rightarrow$ depth-band
+  frustum $\rightarrow$ PointNet\texttt{++}, associated by SORT.
+  (a)~First-person view: four drones detected and tracked at once, each box
+  labeled with its identity and range. (b)~Synchronized bird's-eye view: the
+  tracker estimates (boxes) overlay the ground-truth targets (filled), with the
+  ego at the origin and $10$~m range rings.}
+  \label{fig:pipeline_live}
+\end{figure}
 
 \begin{figure}[H]
   \centering
