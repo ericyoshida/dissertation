@@ -471,8 +471,8 @@ Chapter~\ref{cha:conclusions}.
 The tracker was evaluated on a real flight in an indoor sports hall, in which the
 quadrotor hovered and maneuvered over a matted area ($\approx 11.0\times12.0$~m,
 whose extent was measured on site) while a single person walked along its
-perimeter.\footnote{A video of the experiment is available at
-\url{https://www.dropbox.com/scl/fo/r9j7sqlwngrz60ltsldpr/AOwC3mAlRbmpuSl3Xv06cKo?rlkey=mygn29ak7c016honkx6jyz1d5&dl=0}.}
+perimeter.\footnote{A video of the real-flight experiment is available at
+\url{https://www.dropbox.com/scl/fo/r9j7sqlwngrz60ltsldpr/AOwC3mAlRbmpuSl3Xv06cKo?rlkey=rez4d1ao6k2ccnpku2qlmbpvm&dl=0}.}
 The flight lasted
 about $150$~s. Importantly for the analysis below, the platform executed full
 $360^\circ$ yaw rotations, so the target traversed the entire field of view and
@@ -525,6 +525,30 @@ the projective formulation of Section~\ref{sec:mono_method} is sound: with a
 correct foot pixel and the recorded pose, the metric position is recovered to
 about a meter despite the grazing $\sim 6^\circ$ depression angle at which the
 low-altitude platform viewed the target.
+
+This intrinsic accuracy is not uniform with distance, and
+Figure~\ref{fig:error_range} makes the dependence explicit. Binning the per-frame
+projection error by the target's distance from the camera shows the error rising
+from about $0.7$~m for targets at $10$--$12$~m to roughly $1.5$--$1.9$~m beyond
+$18$~m, with a sample correlation of $0.53$ between distance and error and a
+trend well described by a quadratic. This is the geometry predicted in
+Section~\ref{sec:mono_meas}: a fixed vertical offset of the foot pixel subtends a
+ground-range error that grows with distance, and the growth is steepened by the
+shallow depression angle, where the viewing ray grazes the floor. It is the
+fundamental reason a single camera, lifting a pixel through a ground plane,
+degrades with range where a true range sensor would not.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.78\linewidth]{Cap6/error_vs_range.pdf}
+  \caption{Horizontal localization error of the ground-plane lift as a function
+  of the target's distance from the camera (per manually annotated frame, geometry
+  only, no filtering). The error grows with range --- from ${\approx}0.7$~m near
+  $10$~m to ${\approx}1.5$--$1.9$~m beyond $18$~m (correlation $0.53$) --- because
+  a fixed foot-pixel offset maps to a ground error that increases with distance,
+  an effect amplified by the grazing $\sim 6^\circ$ viewing angle.}
+  \label{fig:error_range}
+\end{figure}
 
 \begin{figure}[H]
   \centering
