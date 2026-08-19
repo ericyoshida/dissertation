@@ -59,10 +59,13 @@ consumes them and its real-world generalization.
   inherits its 2D detector's recall ceiling (${\approx}0.49$), whereas a
   learned-feature voxel detector recalls far more targets ($0.80$) and localizes
   them best ($0.87$~m RMSE) at the cost of noisier identities, with a late fusion
-  recovering much of both. Crucially, the localization error is essentially flat
-  with range, mirroring the range-bounded uncertainty of the
-  Chapter~\ref{cha:tracking} filter and confirming that detector and tracker are
-  matched by design.
+  recovering much of both. Crucially, the localization error is essentially flat in
+  both of the variables that could have degraded it: it does not grow with range,
+  and it does not drift along a sequence --- over the $5{,}359$ matched pairs of
+  the campaign the binned median stays within $0.84$--$1.00$~m from the first
+  frame to the last (Section~\ref{sec:results-temporal}). Together these mirror
+  the range-bounded uncertainty of the Chapter~\ref{cha:tracking} filter and
+  confirm that detector and tracker are matched by design.
 
   \item \textbf{The tracking stage and the reference-frame question
   (Chapter~\ref{cha:tracking}).}
@@ -93,11 +96,12 @@ consumes them and its real-world generalization.
   recovered through a ground-plane constraint), and the platform pose became an
   on-board estimate rather than a known quantity. Tracking a freely walking person
   during flights with full $360^\circ$ yaw rotations, the system attained a median
-  ground-plane error of $1.28$~m over a ${\sim}12$~m arena from monocular cues alone
+  ground-plane error of $1.43$~m over a ${\sim}12$~m arena from monocular cues alone
   and without GNSS, against a LiDAR-referenced ground truth and with no post-hoc
-  alignment; the median rises to $1.75$~m if the two intervals in which the target
+  alignment; the median rises to $1.75$~m if the intervals in which the target
   left the field of view, and the detector fired on background structure, are
-  included. The unfiltered per-frame ground-plane lift is accurate to $1.05$~m,
+  included --- those intervals being identified by a purely geometric visibility
+  test rather than by a tuned threshold. The unfiltered per-frame ground-plane lift is accurate to $1.05$~m,
   so the filter preserves rather than degrades the accuracy of the geometry. More important than the accuracy was the consistency result: this is
   exactly the uncertain-pose regime that Chapter~\ref{cha:tracking} predicted would
   break the frame equivalence, and propagating the six-degree-of-freedom camera-pose
@@ -207,7 +211,7 @@ work does not yet establish.
   tracker does; doing so is left as future work.
   \item \textbf{No real-time, embedded demonstration.} All experiments were run on
   the laptop-class machine described in Section~\ref{sec:compute}, an Intel
-  Core~i7 with an NVIDIA GeForce RTX~4060. On that hardware the recursive filter
+  Core~i9-13900HX with an NVIDIA GeForce RTX~4080 laptop GPU. On that hardware the recursive filter
   is real-time by a wide margin and the 2D detector meets the frame rate at
   roughly $5$~ms per frame, but the composed pipeline does not: network inference
   in the real-flight study lags the live stream by two to three seconds, and the

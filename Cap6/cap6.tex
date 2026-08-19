@@ -671,7 +671,7 @@ low-altitude platform viewed the target.
 This intrinsic accuracy is not uniform with distance, and
 Figure~\ref{fig:error_range} makes the dependence explicit. Binning the per-frame
 projection error by the target's distance from the camera shows the error rising
-from about $0.7$~m for targets at $10$--$12$~m to roughly $1.5$--$1.9$~m beyond
+from a median of about $0.6$~m for targets at $10$--$12$~m to about $1.7$~m beyond
 $18$~m, with a sample correlation of $0.53$ between distance and error and a
 trend well described by a quadratic. This is the geometry predicted in
 Section~\ref{sec:mono_meas}: a fixed vertical offset of the foot pixel subtends a
@@ -685,8 +685,9 @@ degrades with range where a true range sensor would not.
   \includegraphics[width=0.78\linewidth]{Cap6/error_vs_range.pdf}
   \caption{Ground-plane localization error of the single-frame geometric lift, as a
   function of the target's distance from the camera (per manually annotated frame,
-  geometry only, no filtering). The error grows with range --- from ${\approx}0.7$~m near
-  $10$~m to ${\approx}1.5$--$1.9$~m beyond $18$~m (correlation $0.53$) --- because
+  geometry only, no filtering). The error grows with range --- from a median of
+  ${\approx}0.6$~m at $10$--$12$~m to ${\approx}1.7$~m beyond $18$~m
+  (correlation $0.53$) --- because
   a fixed foot-pixel offset maps to a ground error that increases with distance,
   an effect amplified by the grazing $\sim 6^\circ$ viewing angle.}
   \label{fig:error_range}
@@ -701,12 +702,16 @@ degrades with range where a true range sensor would not.
   \textbf{Continuous yellow-to-red track:} the EKF estimate; the color is
   \emph{flight time}, read on the color bar at the right of the figure (yellow
   early, red late), and encodes neither error nor any second variable.
-  \textbf{Gray:} detector false positives, identified by a physical speed test
-  (implied speed above $4$~m/s from the preceding estimate) and excluded from the
-  track; they are plotted only to show where they occur, which is during the two
-  intervals in which the target leaves the field of view over the course of the
-  platform's full-circle yaw sweeps, and the detector fires on background
-  structure instead. \textbf{Dashed rectangle:} the surveyed perimeter
+  \textbf{Gray:} estimates from frames in which the camera is not looking at the
+  target, identified by the geometric visibility test of
+  Section~\ref{sec:mono_accuracy} --- the detection's back-projected ray either
+  never meets the floor ahead of the camera, or meets it more than $2$~m outside
+  the surveyed mat, or no surveyed corner of the mat projects inside the image ---
+  and excluded from the track. They are plotted only to show where they occur,
+  which is during the intervals in which the target leaves the field of view over
+  the course of the platform's full-circle yaw sweeps and the detector fires on
+  background structure instead; most of them fall far outside the plotted window,
+  as the annotation in the figure records. \textbf{Dashed rectangle:} the surveyed perimeter
   of the matted area. The estimate reproduces the perimeter walk; the straight
   strays into the interior are the filter's excursions toward the false positives
   and back (Figure~\ref{fig:mono_errors}).}
@@ -716,19 +721,21 @@ degrades with range where a true range sensor would not.
 \begin{figure}[H]
   \centering
   \includegraphics[width=\linewidth]{Cap6/tracking_errors.pdf}
-  \caption{Localization error against the ground truth. (a) Ground-plane error
-  (red) over flight time, with the platform's yaw rate overlaid (blue, right
-  axis): the error stays near $1$--$2$~m for most of the flight and spikes only in
-  the two intervals in which the target leaves the field of view during the
-  platform's full-circle yaw sweeps, and the detector briefly locks onto
-  background structure. The spikes are aligned with the loss-of-view intervals
-  rather than with the instantaneous yaw-rate peaks: rotation is the cause, but
-  the error follows the target's absence from the frame, which outlasts the sweep
-  that produced it. (b) Empirical CDF of the
-  error over the $128$ matched samples. With the target in view the median is
-  $1.28$~m and the RMSE $2.07$~m; including the two loss-of-view episodes the
-  median rises to $1.75$~m and the RMSE to $6.27$~m, the entire upper tail being
-  set by those episodes (Table~\ref{tab:mono_accuracy}).}
+  \caption{Localization error against the ground truth, in both reporting regimes.
+  (a) Ground-plane error over flight time, with the platform's yaw rate overlaid
+  (blue, right axis). The red curve is restricted to the frames in which the
+  geometric visibility test places the target inside the camera's field of view,
+  and is interrupted over the shaded intervals, in which it is not; the gray curve
+  retains every matched sample. The in-view error stays near $1$--$2$~m throughout
+  the flight, while the excursions reaching ${\approx}22$~m belong entirely to the
+  out-of-view intervals. Those excursions align with the loss-of-view intervals
+  rather than with the instantaneous yaw-rate peaks: rotation is the cause, but the
+  error follows the target's absence from the frame, which outlasts the sweep that
+  produced it. (b) Empirical CDF of the error, on a logarithmic abscissa, for both
+  regimes. With the target in view ($103$ of the $128$ matched samples) the median
+  is $1.43$~m and the RMSE $2.46$~m; over all $128$ samples the median rises to
+  $1.75$~m and the RMSE to $6.27$~m, the entire upper tail being set by the
+  out-of-view episodes (Table~\ref{tab:mono_accuracy}).}
   \label{fig:mono_errors}
 \end{figure}
 
@@ -742,12 +749,31 @@ the detector then fires on background structure, and the resulting false-positiv
 foot pixel lifts to a position several meters away. Including those frames in a
 single aggregate does not measure the localization capability of the system at
 all: it measures how badly a wrong detection projects, which is a property of the
-detector's precision under loss of view. The system, moreover, \emph{knows} when
-it is in that condition, since a track whose implied speed exceeds a physical
-bound for a walking person cannot be the person; the same test that flags those
-points in Figure~\ref{fig:mono_traj} (an implied speed above $4$~m/s from the
-preceding estimate, roughly three times a brisk walk) is available online and
-would be used to reject them in operation.
+detector's precision under loss of view.
+
+The separation between the two regimes is made on purely geometric grounds, with
+no tuned threshold and no appeal to the ground truth. A detection is accepted as a
+view of the target only if all three of the following hold. First, its
+back-projected ray must actually meet the ground plane ahead of the camera: with
+$\mathbf{d}=[(u-c_x)/f_x,\;(v-c_y)/f_y,\;1]^{\!\top}$, the ray
+$\mathbf{r}=\mathbf{R}_{\mathcal{W}\mathcal{O}}^{\!\top}\mathbf{d}$ and the camera
+centre $\mathbf{C}=-\mathbf{R}_{\mathcal{W}\mathcal{O}}^{\!\top}\mathbf{t}$ must
+give a positive depth $\lambda=(z_g-C_z)/r_z>0$, which fails outright whenever the
+detection lies above the horizon. Second, the resulting floor point must lie no
+more than $2$~m outside the surveyed mat. Third, at least one surveyed corner of
+the mat must project inside the $1280\times960$ image, so that the camera is
+demonstrably still looking at the arena at all. The test uses only the intrinsics,
+the recorded pose, and the surveyed room geometry, all of which are available
+online; it is the operational criterion the system would use to declare that it
+has lost sight of the target, and it is applied here to the error metric exactly
+as it would be applied in flight.
+
+Of the $626$ frames in which the detector fired, this test rejects $106$
+($16.9\%$): $37$ because the ray never meets the floor, and $69$ because it meets
+it far outside the hall. The rejected detections sit high in the image (median row
+$v\approx185$, against $v\approx354$ for the accepted ones), that is, at or above
+the horizon --- the signature of a detector firing on background structure rather
+than on a person standing on the floor.
 
 Table~\ref{tab:mono_accuracy} therefore reports both regimes, and the first is the
 one that characterizes the estimator.
@@ -755,9 +781,9 @@ one that characterizes the estimator.
 \begin{table}[H]
   \centering
   \caption{Ground-plane localization error over the $128$ matched samples, in the
-  two reporting regimes. ``Target in view'' excludes the frames of the two
-  loss-of-view episodes, in which the detector fires on background structure and
-  which the physical-speed test identifies online; ``all frames'' includes them.
+  two reporting regimes. ``Target in view'' keeps the $103$ samples that the
+  geometric visibility test accepts; ``all frames'' includes the $25$ samples from
+  the loss-of-view intervals, in which the detector fires on background structure.
   The per-frame geometric lift, given for reference, applies no filtering at all.}
   \label{tab:mono_accuracy}
   \begin{tabular}{@{}lccc@{}}
@@ -765,28 +791,37 @@ one that characterizes the estimator.
     & Median (m) & RMSE (m) & Worst case (m) \\
     \midrule
     Per-frame geometric lift (no filter) & $1.05$ & $1.36$ & $3.1$ \\
-    End-to-end tracker, target in view   & $1.28$ & $2.07$ & --- \\
-    End-to-end tracker, all frames       & $1.75$ & $6.27$ & --- \\
+    End-to-end tracker, target in view   & $1.43$ & $2.46$ & $6.9$ \\
+    End-to-end tracker, all frames       & $1.75$ & $6.27$ & $22.3$ \\
     \bottomrule
   \end{tabular}
 \end{table}
 
 With the loss-of-view frames excluded, the tracker attains a median ground-plane
-error of $1.28$~m and an RMSE of $2.07$~m. The median sits within $0.25$~m of the
+error of $1.43$~m and an RMSE of $2.46$~m. The median sits within $0.4$~m of the
 $1.05$~m geometric floor established above, which is the substantive result of
 this comparison: the recursive filter essentially \emph{preserves} the accuracy of
-the underlying single-frame lift rather than degrading it, and what remains is the
-irreducible error of the monocular ground-plane geometry itself. Including every
-frame, the median rises modestly to $1.75$~m but the RMSE jumps to $6.27$~m, with
-a $90$th percentile of $7.75$~m. That the median barely moves while the RMSE
-triples is itself diagnostic: a quadratic penalty is dominated by a small number
-of large excursions, so the gap between the two rows of Table~\ref{tab:mono_accuracy}
-is not a broad degradation but two short episodes.
+the underlying single-frame lift rather than degrading it, and what remains is
+dominated by the irreducible error of the monocular ground-plane geometry itself.
+Including every frame, the median rises modestly to $1.75$~m but the RMSE jumps to
+$6.27$~m, with a $90$th percentile of $7.75$~m. That the median barely moves while
+the RMSE more than doubles is itself diagnostic: a quadratic penalty is dominated
+by a small number of large excursions, so the gap between the two rows of
+Table~\ref{tab:mono_accuracy} is not a broad degradation but a few short episodes.
+
+It should be said plainly that the in-view figure is not a clean measure of the
+estimator either. The visibility test certifies that the camera was looking at the
+mat, not that the detection on it was the person: a residual worst case of $6.9$~m
+survives the test, against a worst case of $3.1$~m for the geometric lift on
+annotated frames, so a handful of in-view frames still carry a misassociated
+detection. The gap between those two worst cases, rather than either median, is the
+honest measure of how much of the residual error is attributable to the detector
+rather than to the geometry.
 
 These figures are best read against the scale and difficulty of the task: a single
 uninstrumented camera, recovering metric position through a ground-plane lift, on
 a platform undergoing full rotations, with a navigation pose that is itself
-estimated. A median of about $1.3$~m over a $\sim 12$~m working area, with the
+estimated. A median of about $1.4$~m over a $\sim 12$~m working area, with the
 target $10$--$20$~m from the camera and the line of sight grazing the floor at
 about $6^\circ$, is an accurate localization from monocular cues alone, and it
 improves on consumer GNSS, which this pipeline does not use.
@@ -799,18 +834,19 @@ from the LiDAR map and independent of both the camera pose and the detector. The
 continuous track shaded from yellow to red is the raw EKF estimate, and the
 \emph{color encodes flight time}, from yellow at the start of the flight to red at
 the end, on the scale given by the color bar on the right of the figure; it is not
-a second variable and not an error magnitude. The \emph{gray} points are the
-detector false positives rejected by the physical-speed test, plotted only so that
-their location can be seen; they are not part of the track. The dashed rectangle is
+a second variable and not an error magnitude. The \emph{gray} points are the estimates
+rejected by the geometric visibility test, plotted only so that their location can
+be seen; they are not part of the track, and most of them lie far enough outside
+the mat to fall outside the plotted window entirely. The dashed rectangle is
 the surveyed perimeter of the matted area.
 
 Read this way, the plot shows that the estimate reproduces the perimeter walk and
 overlays the ground truth for most of the flight, with a handful of straight
 strays into the interior of the mat. The strays are not a drift of the filter but
-its response to the two false-positive episodes: the estimate is pulled toward a
+its response to the loss-of-view episodes: the estimate is pulled toward a
 spurious detection and then returns, and because the intervening frames are
 propagated by a constant-velocity model the excursion is drawn as a straight
-segment. The gray points cluster in exactly those two intervals.
+segment. The gray points cluster in exactly those intervals.
 
 \paragraph*{Systematic effects and where the error comes from.} Three distinct
 mechanisms contribute to the error, and separating them is what the analysis above
@@ -822,8 +858,8 @@ is for.
   that grows with distance, and the growth is amplified by the $\sim 6^\circ$
   depression angle at which this low-altitude platform views the floor, where the
   viewing ray is nearly parallel to the plane it is being intersected with. The
-  measured dependence, from about $0.7$~m at $10$--$12$~m to $1.5$--$1.9$~m beyond
-  $18$~m with a correlation of $0.53$, is reported in
+  measured dependence, from a median of about $0.6$~m at $10$--$12$~m to about
+  $1.7$~m beyond $18$~m with a correlation of $0.53$, is reported in
   Figure~\ref{fig:error_range}. Because the mat is walked around its perimeter
   while the platform hovers near one side, range and error co-vary through the
   flight, which is why the error series shows a slow modulation on top of its
@@ -867,6 +903,21 @@ because it illustrates a general point about this class of estimator: over a lon
 measurement outage, a constant-velocity model is not a conservative choice but an
 actively dangerous one, and the safe behavior is to discard the stale velocity
 rather than to trust it.
+
+A second point is recorded for the same reason. Read side by side, the error
+series of Figure~\ref{fig:mono_errors} and the map of Figure~\ref{fig:mono_traj}
+appear at first to disagree: the series reaches ${\approx}22$~m, whereas no point
+drawn inside the map lies that far from any ground-truth sample. The two were
+checked against each other sample by sample, and they agree exactly; the
+appearance of a contradiction is an artifact of the map's axes. During the
+loss-of-view intervals the filter is dragged to positions tens of meters outside
+the hall --- the extreme case is $(40.4,\,17.4)$~m, against a ground truth at
+$(19.5,\,10.9)$~m --- and those estimates simply fall outside the plotted window.
+Of the $106$ rejected estimates, $85$ lie outside it. This is precisely why the
+out-of-view frames are now identified by an explicit geometric test and reported
+as a separate regime rather than folded into a single aggregate: an error
+statistic whose tail is invisible in the corresponding figure is an invitation to
+misread both.
 
 The role of the platform rotation, and of the pose uncertainty it induces, is
 examined next through the filter's consistency rather than its point error.
@@ -947,8 +998,8 @@ Chapter~\ref{cha:tracking} framework, and the result is affirmative with one
 caveat. The same constant-velocity EKF, with the spherical measurement replaced
 by a ground-constrained pinhole projection, tracks a walking person from a real,
 freely maneuvering UAV using a single camera and an estimated platform pose. The
-typical end-to-end accuracy, a median ground-plane error of $1.28$~m with the
-target in view, rising to $1.75$~m when the two loss-of-view episodes are
+typical end-to-end accuracy, a median ground-plane error of $1.43$~m with the
+target in view, rising to $1.75$~m when the loss-of-view episodes are
 included, over a $\sim 12$~m arena from monocular cues and without GNSS, against a
 geometric floor of $1.05$~m for the unfiltered single-frame lift, shows that the
 estimator survives the transition from simulation to the real world and recovers
@@ -956,7 +1007,7 @@ metric position to about a meter even at the grazing $\sim 6^\circ$ depression
 angle of this low-altitude flight.
 
 It is worth being blunt about how good these numbers are and are not. A median of
-roughly $1.3$~m is a respectable result for the sensing available, but it is an
+roughly $1.4$~m is a respectable result for the sensing available, but it is an
 order of magnitude coarser than the ${\approx}0.2$~m the range-sensing tracker of
 Chapter~\ref{cha:tracking} achieves in simulation, and the error distribution has
 a heavy tail that a collision-avoidance function could not simply ignore: the
