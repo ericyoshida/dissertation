@@ -345,79 +345,174 @@ error is largest, that is, during aggressive platform motion. This is the
 the setting where the global and local formulations cease to be equivalent.
 
 The remedy is to propagate the pose uncertainty into the innovation covariance.
-Lift the planar state to the 3D point $\bm{X}^{\mathcal{W}}=[x_k,\,y_k,\,z_{\mathrm{obj}}]^{\top}$
-on the plane and let $\bm{p}^{\mathcal{O}}=\bm{R}^{wo}_k\bm{X}^{\mathcal{W}}+\bm{t}^{wo}_k$
-be its optical-frame coordinates. The Jacobian of the projection
-\eqref{eq:mono_h} with respect to the optical-frame point is
+The derivation is given here in full, since the final expression
+\eqref{eq:Smono} is the methodological core of this chapter and its dimensions
+and approximations are easy to lose sight of. It proceeds in four steps: fix the
+geometric chain and its dimensions; differentiate it with respect to the
+\emph{state}; differentiate it with respect to the \emph{pose}; and combine the
+two, with the sensor noise, into the innovation covariance.
+
+\paragraph*{Step 1: the geometric chain.} Lift the planar state to the
+three-dimensional point on the ground plane,
+\begin{equation}
+  \bm{X}^{\mathcal{W}} = \begin{bmatrix} x_k \\ y_k \\ z_{\mathrm{obj}} \end{bmatrix} \in\mathbb{R}^{3},
+  \qquad
+  \bm{p}^{\mathcal{O}} = \bm{R}^{wo}_k\,\bm{X}^{\mathcal{W}} + \bm{t}^{wo}_k
+  = \begin{bmatrix} X^{\mathcal{O}} \\ Y^{\mathcal{O}} \\ Z^{\mathcal{O}} \end{bmatrix} \in\mathbb{R}^{3},
+  \label{eq:mono_chain}
+\end{equation}
+with $\bm{R}^{wo}_k\in SO(3)$ ($3\times3$) and $\bm{t}^{wo}_k\in\mathbb{R}^3$ the
+world-to-optical rotation and translation of
+$\bm{T}_{\mathcal{W}\to\mathcal{O},k}$. The predicted measurement is
+$\hat{\bm{z}}_k=\bm{h}(\bm{X}^{\mathcal{W}})=\pi(\bm{K}\bm{p}^{\mathcal{O}})\in\mathbb{R}^{2}$
+from \eqref{eq:mono_h}. The measurement is therefore a function of two distinct
+groups of uncertain quantities: the target state $\bm{x}_k\in\mathbb{R}^{4}$ and
+the camera pose, whose error lives in $\mathbb{R}^{6}$.
+
+\paragraph*{Step 2: the projection Jacobian.} Differentiating
+$\pi([X,Y,Z]^{\top})=[X/Z,\,Y/Z]^{\top}$ and scaling by the focal lengths gives
+the sensitivity of the pixel to the optical-frame point,
 \begin{equation}
   \bm{J}_{\pi} = \frac{\partial \pi(\bm{K}\,\cdot)}{\partial \bm{p}^{\mathcal{O}}}
   = \begin{bmatrix}
       f_x/Z^{\mathcal{O}} & 0 & -f_x X^{\mathcal{O}}/(Z^{\mathcal{O}})^2 \\[2pt]
       0 & f_y/Z^{\mathcal{O}} & -f_y Y^{\mathcal{O}}/(Z^{\mathcal{O}})^2
-    \end{bmatrix}.
+    \end{bmatrix} \in \mathbb{R}^{2\times3},
   \label{eq:Jpi}
 \end{equation}
-This projection Jacobian is the common factor in the two derivatives the filter
-needs: the \emph{state} Jacobian, which maps a change in the target's planar state
-to a pixel displacement, and the \emph{extrinsic} Jacobian, which maps a change in
-the platform pose to a pixel displacement. We derive each in turn and then combine
-them into the innovation covariance.
+where the third column collects the terms produced by the quotient rule acting on
+the depth $Z^{\mathcal{O}}$. Note the $1/Z^{\mathcal{O}}$ and
+$1/(Z^{\mathcal{O}})^{2}$ scaling: the same metric displacement subtends fewer
+pixels the farther the target is, which is the algebraic root of the
+range-dependent degradation reported in Section~\ref{sec:mono_accuracy}. This
+$2\times3$ matrix is the common left factor of both Jacobians that follow, since
+every uncertain quantity reaches the pixel through $\bm{p}^{\mathcal{O}}$.
 
-\textbf{State Jacobian.} Since only the planar coordinates are free and
-$\partial\bm{p}^{\mathcal{O}}/\partial[x_k,y_k] = \bm{R}^{wo}_k[:,1{:}2]$, the
-$2\times4$ measurement Jacobian is
+\paragraph*{Step 3: the state Jacobian.} Only the two planar coordinates of the
+state are free, the height being fixed at $z_{\mathrm{obj}}$ by the ground-plane
+constraint, and the velocities do not appear in \eqref{eq:mono_h} at all.
+Differentiating the chain \eqref{eq:mono_chain} with respect to $[x_k,y_k]^{\top}$
+gives $\partial\bm{p}^{\mathcal{O}}/\partial[x_k,y_k]^{\top}=\bm{R}^{wo}_k\bm{E}$,
+where $\bm{E}=[\bm{I}_2\;\;\bm{0}_{2\times1}]^{\top}\in\mathbb{R}^{3\times2}$
+selects the first two columns of the rotation. Appending the two zero columns that
+correspond to the velocity states yields the $2\times4$ measurement Jacobian
 \begin{equation}
-  \bm{H}_k = \bm{J}_{\pi}\,\bm{R}^{wo}_k\!\begin{bmatrix}\bm{I}_2\\\bm{0}\end{bmatrix}\!
-             \begin{bmatrix}\bm{I}_2 & \bm{0}_2\end{bmatrix},
+  \bm{H}_k
+  = \underbrace{\bm{J}_{\pi}}_{2\times3}\;
+    \underbrace{\bm{R}^{wo}_k}_{3\times3}\;
+    \underbrace{\begin{bmatrix}\bm{I}_2\\\bm{0}_{1\times2}\end{bmatrix}}_{3\times2}\;
+    \underbrace{\begin{bmatrix}\bm{I}_2 & \bm{0}_{2\times2}\end{bmatrix}}_{2\times4}
+  \;\in\;\mathbb{R}^{2\times4},
   \label{eq:Hmono}
 \end{equation}
-the trailing block reflecting that velocities do not enter the measurement.
+the trailing block reflecting that velocities affect the measurement only
+indirectly, through the prediction step.
 
-\textbf{Extrinsic Jacobian.} A small perturbation of the camera pose is represented
-in the tangent space of $SE(3)$ by $\bm{\xi}=[\bm{\delta\theta}^{\top}\;\bm{\delta t}^{\top}]^{\top}$
-(Chapter~\ref{cha:background}, \eqref{eq:se3_pert}); to first order it displaces
-the optical-frame point by
-$\delta\bm{p}^{\mathcal{O}}\approx-[\bm{p}^{\mathcal{O}}]_\times\bm{\delta\theta}+\bm{\delta t}$.
-Composing with \eqref{eq:Jpi} gives the $2\times6$ extrinsic Jacobian of the pixel
-with respect to the pose,
+\paragraph*{Step 4: the extrinsic Jacobian.} The pose error is not a vector in the
+ordinary sense, since $SE(3)$ is not a vector space; it is represented by the
+coordinate vector
+$\bm{\xi}=[\bm{\delta\theta}^{\top}\;\bm{\delta t}^{\top}]^{\top}\in\mathbb{R}^{6}$
+of an element of the Lie algebra $\mathfrak{se}(3)$, as set out in
+Section~\ref{sec:pose_perturbations}. The true pose is written multiplicatively as
+$\tilde{\bm{T}}=\exp(\bm{\xi}^{\wedge})\bm{T}$, and the derivation rests on
+\emph{one} approximation, namely the first-order truncation of the exponential
+series \eqref{eq:se3_exp_approx},
+$\exp(\bm{\xi}^{\wedge})=\bm{I}_4+\bm{\xi}^{\wedge}+\tfrac{1}{2}(\bm{\xi}^{\wedge})^{2}+\cdots\approx\bm{I}_4+\bm{\xi}^{\wedge}$,
+whose neglected remainder is $O(\lVert\bm{\xi}\rVert^{2})$. Applying it to
+$\bm{p}^{\mathcal{O}}$ and using $[\bm{a}]_\times\bm{b}=-[\bm{b}]_\times\bm{a}$ to
+make the expression linear in the unknown gives \eqref{eq:se3_pert},
 \begin{equation}
-  \bm{J}_{\mathrm{ext}} = \bm{J}_{\pi}
-  \begin{bmatrix} -[\bm{p}^{\mathcal{O}}]_\times & \bm{I}_3 \end{bmatrix},
+  \frac{\partial\bm{p}^{\mathcal{O}}}{\partial\bm{\xi}}
+  = \big[\,-[\bm{p}^{\mathcal{O}}]_\times \;\; \bm{I}_3\,\big] \in \mathbb{R}^{3\times6}.
+  \label{eq:dp_dxi}
+\end{equation}
+Composing \eqref{eq:dp_dxi} with the projection Jacobian by the chain rule gives
+the extrinsic Jacobian of the pixel with respect to the pose,
+\begin{equation}
+  \bm{J}_{\mathrm{ext}}
+  = \frac{\partial\bm{h}}{\partial\bm{\xi}}
+  = \underbrace{\bm{J}_{\pi}}_{2\times3}
+    \underbrace{\big[\,-[\bm{p}^{\mathcal{O}}]_\times \;\; \bm{I}_3\,\big]}_{3\times6}
+  \;\in\;\mathbb{R}^{2\times6},
   \label{eq:Jext}
 \end{equation}
-whose rotational block $-\bm{J}_{\pi}[\bm{p}^{\mathcal{O}}]_\times$ and
-translational block $\bm{J}_{\pi}$ map, respectively, an attitude error and a
-position error of the platform into a pixel displacement of the target.
+whose rotational block $-\bm{J}_{\pi}[\bm{p}^{\mathcal{O}}]_\times$
+($2\times3$) and translational block $\bm{J}_{\pi}$ ($2\times3$) map,
+respectively, an attitude error and a position error of the platform into a pixel
+displacement of the target. The two blocks scale differently with geometry, and
+this is what makes the term behave sensibly: the translational block falls off as
+$1/Z^{\mathcal{O}}$, so a position error of the platform matters less for a
+distant target, whereas the rotational block contains
+$[\bm{p}^{\mathcal{O}}]_\times$, whose entries \emph{grow} with the target
+distance, so an attitude error matters more. Attitude, not position, is therefore
+the dominant pose-error channel at range, which is consistent with the fact that
+the observed inconsistency concentrates in the high-yaw-rate intervals
+(Section~\ref{sec:mono_consistency}).
 
-\textbf{Augmented innovation covariance.} Modeling the navigation pose error as
-zero-mean Gaussian with $6\times6$ covariance $\bm{\Sigma}$, the innovation
-covariance gains a third additive term beyond the state and sensor contributions:
+\paragraph*{Step 5: the augmented innovation covariance.} The innovation is
+$\bm{\nu}_k=\bm{z}_k-\hat{\bm{z}}_k\in\mathbb{R}^{2}$, and to first order it
+collects three mutually independent error sources: the error of the predicted
+state, with covariance $\bm{P}_{k|k-1}\in\mathbb{R}^{4\times4}$, mapped through
+$\bm{H}_k$; the error of the camera pose, with covariance
+$\bm{\Sigma}\in\mathbb{R}^{6\times6}$, mapped through $\bm{J}_{\mathrm{ext}}$; and
+the pixel measurement noise itself,
+$\bm{R}_{\mathrm{cam}}=\sigma_{\mathrm{cam}}^2\bm{I}_2\in\mathbb{R}^{2\times2}$.
+Writing $\bm{\nu}_k\approx\bm{H}_k\,\delta\bm{x}_{k|k-1}+\bm{J}_{\mathrm{ext}}\,\bm{\xi}+\bm{v}_k$
+and taking the expectation of $\bm{\nu}_k\bm{\nu}_k^{\top}$, the cross terms
+vanish by independence and the three quadratic forms add, giving
 \begin{equation}
-  \bm{S}_k = \bm{H}_k\,\bm{P}_{k|k-1}\,\bm{H}_k^{\!\top}
-                     \;+\; \bm{J}_{\mathrm{ext}}\,\bm{\Sigma}\,\bm{J}_{\mathrm{ext}}^{\!\top}
-                     \;+\; \bm{R}_{\mathrm{cam}}
+  \underbrace{\bm{S}_k}_{2\times2}
+  = \underbrace{\bm{H}_k\,\bm{P}_{k|k-1}\,\bm{H}_k^{\!\top}}_{(2\times4)(4\times4)(4\times2)}
+  \;+\; \underbrace{\bm{J}_{\mathrm{ext}}\,\bm{\Sigma}\,\bm{J}_{\mathrm{ext}}^{\!\top}}_{(2\times6)(6\times6)(6\times2)}
+  \;+\; \underbrace{\bm{R}_{\mathrm{cam}}}_{2\times2}.
   \label{eq:Smono}
 \end{equation}
-with $\bm{R}_{\mathrm{cam}}=\sigma_{\mathrm{cam}}^2\bm{I}_2$ the pixel-noise
-covariance. The middle term on the right-hand side of \eqref{eq:Smono} is the
-methodological core of this chapter. It
-inflates the gate by the amount of pixel uncertainty that the pose error induces
-at the current geometry, so that the Kalman gain
-$\bm{K}_k=\bm{P}_{k|k-1}\bm{H}_k^{\top}\bm{S}_k^{-1}$ automatically down-weights
-measurements taken while the platform pose is poorly known. The update otherwise
-follows the standard EKF recursion of Chapter~\ref{cha:background}. Equation
-\eqref{eq:Smono} is the concrete instance, for the monocular projective
-measurement, of the pose-uncertainty propagation that Chapter~\ref{cha:tracking}
-anticipated once assumption~(i) of its equivalence proposition is dropped.
+The independence assumption behind the vanishing cross terms deserves to be named:
+it holds because the navigation solution is produced by a separate subsystem that
+does not use the target detections, exactly the separation stated in
+Chapter~\ref{cha:tracking}; were the two coupled, as they would be in a joint
+navigation-and-tracking filter, a cross-covariance term would be required.
 
-Ideally $\bm{\Sigma}$ would be read directly from the navigation system, which in
-principle reports the covariance of its own pose estimate. That covariance was not
-available to us in this study, so rather than ignore the pose uncertainty
-altogether we model it as isotropic, $\bm{\Sigma}=\sigma_{\mathrm{pose}}^2\bm{I}_6$,
-and treat the single scale $\sigma_{\mathrm{pose}}$ as a tunable parameter
-calibrated by the consistency analysis of Section~\ref{sec:mono_consistency}.
-Replacing this scalar with the navigation solution's true covariance is a
-straightforward extension once that output is exposed.
+The middle term of \eqref{eq:Smono} is what this chapter contributes. It inflates
+the innovation covariance, and hence the validation gate, by the amount of pixel
+uncertainty that the pose error induces \emph{at the current geometry}, so that
+the Kalman gain $\bm{K}_k=\bm{P}_{k|k-1}\bm{H}_k^{\top}\bm{S}_k^{-1}$
+automatically down-weights measurements taken while the platform pose is poorly
+known. The update otherwise follows the standard EKF recursion of
+Chapter~\ref{cha:background}. Equation \eqref{eq:Smono} is thus the concrete
+instance, for a monocular projective measurement, of the pose-uncertainty
+propagation that Chapter~\ref{cha:tracking} anticipated once assumption~(i) of its
+equivalence proposition is dropped.
+
+\paragraph*{On the unavailability of $\bm{\Sigma}$.} Ideally $\bm{\Sigma}$ would be
+read directly from the navigation system at every step, as the covariance that a
+Bayesian estimator reports alongside its mean, and the term would then require no
+tuning at all. That was not possible here, and the reason is worth stating
+precisely rather than leaving as a gap, since it is the single most
+important caveat attached to the results of this chapter. The platform's
+localization is produced by a LiDAR-inertial odometry solution running on board
+the TU~Berlin quadrotor. That solution publishes a pose, but it does
+\emph{not} publish an associated covariance: the estimator's uncertainty is
+simply not among the quantities exposed on its output interface, and recovering it
+would have required instrumenting and re-running the navigation stack itself,
+which was outside the scope of the collaboration and, after the return from the
+three-month research stay, no longer practicable with the recorded data alone.
+Consequently a time-varying $\bm{\Sigma}_k$ could not be used. Rather than discard
+the pose uncertainty altogether, which the ablation of
+Section~\ref{sec:mono_consistency} shows to be the far worse option, it is modeled
+as constant and isotropic, $\bm{\Sigma}=\sigma_{\mathrm{pose}}^2\bm{I}_6$, with the
+single scale $\sigma_{\mathrm{pose}}$ calibrated \emph{a posteriori} from the
+consistency analysis. Two consequences follow and should be read into the results.
+First, the term captures the \emph{average} pose quality over the flight and cannot
+respond to the fact that the navigation error is genuinely larger during the fast
+yaw sweeps than in hover, so the filter is somewhat optimistic exactly when it
+should be most cautious. Second, isotropy is a modeling convenience rather than a
+physical claim: a real LiDAR-inertial solution is markedly more accurate in
+attitude than in position, and in yaw than in roll and pitch, so the true
+$\bm{\Sigma}$ is far from a multiple of the identity. Replacing the scalar by the
+navigation solution's own covariance is a direct extension, requiring only that
+the estimator expose it, and is identified as future work in
+Chapter~\ref{cha:conclusions}.
 
 \subsection{Temporal Synchronization}
 \label{sec:mono_sync}
@@ -427,7 +522,7 @@ clocks and rates, so each image must be paired with the platform pose at its tru
 \emph{capture} instant. Two effects are corrected. First, a fixed camera latency
 $\tau$ (the capture-to-timestamp delay) is subtracted from each frame's timestamp.
 Second, the pose is interpolated to the corrected instant: the position by linear
-interpolation and the orientation by spherical linear interpolation (SLERP) of
+interpolation and the orientation by Spherical Linear Interpolation (SLERP) of
 the unit quaternions, which respects the geometry of $SO(3)$. A pose paired with a
 stale or mis-synchronized frame would inject a spurious apparent motion of the
 target, so correct synchronization is a prerequisite for the extrinsic-aware
@@ -437,33 +532,67 @@ timing artifact.
 \subsection{Experimental Platform}
 \label{sec:mono_platform}
 
-The data were collected with a custom quadrotor carrying a global-shutter camera
-(a Raspberry Pi Global Shutter module, Sony IMX296 sensor) at
-$1280\times960$~px. A global shutter is essential on a rotating platform, because
-a rolling shutter would skew the target during the aggressive yaw maneuvers that
-characterize the flights. The camera is rigidly mounted ahead of and above the
-body center and pitched downward, a fixed extrinsic
-$\bm{T}_{\mathcal{B}\to\mathcal{O}}$ composed with the platform pose to form the
-world-to-optical transform of \eqref{eq:mono_h}. The platform pose itself is
-streamed by the onboard navigation system as a position--attitude solution
-(a fused LiDAR-inertial estimate), which provides the $(\bm{R}^{wo}_k,\bm{t}^{wo}_k)$
-sequence and motivates the covariance $\bm{\Sigma}$ of \eqref{eq:Smono}. The
-camera intrinsics and plumb-bob coefficients were calibrated offline and held
-fixed throughout.
+The data were collected with the UBADRON platform of TU~Berlin, a custom
+multirotor developed within the UBASWARM project, shown in
+Figure~\ref{fig:tub_platform}. It carries a global-shutter camera (a Raspberry Pi
+Global Shutter module built on the Sony IMX296 sensor, with a $6$~mm C-mount
+lens) operating at $1280\times960$~px. A global shutter is essential on a rotating
+platform, because a rolling shutter would skew the target during the aggressive
+yaw maneuvers that characterize these flights. The camera is rigidly mounted in an
+underslung pod, $0.21$~m below the body origin and pitched $10^\circ$ downward
+from the horizontal, and this fixed extrinsic $\bm{T}_{\mathcal{B}\to\mathcal{O}}$
+is composed with the platform pose to form the world-to-optical transform of
+\eqref{eq:mono_h}. The camera intrinsics ($f_x=1592.3$, $f_y=1513.2$,
+$c_x=640.5$, $c_y=434.1$~px) and the plumb-bob distortion coefficients were
+obtained by an offline checkerboard calibration and held fixed throughout. The
+platform pose itself is streamed by the onboard navigation system as a
+position--attitude solution, a fused LiDAR-inertial estimate built on an onboard
+Livox Avia LiDAR and an inertial measurement unit, which provides the
+$(\bm{R}^{wo}_k,\bm{t}^{wo}_k)$ sequence and motivates the covariance
+$\bm{\Sigma}$ of \eqref{eq:Smono}.
 
-A note on compute is in order, since it frames what ``real-time'' means for this
-application. In the TU~Berlin search-and-rescue setting the detector and tracker
-are not required to run embedded on the drone: the platform streams its imagery
-and navigation solution to a companion ground computer that runs the perception
-stack, which is the operating model the team adopts. The CNN detector therefore
-runs on a desktop-class GPU rather than a constrained onboard board, so its
-throughput is comfortable, and the recursive filter itself is negligible in cost.
-Real-time operation in the intended scenario is thus feasible; embedded, fully
-onboard inference remains the harder target discussed in
-Chapter~\ref{cha:conclusions}.
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.62\linewidth]{Cap6/tub_platform.png}
+  \caption{The experimental platform: the TU~Berlin UBADRON multirotor in flight
+  inside the indoor sports hall where the tracking experiments of this chapter
+  were recorded. The monocular global-shutter camera is carried in the underslung
+  pod visible below the body, pitched $10^\circ$ downward; the shallow depression
+  angle at which this low-altitude platform views a target on the floor is the
+  geometry that governs the accuracy analysis of Section~\ref{sec:mono_accuracy}.}
+  \label{fig:tub_platform}
+\end{figure}
+
+\paragraph*{Computing environment and what ``real-time'' means here.} The
+perception stack is not required to run embedded on the aircraft in the TU~Berlin
+search-and-rescue setting: the platform streams its imagery and navigation
+solution to a companion ground computer, which is the operating model the team
+adopts, and this study follows it. All processing reported in this dissertation,
+for this chapter as well as for the simulation studies of
+Chapters~\ref{cha:tracking} and~\ref{cha:airsim}, was carried out on a single
+machine, a Dell laptop with an Intel Core~i7 processor and an NVIDIA GeForce
+RTX~4060 GPU, using multi-threaded execution to overlap decoding, inference, and
+filtering. The recursive filter itself is computationally negligible and runs
+comfortably faster than the $20$~Hz frame rate, so the \emph{tracking} stage is
+real-time on this hardware. The CNN detector is not: its inference introduces a
+latency of roughly two to three seconds behind the live stream, so the composed
+detector-plus-tracker chain of this chapter was run offline over the recorded
+flight rather than live. This is a throughput limitation of the detector on a
+laptop-class GPU, not of the estimator, and it is stated plainly here so that the
+accuracy results that follow are not read as a demonstration of onboard real-time
+operation. The full three-dimensional pipeline of Chapter~\ref{cha:airsim} is
+heavier still and further from real time; the corresponding limitation is recorded
+in Chapter~\ref{cha:conclusions}.
 
 \section{Results}
 \label{sec:mono_results}
+
+The methodology above is evaluated on real flight data. This section reports, in
+turn, the experimental scenario and how metric ground truth was obtained for a
+freely walking person indoors; the localization accuracy of the tracker against
+that reference, separating the accuracy of the geometry from the robustness of the
+end-to-end chain; and the statistical consistency of the filter, which is where
+the pose-uncertainty term of Section~\ref{sec:mono_extrinsic} is put to the test.
 
 \subsection{Experimental Scenario and Ground-Truth Acquisition}
 \label{sec:mono_scenario}
@@ -506,11 +635,24 @@ $1.6$ laps of the mat perimeter, as observed in the video.
 The tracker produced a continuous ground-plane estimate over the flight, active
 in $626$ frames. Comparing it to the manual ground truth at the annotated instants
 (matched by timestamp to within $0.5$~s, $128$ paired samples) gives the
-horizontal localization error reported in Figures~\ref{fig:mono_traj}
+ground-plane localization error reported in Figures~\ref{fig:mono_traj}
 and~\ref{fig:mono_errors}. The
 estimate is the \emph{raw} filter output: no post-hoc alignment, bias removal, or
 trajectory registration of any kind is applied, so the numbers reflect the
 end-to-end accuracy an onboard consumer would actually receive.
+
+\paragraph*{Terminology.} The error metric used throughout this section is the
+Euclidean distance between the estimated and the true target position measured
+\emph{in the plane of the floor}, that is, in the $(x,y)$ coordinates of the world
+frame $\mathcal{W}$, whose $z$ axis is vertical. It is called the
+\emph{ground-plane error} rather than the ``horizontal error'' deliberately: the
+latter invites confusion with a plane attached to the \emph{aircraft}, which on a
+freely maneuvering quadrotor is tilted with respect to the ground and rotates
+continuously during the flight. No component of the error is measured in the
+aircraft's own plane. The vertical component is not reported at all, and could not
+be: the ground-plane constraint of Section~\ref{sec:mono_groundplane} fixes the
+target's height by assumption, so the estimator has no vertical degree of freedom
+whose error could be evaluated.
 
 It is worth separating two questions that the single error figure conflates: how
 accurate the geometric lift is when the target is correctly detected, and how
@@ -541,9 +683,9 @@ degrades with range where a true range sensor would not.
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.78\linewidth]{Cap6/error_vs_range.pdf}
-  \caption{Horizontal localization error of the ground-plane lift as a function
-  of the target's distance from the camera (per manually annotated frame, geometry
-  only, no filtering). The error grows with range --- from ${\approx}0.7$~m near
+  \caption{Ground-plane localization error of the single-frame geometric lift, as a
+  function of the target's distance from the camera (per manually annotated frame,
+  geometry only, no filtering). The error grows with range --- from ${\approx}0.7$~m near
   $10$~m to ${\approx}1.5$--$1.9$~m beyond $18$~m (correlation $0.53$) --- because
   a fixed foot-pixel offset maps to a ground error that increases with distance,
   an effect amplified by the grazing $\sim 6^\circ$ viewing angle.}
@@ -554,60 +696,180 @@ degrades with range where a true range sensor would not.
   \centering
   \includegraphics[width=0.82\linewidth]{Cap6/tracking_traj.pdf}
   \caption{Estimated track against the LiDAR-referenced ground truth, raw filter
-  output. The EKF estimate (continuous track colored by flight time, yellow early
-  to red late) reproduces the perimeter walk and overlays the manual ground-truth
-  samples (green); the surveyed tatami perimeter is dashed. The gray points are
-  detector false positives, isolated by a physical speed test ($>4$~m/s from the
-  preceding estimate) and excluded from the track: they occur during the fastest
-  yaw sweeps, when the target leaves the field of view and the detector fires on
-  background structure (Figure~\ref{fig:mono_errors}).}
+  output, in the plane of the floor. \textbf{Green:} the manually annotated
+  ground-truth positions, independent of both the camera pose and the detector.
+  \textbf{Continuous yellow-to-red track:} the EKF estimate; the color is
+  \emph{flight time}, read on the color bar at the right of the figure (yellow
+  early, red late), and encodes neither error nor any second variable.
+  \textbf{Gray:} detector false positives, identified by a physical speed test
+  (implied speed above $4$~m/s from the preceding estimate) and excluded from the
+  track; they are plotted only to show where they occur, which is during the two
+  intervals in which the target leaves the field of view over the course of the
+  platform's full-circle yaw sweeps, and the detector fires on background
+  structure instead. \textbf{Dashed rectangle:} the surveyed perimeter
+  of the matted area. The estimate reproduces the perimeter walk; the straight
+  strays into the interior are the filter's excursions toward the false positives
+  and back (Figure~\ref{fig:mono_errors}).}
   \label{fig:mono_traj}
 \end{figure}
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=\linewidth]{Cap6/tracking_errors.pdf}
-  \caption{Localization error against the ground truth. (a) Horizontal error
+  \caption{Localization error against the ground truth. (a) Ground-plane error
   (red) over flight time, with the platform's yaw rate overlaid (blue, right
   axis): the error stays near $1$--$2$~m for most of the flight and spikes only in
-  the two intervals of fastest yaw, where the target leaves the field of view and
-  the detector briefly locks onto background objects. (b) Empirical CDF of the
-  error. Across the $128$ matched samples the median is $1.75$~m and the mean is
-  $3.67$~m; the upper tail (RMSE $6.27$~m) is set by those two false-positive
-  episodes, and excluding them the RMSE falls to $2.07$~m.}
+  the two intervals in which the target leaves the field of view during the
+  platform's full-circle yaw sweeps, and the detector briefly locks onto
+  background structure. The spikes are aligned with the loss-of-view intervals
+  rather than with the instantaneous yaw-rate peaks: rotation is the cause, but
+  the error follows the target's absence from the frame, which outlasts the sweep
+  that produced it. (b) Empirical CDF of the
+  error over the $128$ matched samples. With the target in view the median is
+  $1.28$~m and the RMSE $2.07$~m; including the two loss-of-view episodes the
+  median rises to $1.75$~m and the RMSE to $6.27$~m, the entire upper tail being
+  set by those episodes (Table~\ref{tab:mono_accuracy}).}
   \label{fig:mono_errors}
 \end{figure}
 
-Over the same matched samples the full end-to-end tracker attains a median error
-of $1.75$~m and a mean of $3.67$~m, with a $90$th percentile of $7.75$~m. The
-median is within $0.7$~m of the geometric floor established above, which shows that
-the filter, for the bulk of the flight, preserves the accuracy of the underlying
-lift rather than degrading it. The root-mean-square error, $6.27$~m, is by
-contrast set almost entirely by the upper tail: two short intervals account for
-nearly all of it, and removing them brings the RMSE down to $2.07$~m and the
-median to $1.28$~m. These figures are best read against the scale and difficulty
-of the task: a single uninstrumented camera, recovering metric position through a
-ground-plane lift, on a platform undergoing full rotations, with a navigation pose
-that is itself estimated. A median of $1.75$~m over a $\sim 12$~m working area,
-with the target $10$--$20$~m from the camera and the line of sight grazing the
-floor at about $6^\circ$, is an accurate localization from monocular cues alone,
-and it improves on consumer GNSS, which this pipeline does not use.
+\paragraph*{Two reporting regimes, and why both are given.} The end-to-end error
+must be quoted carefully, because two quite different quantities can be computed
+from the same $128$ matched samples, and reporting only one of them misleads in
+opposite directions. The distinction is between the frames in which the detector
+is actually looking at the person and the frames in which it is not. During the
+platform's full-circle yaw sweeps the target leaves the field of view entirely;
+the detector then fires on background structure, and the resulting false-positive
+foot pixel lifts to a position several meters away. Including those frames in a
+single aggregate does not measure the localization capability of the system at
+all: it measures how badly a wrong detection projects, which is a property of the
+detector's precision under loss of view. The system, moreover, \emph{knows} when
+it is in that condition, since a track whose implied speed exceeds a physical
+bound for a walking person cannot be the person; the same test that flags those
+points in Figure~\ref{fig:mono_traj} (an implied speed above $4$~m/s from the
+preceding estimate, roughly three times a brisk walk) is available online and
+would be used to reject them in operation.
 
-The spatial plot (Figure~\ref{fig:mono_traj}) shows that the estimated track
-reproduces the perimeter of the walk and overlays the ground truth for most of the
-flight, with a handful of straight strays into the interior. The error time series
-(Figure~\ref{fig:mono_errors}a) explains both the strays and the heavy RMSE tail:
-the error stays near $1$--$2$~m throughout, except for two spikes that coincide
-exactly with the platform's two fastest yaw sweeps. During those sweeps the target
-crosses out of the field of view, the person detector momentarily fires on
-background structure instead, and the resulting false-positive foot pixel lifts to
-a position several meters away. This is a \emph{detector-precision} failure during
-loss of view, not an error of the geometry or of the filter: the per-frame
-geometric projection on the correctly detected frames never exceeds $3.1$~m, and
-the filter's own re-initialization (Section~\ref{sec:mono_groundplane}) recovers
-the track as soon as the true target is re-detected. The role of the platform
-rotation, and of the pose uncertainty it induces, is examined next through the
-filter's consistency rather than its point error.
+Table~\ref{tab:mono_accuracy} therefore reports both regimes, and the first is the
+one that characterizes the estimator.
+
+\begin{table}[H]
+  \centering
+  \caption{Ground-plane localization error over the $128$ matched samples, in the
+  two reporting regimes. ``Target in view'' excludes the frames of the two
+  loss-of-view episodes, in which the detector fires on background structure and
+  which the physical-speed test identifies online; ``all frames'' includes them.
+  The per-frame geometric lift, given for reference, applies no filtering at all.}
+  \label{tab:mono_accuracy}
+  \begin{tabular}{@{}lccc@{}}
+    \toprule
+    & Median (m) & RMSE (m) & Worst case (m) \\
+    \midrule
+    Per-frame geometric lift (no filter) & $1.05$ & $1.36$ & $3.1$ \\
+    End-to-end tracker, target in view   & $1.28$ & $2.07$ & --- \\
+    End-to-end tracker, all frames       & $1.75$ & $6.27$ & --- \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+With the loss-of-view frames excluded, the tracker attains a median ground-plane
+error of $1.28$~m and an RMSE of $2.07$~m. The median sits within $0.25$~m of the
+$1.05$~m geometric floor established above, which is the substantive result of
+this comparison: the recursive filter essentially \emph{preserves} the accuracy of
+the underlying single-frame lift rather than degrading it, and what remains is the
+irreducible error of the monocular ground-plane geometry itself. Including every
+frame, the median rises modestly to $1.75$~m but the RMSE jumps to $6.27$~m, with
+a $90$th percentile of $7.75$~m. That the median barely moves while the RMSE
+triples is itself diagnostic: a quadratic penalty is dominated by a small number
+of large excursions, so the gap between the two rows of Table~\ref{tab:mono_accuracy}
+is not a broad degradation but two short episodes.
+
+These figures are best read against the scale and difficulty of the task: a single
+uninstrumented camera, recovering metric position through a ground-plane lift, on
+a platform undergoing full rotations, with a navigation pose that is itself
+estimated. A median of about $1.3$~m over a $\sim 12$~m working area, with the
+target $10$--$20$~m from the camera and the line of sight grazing the floor at
+about $6^\circ$, is an accurate localization from monocular cues alone, and it
+improves on consumer GNSS, which this pipeline does not use.
+
+\paragraph*{Reading the trajectory plot.} Figure~\ref{fig:mono_traj} shows the
+estimated track against the ground truth in the plane of the floor, and it repays
+a careful reading, since three different objects are superimposed on it. The
+\emph{green} markers are the manually annotated ground-truth positions, obtained
+from the LiDAR map and independent of both the camera pose and the detector. The
+continuous track shaded from yellow to red is the raw EKF estimate, and the
+\emph{color encodes flight time}, from yellow at the start of the flight to red at
+the end, on the scale given by the color bar on the right of the figure; it is not
+a second variable and not an error magnitude. The \emph{gray} points are the
+detector false positives rejected by the physical-speed test, plotted only so that
+their location can be seen; they are not part of the track. The dashed rectangle is
+the surveyed perimeter of the matted area.
+
+Read this way, the plot shows that the estimate reproduces the perimeter walk and
+overlays the ground truth for most of the flight, with a handful of straight
+strays into the interior of the mat. The strays are not a drift of the filter but
+its response to the two false-positive episodes: the estimate is pulled toward a
+spurious detection and then returns, and because the intervening frames are
+propagated by a constant-velocity model the excursion is drawn as a straight
+segment. The gray points cluster in exactly those two intervals.
+
+\paragraph*{Systematic effects and where the error comes from.} Three distinct
+mechanisms contribute to the error, and separating them is what the analysis above
+is for.
+
+\begin{enumerate}
+  \item \textbf{Range.} The dominant systematic effect on the correctly detected
+  frames. A fixed vertical offset of the foot pixel subtends a ground-range error
+  that grows with distance, and the growth is amplified by the $\sim 6^\circ$
+  depression angle at which this low-altitude platform views the floor, where the
+  viewing ray is nearly parallel to the plane it is being intersected with. The
+  measured dependence, from about $0.7$~m at $10$--$12$~m to $1.5$--$1.9$~m beyond
+  $18$~m with a correlation of $0.53$, is reported in
+  Figure~\ref{fig:error_range}. Because the mat is walked around its perimeter
+  while the platform hovers near one side, range and error co-vary through the
+  flight, which is why the error series shows a slow modulation on top of its
+  baseline.
+  \item \textbf{Platform rotation.} The yaw sweeps act through two separate
+  channels, and it is worth not conflating them. The first is \emph{geometric and
+  benign}: the target crosses the field of view and eventually leaves it, so the
+  measurement stream is interrupted and the track must coast or re-initialize.
+  The second is \emph{estimation-theoretic}: the navigation pose is least accurate
+  precisely during aggressive rotation, and an attitude error maps into a pixel
+  displacement through the rotational block of the extrinsic Jacobian
+  \eqref{eq:Jext}, whose magnitude \emph{grows} with target distance. This second
+  channel does not show up prominently in the point error, because the
+  re-initialization logic re-anchors the state to a fresh measurement, but it is
+  exactly what the consistency analysis of
+  Section~\ref{sec:mono_consistency} exposes, and it is the reason the pose
+  covariance must be propagated.
+  \item \textbf{Detector precision under loss of view.} The cause of the two large
+  excursions, and of the entire RMSE tail. It is a failure of the
+  \emph{detector}, not of the geometry or of the filter: the per-frame geometric
+  projection on correctly detected frames never exceeds $3.1$~m, and the filter's
+  re-initialization (Section~\ref{sec:mono_groundplane}) recovers the track as
+  soon as the true target is re-detected. The remedy belongs at the detection and
+  track-management level, through more selective detection and explicit
+  loss-of-view handling, and not in the projection.
+\end{enumerate}
+
+One further observation deserves recording, since it was raised during the
+examination. An earlier version of these results reported a median error of
+$4.3$~m and a $90$th percentile of $10.3$~m, roughly three times what is reported
+here. Those figures were not a property of the geometry. An audit of the
+projection against the independent floor-plan ground truth, carried out
+separately from the filter, established that the single-frame lift was correct all
+along (median $1.05$~m); what produced the larger numbers was the constant-velocity
+model being propagated open-loop across the long detection gaps left by the yaw
+sweeps, so that any nonzero velocity estimate was extrapolated for the whole gap.
+Bounding that open-loop horizon and re-initializing the track by ray--plane
+intersection after a gap, as described in Section~\ref{sec:mono_groundplane}, is
+what brought the error down to the values reported here. The episode is recorded
+because it illustrates a general point about this class of estimator: over a long
+measurement outage, a constant-velocity model is not a conservative choice but an
+actively dangerous one, and the safe behavior is to discard the stale velocity
+rather than to trust it.
+
+The role of the platform rotation, and of the pose uncertainty it induces, is
+examined next through the filter's consistency rather than its point error.
 
 Figure~\ref{fig:mono_frames} shows the system in operation, with the trained
 detector's measurement and the projected estimate overlaid on two frames of the
@@ -631,7 +893,7 @@ for an estimator feeding a collision-avoidance layer is whether the filter is
 \emph{consistent}, that is, whether its reported covariance matches its actual
 error
 (Chapter~\ref{cha:background}). With no per-step ground truth for the full state,
-consistency is assessed through the normalized innovation squared (NIS),
+consistency is assessed through the Normalized Innovation Squared (NIS),
 $\eta_k=\bm{\nu}_k^{\top}\bm{S}_k^{-1}\bm{\nu}_k$, which for the two-dimensional
 pixel innovation follows a $\chi^2_2$ law with mean $2$ under a consistent filter.
 The NIS bears directly on the contribution of
@@ -685,12 +947,30 @@ Chapter~\ref{cha:tracking} framework, and the result is affirmative with one
 caveat. The same constant-velocity EKF, with the spherical measurement replaced
 by a ground-constrained pinhole projection, tracks a walking person from a real,
 freely maneuvering UAV using a single camera and an estimated platform pose. The
-typical end-to-end accuracy, a median horizontal error of $1.75$~m over a
-$\sim 12$~m arena from monocular cues and without GNSS, and a geometric floor of
-$1.05$~m on the correctly detected frames, shows that the estimator survives the
-transition from simulation to the real world and recovers metric position to about
-a meter even at the grazing $\sim 6^\circ$ depression angle of this low-altitude
-flight.
+typical end-to-end accuracy, a median ground-plane error of $1.28$~m with the
+target in view, rising to $1.75$~m when the two loss-of-view episodes are
+included, over a $\sim 12$~m arena from monocular cues and without GNSS, against a
+geometric floor of $1.05$~m for the unfiltered single-frame lift, shows that the
+estimator survives the transition from simulation to the real world and recovers
+metric position to about a meter even at the grazing $\sim 6^\circ$ depression
+angle of this low-altitude flight.
+
+It is worth being blunt about how good these numbers are and are not. A median of
+roughly $1.3$~m is a respectable result for the sensing available, but it is an
+order of magnitude coarser than the ${\approx}0.2$~m the range-sensing tracker of
+Chapter~\ref{cha:tracking} achieves in simulation, and the error distribution has
+a heavy tail that a collision-avoidance function could not simply ignore: the
+$90$th percentile over all frames is $7.75$~m. Nor is the accuracy uniform, since
+it degrades roughly quadratically with target range and would degrade further at
+the larger standoffs a real sense-and-avoid engagement involves. The honest
+summary is that monocular ground-plane tracking is adequate for the
+search-and-rescue task it was built for, where the objective is to \emph{find} a
+person on the terrain to within a couple of meters, and is not by itself adequate
+for close-in collision avoidance, where the tail of the error distribution matters
+more than its median. That is an argument for the camera--point-cloud fusion of
+the full pipeline rather than against the estimator, whose behavior under these
+conditions is exactly what the consistency analysis showed it to be: correct about
+how uncertain it is, once the pose covariance is propagated.
 
 The caveat is the platform pose, and it ties this chapter back to the theory of
 Chapter~\ref{cha:tracking}. There, the global and local EKF formulations were
@@ -708,7 +988,7 @@ this real-world setting provided that term is included.
 The error analysis also delineates the limits of monocular ground-plane tracking
 and points to the remedies. The largest errors are not a failure of the geometry
 or the filter but of the \emph{detector under loss of view}: during the platform's
-fastest yaw sweeps the target leaves the field of view, the person detector
+full-circle yaw sweeps the target leaves the field of view, the person detector
 momentarily fires on background structure, and the false-positive foot pixel lifts
 to a position several meters off. The remedy is at the detection and
 track-management level, more selective detection and explicit track-coasting or
@@ -730,3 +1010,19 @@ simulation and an uncertain-pose bearing-only real-world deployment, and togethe
 they substantiate the dissertation's claim that one recursive estimator, properly
 instrumented with its uncertainty model, serves the tracking stage across
 perception modalities.
+
+With the tracking stage now established in both regimes, what remains unbuilt is
+the front-end that feeds it. Chapters~\ref{cha:tracking} and~\ref{cha:monocular}
+have taken their measurements as given: a synthetic range--bearing reading in the
+first case, and a person-detector bounding box in the second. The next chapter
+constructs the measurement itself for the full pipeline of
+Chapter~\ref{cha:pipeline}. It builds a purpose-made synthetic aerial dataset in
+the AirSim simulator to overcome the scarcity of annotated three-dimensional
+aerial data identified in Chapter~\ref{cha:relatedwork}, trains the
+two-dimensional detector and the frustum-based point-cloud network on it,
+identifies foreground extraction as the factor that governs three-dimensional
+localization accuracy, and compares the adopted two-stage frustum design against
+the single-stage voxel alternative on a moving-observer campaign. Its output, a
+range, azimuth, elevation, and size with a covariance, is exactly the measurement
+that the filter of Chapter~\ref{cha:tracking} consumes, which is where the
+detection front-end and the tracker of this dissertation meet.

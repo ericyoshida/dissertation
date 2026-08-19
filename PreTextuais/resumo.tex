@@ -1,24 +1,46 @@
 % Resumo (português) --- obrigatório pelo ITA mesmo em dissertações escritas em inglês.
 
-O voo autônomo seguro no espaço aéreo urbano de baixa altitude exige que a
-aeronave construa, a bordo e em tempo real, uma representação calibrada dos
-obstáculos ao seu redor. Esta dissertação desenvolve a camada de percepção
-(\emph{Sense}) do detect-and-avoid de VANTs urbanos, estruturada como um único
-pipeline modular câmera--nuvem de pontos no qual um detector convolucional gera um
-tronco de visada (\emph{frustum}), uma rede de nuvem de pontos eleva cada detecção
-a uma caixa tridimensional métrica, e um filtro bayesiano recursivo converte o
-fluxo de detecções em trajetórias calibradas. O pipeline é validado por três
-estudos autocontidos. Primeiro, o estágio de rastreamento é formulado para uma
-plataforma em movimento nos referenciais global e local; as duas formulações são
-provadas matematicamente equivalentes sob pose conhecida e ruído de processo
-isotrópico, seus regimes de divergência são caracterizados, e o filtro mostra-se
-quase ótimo frente ao limite de Cram\'er--Rao posterior. Segundo, o mesmo
-estimador é levado a voos reais, rastreando uma pessoa a partir de um VANT
-monocular cuja pose é estimada, onde propagar a incerteza da pose da câmera para a
-inovação mostra-se necessário para a consistência estatística. Terceiro, um
-conjunto de dados sintético construído no AirSim treina o \emph{front-end} de
-detecção, e uma comparação empírica identifica a extração de \emph{foreground},
-e não o regressor da caixa, como o fator dominante na acurácia de localização 3D.
+Espera-se que táxis aéreos elétricos e drones de entrega voem rotineiramente
+sobre as cidades na próxima década. Antes que isso aconteça, eles precisam ser
+capazes de enxergar por conta própria. Uma aeronave que opera sem piloto a bordo
+tem de encontrar os obstáculos ao seu redor, determinar onde cada um está, qual
+é o seu tamanho e com que velocidade se move, e fazer tudo isso a bordo e em
+tempo real. As autoridades aeronáuticas chamam essa capacidade de
+\emph{detect-and-avoid} (detectar e evitar), e ela se divide em duas metades:
+\emph{sense}, o problema de percepção, que consiste em construir uma
+representação do tráfego ao redor, e \emph{avoid}, o problema de manobrar para
+desviar. Esta dissertação constrói a metade \emph{sense}.
+
+A solução proposta é um pipeline de percepção formado por quatro estágios que
+trocam entre si informações simples e bem definidas. Primeiro, uma Rede Neural
+Convolucional localiza o obstáculo na imagem da câmera. Segundo, essa região da
+imagem é estendida para o espaço na forma de um tronco de visada
+(\emph{frustum}), que seleciona a pequena parcela da nuvem de pontos
+tridimensional --- medida por uma câmera de profundidade ou por um sensor laser
+--- que pode conter o objeto. Terceiro, uma segunda rede neural lê esses pontos e
+ajusta uma caixa tridimensional métrica ao redor do obstáculo. Quarto, um Filtro
+de Kalman Estendido encadeia as detecções quadro a quadro em uma trajetória ao
+longo do tempo e, o que é igualmente importante, informa o quanto essa trajetória
+pode ser considerada confiável, já que a lógica de desvio precisa raciocinar
+sobre risco de colisão e prever onde o obstáculo estará, e não apenas onde ele
+está agora.
+
+Três estudos autocontidos validam o pipeline. O primeiro formula o estágio de
+rastreamento para um observador que também está em movimento, nas duas escolhas
+naturais de sistema de coordenadas: um referencial fixo ao solo e um referencial
+móvel solidário à aeronave. Prova-se que as duas formulações são matematicamente
+equivalentes quando a pose da própria aeronave é conhecida, identificam-se as
+condições exatas em que essa equivalência deixa de valer, e mostra-se que o
+filtro é quase ótimo frente a um limite teórico de acurácia. O segundo estudo
+leva o mesmo estimador a um quadrimotor real, rastreando uma pessoa caminhando
+com uma única câmera e com uma estimativa de pose embarcada que é ela própria
+incerta; propagar essa incerteza de pose para dentro do filtro é o que mantém
+honesta a confiança reportada. O terceiro estudo constrói um conjunto de dados
+sintético dedicado em um simulador de voo para treinar os estágios de detecção, e
+mostra que separar o objeto do seu plano de fundo, e não o regressor da caixa, é
+o que governa a acurácia tridimensional.
+
 Em conjunto, os estudos mostram que um único estimador recursivo, devidamente
-instrumentado com sua incerteza, serve à etapa Sense através de sensores, alvos e
-ambientes distintos.
+instrumentado com um modelo da origem da sua própria incerteza, é capaz de
+sustentar o estágio \emph{sense} através de sensores, alvos e ambientes
+distintos.

@@ -1,23 +1,42 @@
 % Abstract (English).
 
-Safe autonomous flight in low-altitude urban airspace requires an aircraft to
-build, on board and in real time, a calibrated picture of the obstacles around
-it. This dissertation develops the perception (\emph{Sense}) layer of urban UAV
-detect-and-avoid, structured as a single modular camera--point-cloud pipeline in
-which a convolutional detector seeds a viewing frustum, a point-cloud network
-lifts each detection into a metric three-dimensional box, and a recursive
-Bayesian filter turns the stream of detections into calibrated tracks. The
-pipeline is validated through three self-contained studies. First, the tracking
-stage is formulated for a moving platform in global and local reference frames;
-the two formulations are proven mathematically equivalent under a known platform
-pose and isotropic process noise, their divergence regimes are characterized, and
-the filter is shown to be near-optimal against the posterior Cram\'er--Rao bound.
-Second, the same estimator is taken to real flights, tracking a person from a
-monocular UAV whose pose is estimated rather than known, where propagating the
-camera-pose uncertainty into the innovation is shown to be necessary for
-statistical consistency. Third, a purpose-built synthetic AirSim dataset trains
-the detection front-end, and an empirical comparison identifies foreground
-extraction, rather than the box regressor, as the dominant lever on
-three-dimensional localization accuracy. Together, the studies show that one
-recursive estimator, properly instrumented with its uncertainty, serves the Sense
-stage across sensors, targets, and environments.
+Electric air taxis and delivery drones are expected to fly routinely over cities
+within the next decade. Before they can, they must be able to see for
+themselves. An aircraft operating without a pilot on board has to find the
+obstacles around it, work out where each one is, how large it is, and how fast it
+is moving, and it has to do so onboard and in real time. Aviation authorities
+call this capability \emph{detect-and-avoid}, and it divides into two halves:
+\emph{sense}, the perception problem of building a picture of the surrounding
+traffic, and \emph{avoid}, the problem of maneuvering out of the way. This
+dissertation builds the \emph{sense} half.
+
+The proposed solution is a perception pipeline of four stages that hand simple,
+well-defined information to one another. First, a Convolutional Neural Network
+locates the obstacle in the camera image. Second, that image region is extended
+outward into space as a viewing cone, a \emph{frustum}, which selects the small
+portion of the three-dimensional point cloud --- measured by a depth camera or a
+laser scanner --- that can contain the object. Third, a second neural network
+reads those points and fits a metric three-dimensional box around the obstacle.
+Fourth, an Extended Kalman Filter links the per-image detections into a
+trajectory over time and, just as importantly, reports how much that trajectory
+can be trusted, since the avoidance logic must reason about collision risk and
+predict where the obstacle will be, not merely about where it is now.
+
+Three self-contained studies validate the pipeline. The first formulates the
+tracking stage for an observer that is itself moving, in the two natural choices
+of coordinate system: a fixed frame attached to the ground and a moving frame
+attached to the aircraft. The two formulations are proven mathematically
+equivalent when the aircraft's own pose is known, the exact conditions under
+which they cease to be equivalent are identified, and the filter is shown to be
+near-optimal against a theoretical accuracy limit. The second study takes the
+same estimator onto a real quadrotor, tracking a walking person with a single
+camera and an onboard pose estimate that is itself uncertain; carrying that pose
+uncertainty into the filter is what keeps the reported confidence honest. The
+third study builds a purpose-made synthetic dataset in a flight simulator to
+train the detection stages, and shows that separating the object from its
+background, rather than the box regressor itself, is what governs
+three-dimensional accuracy.
+
+Together, the studies show that a single recursive estimator, properly equipped
+with a model of where its own uncertainty comes from, can serve the \emph{sense}
+stage across different sensors, targets, and environments.

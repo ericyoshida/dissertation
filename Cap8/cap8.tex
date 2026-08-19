@@ -93,10 +93,12 @@ consumes them and its real-world generalization.
   recovered through a ground-plane constraint), and the platform pose became an
   on-board estimate rather than a known quantity. Tracking a freely walking person
   during flights with full $360^\circ$ yaw rotations, the system attained a median
-  horizontal error of $1.75$~m over a ${\sim}12$~m arena from monocular cues alone
+  ground-plane error of $1.28$~m over a ${\sim}12$~m arena from monocular cues alone
   and without GNSS, against a LiDAR-referenced ground truth and with no post-hoc
-  alignment, with the per-frame ground-plane lift accurate to about $1$~m on the
-  correctly detected frames. More important than the accuracy was the consistency result: this is
+  alignment; the median rises to $1.75$~m if the two intervals in which the target
+  left the field of view, and the detector fired on background structure, are
+  included. The unfiltered per-frame ground-plane lift is accurate to $1.05$~m,
+  so the filter preserves rather than degrades the accuracy of the geometry. More important than the accuracy was the consistency result: this is
   exactly the uncertain-pose regime that Chapter~\ref{cha:tracking} predicted would
   break the frame equivalence, and propagating the six-degree-of-freedom camera-pose
   covariance into the innovation through an extrinsic Jacobian proved
@@ -146,6 +148,38 @@ work does not yet establish.
   a sim-to-real gap: the detectors have not been confronted with the noise,
   lighting, and appearance statistics of real aerial footage, so their reported
   accuracy is an upper bound on real-world performance.
+  \item \textbf{The simulated point cloud is an idealized depth image, not a real
+  LiDAR.} As set out in Section~\ref{sec:sensor_caveat}, the cloud that feeds the
+  three-dimensional stage in Chapter~\ref{cha:airsim} is produced by AirSim's
+  planar-depth camera: dense, noiseless, free of dropouts, and independent of
+  surface material, incidence angle, and weather. A real airborne LiDAR is sparse,
+  angularly quantized, noisy, prone to dropouts on dark or specular surfaces,
+  degraded by rain and fog, and subject to occlusion and motion-distortion
+  geometries that a globally shuttered depth image does not have. The localization
+  accuracies of Chapter~\ref{cha:airsim} should therefore be read as an upper
+  bound obtained under uniformly favorable sensing, and the frustum-versus-voxel
+  ranking as one established under those same favorable conditions; the two
+  paradigms could plausibly reorder under sparse returns, since the voxel design
+  depends more heavily on having enough points on the target.
+  \item \textbf{Tracking is delivered, but trajectory prediction is not.} The
+  estimator outputs a position, a velocity, and a covariance, from which a future
+  position can be extrapolated through the constant-velocity model, and that is
+  what the avoidance layer would use. It is nevertheless an extrapolation of
+  kinematics, not a prediction of behavior: it does not model the obstacle's
+  intent, its maneuver repertoire, or the structure of the airspace, and its
+  uncertainty envelope therefore widens conservatively with the horizon. Since
+  avoidance is fundamentally a decision about the \emph{future} conflict geometry
+  and not about the present position, this is a real gap between what the
+  perception layer delivers and what a complete detect-and-avoid function needs.
+  \item \textbf{No comparison against an external benchmark.} The detection and
+  tracking results of Chapter~\ref{cha:airsim} are internally comparative: the
+  architectures are compared against each other, on a purpose-built dataset, under
+  an identical protocol. They are not placed against any published method on any
+  public benchmark, because no aerial three-dimensional benchmark with the
+  required annotations was available when the campaign was run and because the
+  synthetic dataset is this work's own. The consequence is that the reported
+  numbers establish a ranking among the alternatives implemented here but do not
+  situate the pipeline within the wider literature in absolute terms.
   \item \textbf{Recall, not precision, limits the two-stage design.} The frustum
   pipeline's recall falls to $0.31$--$0.58$ under tree clutter and fog, inherited
   almost entirely from the 2D stage. In a collision-avoidance application a missed
@@ -171,9 +205,17 @@ work does not yet establish.
   contrast, treats the platform pose as \emph{known} and does not yet propagate
   the pose-estimate covariance the way the Chapter~\ref{cha:monocular} monocular
   tracker does; doing so is left as future work.
-  \item \textbf{No real-time, embedded demonstration.} All inference was run
-  offline; the onboard-compute budget that an embedded sense-and-avoid system
-  imposes (Chapter~\ref{cha:relatedwork}) has not yet been met.
+  \item \textbf{No real-time, embedded demonstration.} All experiments were run on
+  the laptop-class machine described in Section~\ref{sec:compute}, an Intel
+  Core~i7 with an NVIDIA GeForce RTX~4060. On that hardware the recursive filter
+  is real-time by a wide margin and the 2D detector meets the frame rate at
+  roughly $5$~ms per frame, but the composed pipeline does not: network inference
+  in the real-flight study lags the live stream by two to three seconds, and the
+  full three-dimensional chain of Chapter~\ref{cha:airsim} is heavier still, so
+  all inference was executed offline. End-to-end latency was never benchmarked,
+  and no experiment was run on hardware representative of an onboard computer, so
+  the compute budget that an embedded sense-and-avoid system imposes
+  (Chapter~\ref{cha:relatedwork}) has not yet been met or even measured.
 \end{itemize}
 
 \section{Future Work}
@@ -207,7 +249,65 @@ immediate to the most ambitious.
   into the spherical-measurement tracker of Chapter~\ref{cha:airsim}, instantiating
   the uncertain-pose divergent regime of Chapter~\ref{cha:tracking} for the 3D
   case and yielding a tracker that is consistent under the real navigation
-  solution rather than an assumed-known pose.
+  solution rather than an assumed-known pose. Two concrete steps precede it. The
+  extrinsic Jacobian must be re-derived for the spherical measurement, composing
+  the spherical Jacobian of Eq.~\eqref{eq:Jsph} with the $SE(3)$ perturbation
+  block of Eq.~\eqref{eq:se3_pert} in place of the projection Jacobian; and the
+  navigation subsystem must be made to \emph{publish} its covariance, which is the
+  practical obstacle that forced the constant, isotropic $\bm{\Sigma}$ of
+  Chapter~\ref{cha:monocular}. The second is the more important of the two: a
+  time-varying $\bm{\Sigma}_k$ would let the filter widen its gate precisely
+  during the aggressive maneuvers in which the pose is least trustworthy, which a
+  single tuned scalar cannot do.
+
+  \item \textbf{Trajectory prediction, and metrics that reward it.} Tracking is
+  not sufficient for avoidance. An evasive maneuver takes time to plan and to fly,
+  so the decision layer needs the obstacle's \emph{future} position over a horizon
+  of seconds, with an honest uncertainty envelope, and not merely its present
+  state. Extrapolating the constant-velocity model gives a first, kinematic
+  answer, and it is what the present estimator affords; a behavior-aware predictor,
+  learned or maneuver-model-based, would be the substantive extension, and the
+  detection front-end is arguably better placed than the filter to supply the
+  contextual cues (object class, attitude, apparent intent) such a predictor needs.
+  This change of objective implies a change of metrics. Neither RMSE nor MOTA
+  measures whether a system would have avoided a collision, since both score the
+  \emph{current} estimate; the appropriate figures of merit are predictive and
+  risk-oriented, such as average and final displacement error at a fixed horizon,
+  time-to-conflict or time-to-closest-approach error, and the rate of missed or
+  spurious conflict alerts. Adopting them would also make the comparison between
+  the detection paradigms of Chapter~\ref{cha:airsim} conclusive for the intended
+  task, which the present detection-and-tracking metrics can only approximate.
+
+  \item \textbf{External benchmarks and comparison against published methods.} The
+  architectural comparison of Chapter~\ref{cha:airsim} is internally consistent but
+  self-contained. Before those results are submitted for publication they should be
+  anchored to the wider literature in two ways: by evaluating the same pipeline on
+  a public aerial three-dimensional benchmark, of which UAV3D
+  \cite{ye2024uav3d} is currently the only large-scale option, and by reporting the
+  driving-domain baselines the frustum and voxel families were originally
+  validated on, so that the aerial numbers can be read against the ground-vehicle
+  numbers the methods are known for on KITTI \cite{geiger2012kitti} and nuScenes
+  \cite{caesar2020nuscenes}. A published reference point is what turns a ranking
+  among one's own variants into a contribution a reviewer can situate.
+
+  \item \textbf{Realistic range sensing.} The idealized depth camera of
+  Section~\ref{sec:sensor_caveat} should give way to a validated LiDAR model, and
+  ultimately to real returns from one of the light UAV-grade units now available,
+  such as the Livox Mid-360 already carried by the platform of
+  Chapter~\ref{cha:monocular} \cite{livox_mid360}. Sparsity, dropouts, and
+  incidence-angle effects are exactly the conditions under which the
+  frustum-versus-voxel trade-off could reorder, since the voxel design depends on
+  having enough returns on the target, so this is not merely a fidelity exercise
+  but a test of the chapter's central architectural conclusion.
+
+  \item \textbf{Multiple object classes.} Both studies track a single class, a
+  quadrotor in simulation and a person in the real flights. Urban airspace is not
+  so obliging: birds, fixed-wing aircraft, larger eVTOLs, and ground vehicles
+  differ in size, in dynamics, and in the motion model that best describes them.
+  Extending the front-end to a multi-class detector and the tracker to
+  class-conditioned motion models, possibly through an interacting-multiple-model
+  filter, is a natural next step, and it also changes the association problem,
+  since class identity is an additional and highly discriminative association cue.
   \item \textbf{A range-adaptive, mode-switching tracker.} The two tracking
   studies are complementary in range. An active depth or LiDAR sensor gives a
   metric range--bearing measurement at close range (Chapter~\ref{cha:tracking}),
@@ -221,10 +321,29 @@ immediate to the most ambitious.
   bearing-only monocular update beyond it, so that the obstacle is tracked
   continuously across the whole approach. This unifies the two studies into one
   estimator and is, in our view, the most promising way to combine them.
-  \item \textbf{Collaborative multi-UAV perception.} Because the tracker consumes
-  an abstract measurement with a calibrated covariance, tracks estimated by
-  several platforms can in principle be fused into a shared situational picture,
-  extending the single-observer awareness of this work to a cooperative one.
+  \item \textbf{Collaborative and joint multi-UAV perception.} Because the tracker
+  consumes an abstract measurement with a calibrated covariance, tracks estimated
+  by several platforms can in principle be fused into a shared situational
+  picture, extending the single-observer awareness of this work to a cooperative
+  one. Two variants are worth distinguishing. The simpler is \emph{cooperative
+  tracking}, in which each aircraft runs its own filter and only the resulting
+  tracks are fused; the harder, and the more interesting, is \emph{joint
+  cooperative pose estimation and tracking}, in which the common targets are also
+  used to tie the platforms' own pose estimates together, so that an aircraft with
+  a degraded navigation solution is corrected by what its neighbors see. The
+  latter directly relaxes the assumption that Chapter~\ref{cha:tracking} isolates
+  and that Chapter~\ref{cha:monocular} works around, and it would replace the
+  block-diagonal treatment of platform and target uncertainty by a genuinely
+  coupled one. Whether it is appropriate for sense-and-avoid is a design question
+  rather than a settled one, since it introduces a dependence on the
+  communication link and a correlated-error problem that a
+  certification argument must address. The same caution applies to the related
+  idea of \emph{centralized} filtering, in which small aircraft stream their
+  imagery to one powerful ground computer in order to escape their onboard compute
+  budget: attractive on throughput grounds, it concentrates the perception function
+  in a single point of failure, which is difficult to defend for a
+  collision-avoidance function and unacceptable in contested or
+  communication-denied operation.
   \item \textbf{Closing the loop to \emph{Avoid}.} The calibrated tracks this
   pipeline emits were designed for a risk-aware avoidance layer; coupling the
   perception output to trajectory planning and control would complete the

@@ -67,8 +67,9 @@ The second effort grew directly out of that publication. After the tracker was
 presented at FUSION~2025, researchers from the UBADRON team of the Technische
 Universit\"at Berlin (TU~Berlin), led by Prof.~Maarten Uijt de Haag, visited ITA.
 Their team competes in the SPRIND ``Fully Autonomous Flight'' Challenge, in which
-an autonomous UAV must operate without GNSS and locate targets (people) on the
-terrain, a task with a clear search-and-rescue motivation. They had a working
+an autonomous UAV must operate without a Global Navigation Satellite System
+(GNSS) and locate targets (people) on the terrain, a task with a clear
+search-and-rescue motivation. They had a working
 person-\emph{detection} front-end --- the early perception stage that turns raw
 sensor data into per-object detections, before any tracking --- but lacked a
 tracker, which is exactly what our FUSION work provided. The two groups therefore collaborated: TU~Berlin supplied
@@ -114,18 +115,29 @@ requirement that Sense places on Avoid goes beyond the obstacle's current
 position. Avoid needs a \emph{calibrated} estimate of the obstacle's full state,
 its position, velocity, and size, together with a trustworthy measure of the
 uncertainty of that estimate, so that the avoidance logic can reason about
-collision risk and time-to-conflict. The velocity estimate lets Avoid
-anticipate a conflict rather than react to the present position, which is the
-main reason the perception output must include a temporal tracking stage and not
-per-frame detections alone; the size estimate, in turn, bounds the spatial extent
-that the maneuver must clear. This emphasis on calibrated uncertainty recurs
-throughout the thesis and motivates several of its technical choices.
+collision risk and time-to-conflict. Tracking where the obstacle \emph{is} is
+therefore necessary but not sufficient. Because an evasive maneuver takes time to
+plan and to fly, Avoid must reason about where the obstacle \emph{will be} several
+steps ahead, and it is the perception layer that has to supply that forecast: a
+track handed over without a prediction leaves the avoidance logic reacting to the
+past. This is the main reason the perception output must include a temporal
+tracking stage and not per-frame detections alone. The estimator developed here
+supplies the forecast in the form that a recursive filter naturally affords:
+its state carries position \emph{and} velocity together with a covariance, so
+propagating the motion model forward yields a predicted position at any horizon,
+accompanied by an uncertainty envelope that widens with that horizon. Richer
+trajectory prediction, which would model the obstacle's intent rather than
+extrapolate its kinematics, lies beyond the scope of this dissertation and is
+taken up as future work in Chapter~\ref{cha:conclusions}. The size estimate, in
+turn, bounds the spatial extent that the maneuver must clear. This emphasis on
+calibrated uncertainty recurs throughout the thesis and motivates several of its
+technical choices.
 
 Within Sense, three perception sub-problems must be solved in sequence:
 detection in two dimensions (locating objects in the image), detection in three
 dimensions (lifting them into metric space), and tracking (maintaining their
-state over time). The first two are powered by convolutional neural
-networks (CNNs); the third, the tracking stage, by recursive
+state over time). The first two are powered by Convolutional Neural
+Networks (CNNs); the third, the tracking stage, by recursive
 Bayesian estimation.
 
 \section{Problem Statement}
@@ -144,8 +156,19 @@ avoidance module. Three characteristics make this difficult:
   explicitly accounted for.
   \item \textbf{Sensing is noisy, and depth is hard to recover.} Every
   measurement carries noise in both range and bearing. Depth is the harder
-  component: it is unobservable from a single monocular view and must be recovered
-  from additional assumptions or sensors, and even active range sensors degrade
+  component: it is not \emph{directly} observable from a single monocular view,
+  because the pre-image of a pixel is an entire ray, so it must be supplied either
+  by an additional sensor or by an additional assumption about the scene. This is
+  not to say that depth cannot be inferred from imagery at all. Modern learned
+  monocular estimators do recover metric depth from a single image with useful
+  accuracy \cite{bhat2023zoedepth,yang2024depthanything}, and the gap to an active
+  range sensor has narrowed considerably; what remains true is that such an
+  inference is indirect, and that its error is harder to characterize and to
+  bound than that of a direct measurement, which matters for a certifiable
+  estimator. This dissertation therefore recovers depth geometrically: from the
+  point cloud where one is available (Chapters~\ref{cha:pipeline}
+  and~\ref{cha:airsim}), and from a ground-plane constraint where the only sensor
+  is a camera (Chapter~\ref{cha:monocular}). Even active range sensors degrade
   with distance, so the range noise is strongly range-dependent and must be modeled
   as such rather than assumed constant.
   \item \textbf{Aerial data are scarce and computational resources are limited.} Unlike ground
@@ -154,10 +177,16 @@ avoidance module. Three characteristics make this difficult:
   hardware.
 \end{enumerate}
 
+\section{Proposed Solution}
+\label{sec:proposed_solution}
+
 The approach taken here is a \emph{modular camera--point-cloud fusion pipeline},
 modular in the sense that each stage exposes an explicit, low-dimensional
 interface to the next and can therefore be trained, validated, and replaced
-independently of the others.
+independently of the others. Figure~\ref{fig:pipeline_intro} shows the resulting
+architecture end to end; it is the single artifact to which every chapter of this
+dissertation contributes, and Chapter~\ref{cha:pipeline} develops it in detail.
+
 A CNN detector first localizes objects in the image; each two-dimensional
 detection is lifted into a viewing \emph{frustum} that bounds the corresponding
 region of the point cloud; a point-cloud network estimates an amodal
@@ -167,7 +196,53 @@ Filter (EKF) tracks the resulting detections over time. This frustum-based
 fusion follows the lineage of Frustum PointNets \cite{qi2018frustum}, adapted
 here to the aerial sense-and-avoid setting.
 
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{Cap4/pipeline_architecture.pdf}
+  \caption{The proposed modular camera--point-cloud perception pipeline, shown
+  here in overview. A 2D detector seeds a viewing frustum that crops the point
+  cloud; a point-cloud network regresses a 3D box; and a recursive filter tracks
+  the detections, outputting calibrated 3D tracks for the avoidance layer. Each
+  of the three studies of this dissertation contributes one part of this single
+  architecture, which Chapter~\ref{cha:pipeline} presents in full detail.}
+  \label{fig:pipeline_intro}
+\end{figure}
+
+\subsection{Where the Point Clouds Come From}
+\label{sec:cloud_provenance}
+
+Because the pipeline consumes a point cloud at its second stage, it is worth
+stating at the outset which sensor produces that cloud in each part of this work.
+The three settings differ, and the distinction matters when reading the results.
+
+\begin{itemize}
+  \item In the pipeline as an \emph{architecture} (Chapter~\ref{cha:pipeline}),
+  the cloud is whatever three-dimensional sensor the aircraft carries: a LiDAR, a
+  stereo rig, or an RGB-D (depth) camera. The tracker consumes an abstract
+  range--bearing measurement with a covariance and is indifferent to which of
+  these produced it.
+  \item In the simulated detection study (Chapter~\ref{cha:airsim}), the working
+  cloud is produced by an \emph{idealized planar-depth camera} in AirSim, and not
+  by a real LiDAR. A simulated $64$-beam LiDAR is available and is retained as an
+  auxiliary channel, but at the altitudes of interest the targets are seen against
+  the sky, where too few beams strike them to localize a target, whereas the dense
+  depth image supplies the $10^{5}$--$3\times10^{5}$ points per frame that the
+  point-cloud network needs. The idealization this entails, and its consequences
+  for how the reported accuracy should be read, are stated explicitly in
+  Section~\ref{sec:sensor_caveat}.
+  \item In the real-flight study (Chapter~\ref{cha:monocular}) there is
+  \emph{no} point cloud on the target at all. The only onboard sensor pointed at
+  the person is a monocular camera, and the missing depth is recovered from a
+  ground-plane constraint. A LiDAR appears in that study only offline, to survey
+  the room and build the reference map against which the tracker is scored.
+\end{itemize}
+
 \section{Objectives}
+
+The problem stated in Section~\ref{sec:proposed_solution} and the solution
+sketched there translate into one overarching goal and three specific goals, one
+per study. They are stated here in the order in which the dissertation pursues
+them.
 
 \subsection{General Objective}
 
@@ -242,7 +317,7 @@ realize and validate its components:
 \section{Publications}
 
 The tracking formulation of Chapter~\ref{cha:tracking} was published as:
-de~Lima, Dias, and M\'aximo, \emph{Extended Kalman Filter-Based Object Tracking
+de~Lima, Dias, and Maximo, \emph{Extended Kalman Filter-Based Object Tracking
 Using Global and Local Frames}, IEEE International Conference on Information
 Fusion (FUSION), 2025 \cite{delima2025fusion}. The real-data study of
 Chapter~\ref{cha:monocular}, developed with the UBADRON team of the Chair of
@@ -270,7 +345,7 @@ onboard sense-and-avoid system.
 \label{sec:ai_disclaimer}
 
 In the interest of transparency, the author discloses the use of
-artificial-intelligence (AI) assistants during the preparation of this
+Artificial-Intelligence (AI) assistants during the preparation of this
 dissertation. AI-based tools (large language models) were used as a writing aid,
 to improve the clarity, grammar, and flow of the English text, to help structure
 and format \LaTeX{} and to assist with routine plotting and figure-generation

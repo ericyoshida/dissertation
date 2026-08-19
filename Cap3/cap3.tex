@@ -14,6 +14,12 @@ open.
 
 \section{Review Methodology}
 
+A literature review that is to support a claim of novelty must be reproducible,
+which means stating the protocol before the findings. This section does so in
+three parts: the protocol and the research question that drives the search, the
+bibliographic sources and selection criteria applied to it, and the numerical
+outcome of running that procedure.
+
 \subsection{Protocol and Research Question}
 
 The review follows the PRISMA~2020 reporting guideline \cite{page2021prisma}, a
@@ -39,24 +45,73 @@ with real-time feasibility; and the \emph{context} is urban sense-and-avoid
 (perception only).
 
 \subsection{Sources, Search, and Selection}
+\label{sec:slr_sources}
 
-Automated searches of OpenAlex, Semantic Scholar, and academic web search
-engines were run with three query families, namely (i) UAV sense-and-avoid with deep
-perception, (ii) frustum- and PointNet-based 3D detection, and (iii)
-LiDAR--camera fusion for aerial 3D detection, and complemented by backward and
-forward snowballing (one-hop) from four seed papers: PointNet
-\cite{qi2017pointnet}, Frustum PointNets \cite{qi2018frustum}, the UAV3D
-benchmark \cite{ye2024uav3d}, and a recent UAV 3D-perception survey. Studies were
-included if published in 2017--2026 (the year PointNet appeared), addressing
-perception (detection, tracking, or situational awareness) for UAVs or for
-ground-vehicle techniques transferable to UAVs, and containing a deep-learning
-component; works addressing only avoidance, planning, or control, lacking a
-learning component, or in unrelated domains were excluded. Each retained study
-was scored on the five Kitchenham criteria of Table~\ref{tab:qa}, on a
-$0$/$0.5$/$1$ scale; following the protocol, studies scoring below $2.5$ were
-demoted to background text and excluded from the synthesis. The process was
-managed with Rayyan, Zotero, and Parsifal, standard tools for conducting
-systematic literature reviews.
+\paragraph*{Bibliographic sources and search engines.} Because the
+reproducibility of a systematic review rests on stating exactly where one looked,
+the sources are listed explicitly. The automated search was run against two
+scholarly bibliographic databases through their public programmatic interfaces,
+namely the \textbf{OpenAlex} API \cite{priem2022openalex}, an open index of
+scholarly works, authors, venues, and institutions, and the \textbf{Semantic
+Scholar} API \cite{lo2020s2orc}, whose corpus and citation graph also supplied
+the ``cited by'' relation used for snowballing. These were complemented by
+academic web search over the publisher and preprint venues that dominate this
+literature, specifically \textbf{Google Scholar}, \textbf{arXiv},
+\textbf{IEEE Xplore}, \textbf{MDPI}, \textbf{SpringerLink}, and
+\textbf{ScienceDirect} (Elsevier).
+
+Three query families were used: (i) UAV sense-and-avoid with deep perception,
+(ii) frustum- and PointNet-based 3D detection, and (iii) LiDAR--camera fusion for
+aerial 3D detection. Each family combined a population term (\texttt{UAV},
+\texttt{drone}, \texttt{unmanned aerial vehicle}, \texttt{aerial robot}), an
+intervention term (\texttt{sense and avoid}, \texttt{detect and avoid},
+\texttt{obstacle detection}, \texttt{situational awareness}, \texttt{perception}),
+and a method term (\texttt{deep learning}, \texttt{CNN}, \texttt{convolutional
+neural network}, \texttt{PointNet}, \texttt{YOLO}), restricted to
+$2017$--$2026$ and to English-language articles, conference papers, and reviews.
+The automated search was complemented by backward and forward snowballing
+(one-hop, following Wohlin \cite{wohlin2014snowball}) from four seed papers:
+PointNet \cite{qi2017pointnet}, Frustum PointNets \cite{qi2018frustum}, the UAV3D
+benchmark \cite{ye2024uav3d}, and a recent UAV 3D-perception survey.
+
+\paragraph*{Selection and quality assessment.} Studies were included if published
+in $2017$--$2026$ ($2017$ being the year PointNet appeared), addressing perception
+(detection, tracking, or situational awareness) for UAVs or ground-vehicle
+techniques transferable to UAVs, and containing a deep-learning component; works
+addressing only avoidance, planning, or control, lacking a learning component, or
+in unrelated domains were excluded. Each retained study was scored on the five
+Kitchenham criteria of Table~\ref{tab:qa}, on a $0$/$0.5$/$1$ scale; following the
+protocol, studies scoring below $2.5$ were demoted to background text and excluded
+from the synthesis.
+
+\paragraph*{Review-management tools.} Three standard instruments supported the
+process, and are named so that the workflow can be reproduced:
+\textbf{Parsifal}, used to hold the review protocol (research question, PICOC,
+inclusion and exclusion criteria, and quality-assessment form);
+\textbf{Rayyan} \cite{ouzzani2016rayyan}, a purpose-built screening application,
+used for the title-and-abstract and full-text screening stages; and
+\textbf{Zotero}, used for reference management, metadata completion from DOIs, and
+duplicate detection across the merged result sets.
+
+\paragraph*{A limitation of source coverage.} One deviation from the ideal
+protocol should be recorded rather than glossed over, since it bears on the
+completeness of the review. The searches described above were run on open
+bibliographic APIs and academic web search, but the equivalent queries were
+\emph{not} executed against the subscription-based indexes
+\textbf{Scopus}, \textbf{Web of Science}, and the institutional
+\textbf{IEEE Xplore} interface, for which query strings were prepared but which
+were left unrun. Those indexes curate venue coverage differently from OpenAlex and
+Semantic Scholar, so a small number of records --- most plausibly from journals
+outside the arXiv-first culture of this field --- may have been missed. Two
+considerations limit the practical impact. First, the field surveyed here is one
+whose primary venues (CVPR, ICCV, ECCV, NeurIPS, ICRA, IROS, and the IEEE
+robotics and remote-sensing journals) are comprehensively indexed by OpenAlex and
+Semantic Scholar and are almost universally preprinted on arXiv. Second, the
+one-hop bidirectional snowballing provides an independent recovery path that does
+not depend on any index's coverage, and it surfaced $44$ additional records, none
+of which contradicted the gap identified in Section~\ref{sec:gap}. Running the
+institutional searches is nevertheless the first thing that should be done before
+this review is submitted as a standalone publication.
 
 \begin{table}[H]
   \centering
@@ -107,8 +162,8 @@ absent from any one of them.
 \section{Camera--LiDAR 3D Object Detection in Autonomous Driving}
 \label{sec:slr_driving}
 
-Three-dimensional detection by camera--LiDAR fusion is most developed in the
-autonomous-driving domain, where it follows two broad designs. The first, and the
+Fusing a camera with a LiDAR to detect objects in three dimensions is a technique
+most developed in the self-driving-car domain, where it follows two broad designs. The first, and the
 lineage the proposed pipeline descends from, is the \emph{two-stage frustum}
 design: Frustum PointNets \cite{qi2018frustum} lift each 2D detection into a
 viewing frustum, crop the corresponding point cloud, and apply a PointNet
@@ -184,6 +239,15 @@ detector on their union is what yields the cross-domain generalization exploited
 in Chapter~\ref{cha:monocular}.
 
 \section{The Research Gap}
+\label{sec:gap}
+
+The thematic survey above shows a literature that is mature on either side of a
+divide: the frustum-to-PointNet machinery is well developed for ground vehicles,
+and aerial perception is well developed in two dimensions, but the two have not
+been brought together. This section makes that observation precise. It first
+tabulates the closest adjacent works against the attributes that define this
+dissertation's target, and then asks the question such a table invites: if the
+transfer is so direct, why has nobody made it?
 
 \subsection{Uniqueness Matrix}
 
@@ -203,7 +267,7 @@ attributes; only this dissertation fills every cell.
   \caption{Uniqueness matrix. \checkmark{}: present and central; $\sim$: partial;
   $\times$: absent. Only the last row fills all seven attributes.}
   \label{tab:uniqueness}
-  \setlength{\tabcolsep}{4.4pt}
+  \setlength{\tabcolsep}{3.4pt}
   \begin{tabular}{@{}lccccccc@{}}
     \toprule
     Work & Drone & Frustum & PointNet & Fusion & Track & Urban & S\&A \\
@@ -282,3 +346,14 @@ through a synthetic dataset and an efficient, rigorously analyzed tracker. The
 tracking stage, the component that the literature most often
 defers, is the most mature contribution and is developed first, in
 Chapter~\ref{cha:tracking}.
+
+Having established \emph{what} is missing from the literature, the natural next
+question is \emph{what} should be built in its place. The following chapter
+answers it at the level of architecture: it presents the proposed
+camera--point-cloud perception pipeline as a single system, describes its four
+stages and the interfaces between them, explains the two design commitments
+(fusion by geometry and calibrated output) that motivate the arrangement, and maps
+each of the three studies of this dissertation onto the stage it contributes. It
+is the chapter that holds the remainder of the work together, and the three study
+chapters that follow it can be read as detailed treatments of the blocks it
+introduces.

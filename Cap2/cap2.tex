@@ -35,7 +35,7 @@ through the process model (the Chapman--Kolmogorov equation), and an
 \emph{update} that fuses the new measurement through Bayes' rule. For the
 linear-Gaussian special case, with $\bm{f}(\bm{x})=\bm{F}\bm{x}$ and
 $\bm{h}(\bm{x})=\bm{H}\bm{x}$, these integrals admit a closed form, the
-\emph{Kalman filter} (KF) \cite{barshalom2001,brookner1998}: the posterior
+\emph{Kalman Filter} (KF) \cite{barshalom2001,brookner1998}: the posterior
 remains Gaussian and is summarized by its mean $\hat{\bm{x}}_{k|k}$ and covariance
 $\bm{P}_{k|k}$, propagated by
 \begin{align}
@@ -94,6 +94,14 @@ algebraically distinct EKF formulations are compared.
 
 \section{Coordinate Frames and Rigid-Body Transformations}
 
+Every quantity in this dissertation is expressed in one of a small number of
+reference frames, and much of the technical content consists of moving between
+them correctly. This section fixes those frames, the rotation convention that
+relates them, and the algebra of rigid-body transforms, including the
+representation of an \emph{uncertain} transform that Chapter~\ref{cha:monocular}
+requires. The three subsections proceed from the frames themselves, to the
+transforms that connect them, to the linearized perturbation of such a transform.
+
 \subsection{World, Body, and Optical Frames}
 
 Three right-handed frames are used. The \emph{world} frame $\mathcal{W}$ is a
@@ -134,31 +142,101 @@ homogeneous coordinates,
 which compactly writes the world point as a function of the body point through the
 pose $\bm{T}\in SE(3)$.
 
-\subsection{Pose Perturbations}
+\subsection{Pose Perturbations and the Lie Algebra of $SE(3)$}
+\label{sec:pose_perturbations}
 
-When the platform pose is uncertain (Chapter~\ref{cha:monocular}), its
-uncertainty must be propagated through the geometry. A small perturbation of the
-pose is described by a six-vector
-$\bm{\xi}=[\bm{\delta\theta}^{\top}\;\bm{\delta t}^{\top}]^{\top}$ in the tangent
-space of $SE(3)$, where $\bm{\delta\theta}$ collects the three infinitesimal
-rotation angles and $\bm{\delta t}$ the three translation increments. To first
-order, this perturbation displaces a point expressed in the camera frame by
+When the platform pose is uncertain (Chapter~\ref{cha:monocular}), that
+uncertainty must be propagated through the geometry, and doing so requires a
+\emph{linear} coordinate in which a small change of pose can be represented. The
+set $SE(3)$ of rigid-body transforms is not a vector space --- the sum of two
+homogeneous transforms is not itself a transform --- so a pose error cannot be
+represented by simple addition. It is, however, a \emph{Lie group}: a smooth
+manifold that is simultaneously a group under matrix multiplication. The
+construction recalled below is standard, and a tutorial treatment is given by
+\citen{sola2018microlie}.
+
+A tangent space is defined \emph{at a point} of the manifold, so one does not
+speak of ``the'' tangent space of $SE(3)$ without saying where. The tangent space
+at the group identity $\bm{I}_4$ is distinguished, because it inherits the group
+structure, and is called the \emph{Lie algebra} of $SE(3)$, denoted
+$\mathfrak{se}(3)$. Its elements are the $4\times4$ matrices
 \begin{equation}
-  \delta\bm{p}^{\mathcal{O}} \approx -[\bm{p}^{\mathcal{O}}]_\times\,\bm{\delta\theta} + \bm{\delta t},
+  \bm{\xi}^{\wedge} =
+  \begin{bmatrix} [\bm{\delta\theta}]_\times & \bm{\delta t} \\[2pt]
+                  \bm{0}_{1\times3} & 0 \end{bmatrix} \in \mathfrak{se}(3),
   \qquad
   [\bm{a}]_\times = \begin{bmatrix} 0 & -a_3 & a_2 \\ a_3 & 0 & -a_1 \\ -a_2 & a_1 & 0 \end{bmatrix},
+  \label{eq:se3_algebra}
+\end{equation}
+where $[\,\cdot\,]_\times:\mathbb{R}^3\to\mathfrak{so}(3)$ is the skew-symmetric
+(cross-product) matrix, itself the Lie algebra of the rotation group $SO(3)$.
+Such a matrix is determined completely by the six real numbers collected in
+\begin{equation}
+  \bm{\xi} = \begin{bmatrix} \bm{\delta\theta} \\ \bm{\delta t} \end{bmatrix} \in \mathbb{R}^{6},
+  \label{eq:se3_coords}
+\end{equation}
+in which $\bm{\delta\theta}$ holds the three infinitesimal rotation components and
+$\bm{\delta t}$ the three translation increments. The \emph{hat} map
+$(\cdot)^{\wedge}:\mathbb{R}^{6}\to\mathfrak{se}(3)$ defined by
+\eqref{eq:se3_algebra}, and its inverse the \emph{vee} map, are linear bijections,
+so $\mathfrak{se}(3)$ is isomorphic to $\mathbb{R}^{6}$ as a vector space. This
+isomorphism is what allows a pose uncertainty to be carried by an ordinary
+$6\times6$ covariance matrix on $\bm{\xi}$, and it is in this precise sense that
+$\bm{\xi}$ is referred to as a pose perturbation: strictly, $\bm{\xi}$ is the
+coordinate vector, in $\mathbb{R}^6$, of an element of the Lie algebra, that is,
+of the tangent space at the identity, and $\eqref{eq:se3_algebra}$ is a
+parameterization of that $4\times4$ matrix rather than the matrix itself.
+
+The Lie algebra is mapped back onto the group by the exponential map
+$\exp:\mathfrak{se}(3)\to SE(3)$, which here is the matrix exponential.
+A perturbed pose is therefore composed \emph{multiplicatively} rather than
+additively. Adopting the \emph{left} perturbation convention used in
+Chapter~\ref{cha:monocular}, in which the error acts in the target (optical)
+frame,
+\begin{equation}
+  \tilde{\bm{T}} = \exp\!\big(\bm{\xi}^{\wedge}\big)\,\bm{T},
+  \label{eq:se3_perturb_group}
+\end{equation}
+with $\bm{T}\in SE(3)$ the nominal pose and $\bm{\xi}$ small. Truncating the
+exponential series after its first-order term,
+\begin{equation}
+  \exp\!\big(\bm{\xi}^{\wedge}\big)
+  = \bm{I}_4 + \bm{\xi}^{\wedge} + \tfrac{1}{2}\big(\bm{\xi}^{\wedge}\big)^{2} + \cdots
+  \;\approx\; \bm{I}_4 + \bm{\xi}^{\wedge},
+  \label{eq:se3_exp_approx}
+\end{equation}
+and applying \eqref{eq:se3_perturb_group} to a point $\bm{p}^{\mathcal{O}}$
+expressed in the camera frame gives, in homogeneous coordinates,
+$\tilde{\bm{p}}^{\mathcal{O}} \approx \bm{p}^{\mathcal{O}}
+ + [\bm{\delta\theta}]_\times\bm{p}^{\mathcal{O}} + \bm{\delta t}$.
+Applying the identity $[\bm{a}]_\times\bm{b}=-[\bm{b}]_\times\bm{a}$ to move the
+unknown $\bm{\delta\theta}$ to the right of the cross product puts the
+displacement in a form that is linear in $\bm{\xi}$,
+\begin{equation}
+  \delta\bm{p}^{\mathcal{O}} \;\approx\; -[\bm{p}^{\mathcal{O}}]_\times\,\bm{\delta\theta} + \bm{\delta t}
+  \;=\; \underbrace{\big[\,-[\bm{p}^{\mathcal{O}}]_\times \;\; \bm{I}_3\,\big]}_{3\times 6}\;\bm{\xi},
   \label{eq:se3_pert}
 \end{equation}
-where $[\,\cdot\,]_\times$ is the skew-symmetric (cross-product) matrix
-\cite{sola2018microlie}. This linearization is the basis of the extrinsic
-Jacobian derived in Chapter~\ref{cha:monocular}.
+whose truncation error is $O(\lVert\bm{\xi}\rVert^{2})$ and is therefore
+negligible for the small navigation-pose errors of interest here. Equation
+\eqref{eq:se3_pert} is the $3\times6$ block that the extrinsic Jacobian of
+Chapter~\ref{cha:monocular} composes with the projection Jacobian in order to
+carry the platform-pose covariance into the filter's innovation.
 
 \section{Motion Models}
+
+A recursive filter needs a model of how the target evolves between measurements.
+Because the obstacles considered here are uncooperative, their control inputs are
+unknown and their motion must be described kinematically, with the unmodeled
+acceleration absorbed into a stochastic term. The two subsections below introduce
+the kinematic model adopted throughout and the process-noise covariance that goes
+with it; the rotational invariance of that covariance turns out to be the pivotal
+hypothesis of the equivalence result in Chapter~\ref{cha:tracking}.
 
 \subsection{Constant-Velocity and Constant-Acceleration Models}
 
 In the absence of a control input, target motion is described by a kinematic
-model. The \emph{constant-velocity} (CV) model assumes piecewise-constant
+model. The \emph{Constant-Velocity} (CV) model assumes piecewise-constant
 velocity perturbed by random accelerations; per Cartesian axis, the
 position--velocity pair $(p,\dot p)$ propagates as
 \begin{equation}
@@ -185,6 +263,13 @@ $\bm{Q}$ is invariant under rotation of the coordinate axes, a property that has
 a decisive consequence in Chapter~\ref{cha:tracking}.
 
 \section{Measurement Models}
+
+The filter observes the target only through a sensor, and this dissertation uses
+two quite different ones. A depth or fused camera--LiDAR sensor reports a metric
+range and bearing, whereas a monocular camera reports only a pixel. Each leads to
+a different measurement equation, a different Jacobian, and a different noise
+model, and both are stated here so that Chapters~\ref{cha:tracking}
+and~\ref{cha:monocular} can invoke them without re-deriving them.
 
 \subsection{Range--Bearing (Spherical) Measurements}
 
@@ -229,7 +314,7 @@ evaluate the estimator, in terms of tracking accuracy, consistency, and
 optimality, and the last evaluates the detection and tracking chain.
 
 \subsection{Accuracy}
-Accuracy is summarized by the root-mean-square error (RMSE) of the position
+Accuracy is summarized by the Root-Mean-Square Error (RMSE) of the position
 estimate at time step $k$, averaged over $M$ Monte~Carlo runs:
 \begin{equation}
   \mathrm{RMSE}(k)=\left(\frac1M\sum_{i=1}^{M}\big\lVert \bm{p}_k^{(i)}-\hat{\bm{p}}_k^{(i)}\big\rVert^2\right)^{1/2},
@@ -242,18 +327,18 @@ estimate.
 \subsection{Consistency}
 A filter is \emph{consistent} when its reported
 covariance matches its actual error. With ground truth available, the normalized
-estimation error squared (NEES) of an $n$-dimensional state,
+Estimation Error Squared (NEES) of an $n$-dimensional state,
 \begin{equation}
   \epsilon_k = (\bm{x}_k-\hat{\bm{x}}_{k|k})^{\top}\,\bm{P}_{k|k}^{-1}\,(\bm{x}_k-\hat{\bm{x}}_{k|k}),
   \label{eq:nees}
 \end{equation}
 follows a $\chi^2_n$ distribution (mean $n$) for a consistent filter. When ground
-truth is unavailable, the normalized innovation squared (NIS),
+truth is unavailable, the Normalized Innovation Squared (NIS),
 $\eta_k=\bm{\nu}_k^{\top}\bm{S}_k^{-1}\bm{\nu}_k\sim\chi^2_m$ for $m$-dimensional
 measurements, provides an analogous, measurement-only check \cite{barshalom2001}.
 
 \subsection{Optimality Bound}
-The posterior Cram\'er--Rao bound (PCRB) lower-bounds
+The Posterior Cram\'er--Rao Bound (PCRB) lower-bounds
 the achievable estimation-error covariance. For the filtering problem it is
 obtained from the Fisher information recursion
 \begin{equation}
@@ -274,9 +359,9 @@ tracker in Chapter~\ref{cha:tracking}.
 
 The detection front-end (Chapter~\ref{cha:airsim}) is evaluated with the standard
 detection and tracking measures. A detection that matches a ground-truth object
-under an overlap or distance gate is a true positive (TP) and otherwise a false
-positive (FP); a ground-truth object with no matching detection is a false
-negative (FN). \emph{Precision} ($P$), \emph{recall} ($R$), and their harmonic
+under an overlap or distance gate is a True Positive (TP) and otherwise a False
+Positive (FP); a ground-truth object with no matching detection is a False
+Negative (FN). \emph{Precision} ($P$), \emph{Recall} ($R$), and their harmonic
 mean $F_1$ are then
 \begin{equation}
   P = \frac{\mathrm{TP}}{\mathrm{TP}+\mathrm{FP}}, \qquad
@@ -288,11 +373,11 @@ Sweeping the detector's confidence threshold traces a precision--recall curve
 whose area is the average precision; averaging it over classes and overlap gates
 gives the mean average precision (mAP), as standardized by the COCO benchmark
 \cite{lin2014coco}.
-For the temporal chain, multi-object-tracking accuracy (MOTA) aggregates false positives,
+For the temporal chain, Multi-Object-Tracking Accuracy (MOTA) aggregates false positives,
 misses, and identity switches at one operating point, and the identity score
 (IDF1) measures how consistently tracks preserve object identity. Because MOTA is
 read at a single threshold, the driving community favors its integral over recall,
-the average MOTA (AMOTA) \cite{weng2020ab3dmot}, which characterizes the
+the Average MOTA (AMOTA) \cite{weng2020ab3dmot}, which characterizes the
 detector--tracker chain independently of a particular threshold; its companion
 AMOTP averages the localization error of matched tracks. These measures are used
 throughout Chapter~\ref{cha:airsim}.
@@ -305,7 +390,7 @@ section summarizes the building blocks used in Chapters~\ref{cha:pipeline} and
 
 \subsection{Convolutional Neural Networks}
 
-A convolutional neural network (CNN) applies learned convolutional filters across
+A Convolutional Neural Network (CNN) applies learned convolutional filters across
 an image, sharing weights spatially and stacking layers to build a hierarchy of
 features, from edges and textures to object parts and whole objects. Weight
 sharing makes CNNs parameter-efficient and translation-equivariant, which is why
@@ -408,7 +493,7 @@ the point cloud over the whole scene. Because raw points are irregular, these
 methods first impose a regular structure: VoxelNet and the SECOND network
 \cite{yan2018second} quantize space into 3D voxels and apply (sparse) 3D
 convolutions, while PointPillars \cite{lang2019pointpillars} collapses the
-vertical axis into a bird's-eye-view (BEV) grid of \emph{pillars}, encodes each
+vertical axis into a Bird's-Eye-View (BEV) grid of \emph{pillars}, encodes each
 pillar with a small PointNet, and runs an ordinary 2D convolutional backbone on
 the resulting pseudo-image, trading a little vertical resolution for real-time
 speed. Detection heads are increasingly \emph{center-based}: rather than
@@ -428,4 +513,37 @@ $\mathrm{FL}(p_t)=-\alpha_t\,(1-p_t)^{\gamma}\log p_t$, where $p_t$ is the
 predicted probability of the true class and $\gamma>0$ concentrates the gradient
 on hard examples. It is well suited to the objectness and heatmap classification
 heads of dense detectors, whereas the continuous box parameters (center and size)
-are regressed with a smooth-$L_1$ (Huber) loss.
+are regressed with a smooth-$L_1$ (Huber) loss. Both losses reappear in
+Eq.~\eqref{eq:pn_loss}, which trains the three-dimensional detector of
+Chapter~\ref{cha:airsim}.
+
+\section*{Summary and Road Map}
+\addcontentsline{toc}{section}{Summary and Road Map}
+
+This chapter has assembled the two toolkits on which the rest of the dissertation
+draws, and it is worth recording where each of its results is put to work, so that
+the reader can return here for a specific item rather than for the chapter as a
+whole. On the estimation side, the Kalman and extended Kalman recursions
+\eqref{eq:kf_predict}--\eqref{eq:ekf_gain} are instantiated twice, in the
+range--bearing tracker of Chapter~\ref{cha:tracking} and in the monocular tracker
+of Chapter~\ref{cha:monocular}; the frames and rotation conventions of
+Section~\ref{sec:pose_perturbations} and Eq.~\eqref{eq:euler} fix the geometry
+used throughout, and the $SE(3)$ perturbation \eqref{eq:se3_pert} is the
+foundation of the extrinsic Jacobian that Chapter~\ref{cha:monocular} derives;
+the constant-velocity model \eqref{eq:cv} and its process noise \eqref{eq:cwna}
+are the motion model of both trackers, and the rotational invariance of
+\eqref{eq:cwna} is precisely the hypothesis on which the equivalence result of
+Chapter~\ref{cha:tracking} turns; the spherical measurement \eqref{eq:spherical}
+with its range-dependent noise serves Chapters~\ref{cha:tracking}
+and~\ref{cha:airsim}, while the pinhole projection \eqref{eq:pinhole} serves
+Chapter~\ref{cha:monocular}; and the metrics of Section~\ref{sec:detmetrics},
+together with the NEES, NIS, and posterior Cram\'er--Rao definitions that precede
+them, are the yardsticks by which every experimental chapter is judged. On the
+learning side, the YOLO detector, PointNet and PointNet\texttt{++}, the
+single-stage voxel family, and the focal and smooth-$L_1$ losses are the
+components that Chapter~\ref{cha:airsim} trains and compares.
+
+With this common vocabulary fixed, the next chapter turns from tools to the
+literature: it reviews, under a systematic protocol, what has been built with
+these components for aerial perception, and establishes the specific gap that this
+dissertation sets out to fill.

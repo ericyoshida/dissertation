@@ -33,7 +33,24 @@ stage \cite{bewley2016sort}, so that multi-target tracking reduces to running on
 of the per-target filters derived here behind that association. The association
 and track lifecycle are detailed in Chapter~\ref{cha:airsim}.
 
+A second restriction of scope should be stated explicitly, because it delimits
+what the results of this chapter do and do not claim. The platform pose is treated
+throughout as an \emph{exogenous, known} input supplied by the aircraft's own
+navigation system, and the estimator developed here therefore does \emph{not}
+perform joint self-pose estimation and target tracking. The platform state is
+never augmented into the filter state $\bm{x}_k$, and the target measurements are
+never fed back to refine the platform's own pose, as they would be in a
+simultaneous-localization-and-mapping formulation or in a joint navigation-and-tracking
+filter. The separation is deliberate on two counts: it isolates the
+reference-frame question, which is the subject of this chapter, from the
+navigation problem, and it mirrors the architecture of a real aircraft, in which
+the navigation solution is produced by an independent and separately qualified
+subsystem. What happens when this assumption is relaxed, that is, when the pose
+carries its own uncertainty, is characterized in Section~\ref{sec:diverge} and
+addressed empirically in Chapter~\ref{cha:monocular}.
+
 \section{Selection of the Reference Frame}
+\label{sec:selection}
 
 Consider an aerial platform carrying a sensor (a depth or stereo camera, or a
 camera fused with a LiDAR) that, at each discrete time $k$, reports the relative
@@ -54,6 +71,17 @@ re-expressing the state as the frame moves \cite{barshalom2001,lerro1993}? The
 remainder of this chapter formalizes both options and answers the question.
 
 \section{State-Space Formulation}
+
+The two filters compared in this chapter share the same ingredients: a description
+of what is being estimated (the object state), a description of what is known
+about the observer (the platform state), and a kinematic model that propagates the
+former between measurements. This section fixes those three elements once, in the
+notation of Chapter~\ref{cha:background}, so that the global- and local-frame
+formulations of Sections~\ref{sec:global} and~\ref{sec:local} differ only in the
+frame in which the state is carried, and not in the underlying model. The
+subsections that follow introduce, in order, the states themselves and then the
+motion model and its process noise, whose isotropy will prove decisive for the
+equivalence result.
 
 \subsection{Object and Platform States}
 
@@ -87,7 +115,7 @@ the sensor (local) frame is
 
 \subsection{Motion Model and Process Noise}
 
-The object is propagated with a constant-velocity (CV) kinematic model driven by
+The object is propagated with a Constant-Velocity (CV) kinematic model driven by
 white acceleration noise,
 \begin{equation}
   \bm{x}_{k+1} = \bm{F}\,\bm{x}_k + \bm{w}_k, \qquad \bm{w}_k \sim \mathcal{N}(\bm{0},\bm{Q}),
@@ -158,6 +186,14 @@ terminology here.
 
 \section{Spherical Measurement Model}
 
+The sensor does not observe the state directly: it reports the target's relative
+position in the spherical coordinates natural to a ranging device. This section
+fixes that measurement map and, just as importantly for what follows, the noise
+model attached to it. The range dependence of that noise is not a detail of
+sensor modeling but the single feature that governs how the estimation error
+behaves as the engagement evolves, and it is invoked repeatedly when the results
+of Section~\ref{sec:crlb} are interpreted.
+
 \subsection{Range, Azimuth and Elevation}
 
 Writing the local relative position \eqref{eq:rel_local} as
@@ -190,6 +226,41 @@ covariance is then
 Because $\rho_k$ is the \emph{range}, a frame-invariant scalar, the noise
 model \eqref{eq:rangenoise}--\eqref{eq:Rmatrix} is identical regardless of the
 frame in which the state is carried.
+
+One implementation detail of \eqref{eq:Rmatrix} deserves to be made explicit,
+since it has a theoretical consequence. The true range $\rho_k$ is not available
+at update time --- it is precisely what is being estimated --- so the filter
+evaluates the noise covariance at the \emph{predicted} range,
+$\hat{\rho}_{k|k-1}=\lVert\bm{R}_k^{\top}(\hat{\bm{p}}_{k|k-1}-\bm{p}^{p}_k)\rVert$,
+obtained from the prior. The measurement-noise covariance thus becomes a function
+of the state estimate, $\bm{R}_k=\bm{R}(\hat{\bm{x}}_{k|k-1})$, and this is
+recorded in the following remark.
+
+\begin{remark}[State-dependent measurement noise]
+\label{rem:statedep_R}
+The classical derivation of the Kalman filter assumes that the measurement noise
+$\bm{v}_k$ is independent of the state, with a covariance $\bm{R}_k$ that is a
+deterministic, state-independent quantity. The heteroscedastic model
+\eqref{eq:rangenoise} violates that assumption: the noise intensity depends on the
+range, and the range is a function of the state, so noise and state are coupled.
+Evaluating $\bm{R}_k$ at the predicted range rather than at the (unavailable) true
+range is the standard practical resolution, and it is what is done here, but it
+does not restore the hypothesis --- it only replaces one state-dependent quantity
+by another that is measurable. The estimator is consequently \emph{suboptimal} in
+the minimum-mean-square-error sense even in the linear-Gaussian limit, and the
+usual optimality guarantee of the Kalman filter does not formally apply to it. Two
+remarks temper this. First, the alternative of evaluating $\bm{R}_k$ at the
+\emph{measured} range is worse, because it correlates the noise covariance with
+the very noise realization it is meant to describe, systematically assigning a
+smaller variance to measurements that happen to under-report the range and thereby
+biasing the estimate inward. Second, the practical cost of the approximation is
+small in the regime of interest and is quantified rather than assumed: the
+posterior Cram\'er--Rao analysis of Section~\ref{sec:crlb} shows the filter
+tracking the bound closely at every step, so the loss relative to the best
+achievable performance is minor. A formally exact treatment would require a
+state-dependent-noise filter, and is noted as a refinement rather than pursued
+here.
+\end{remark}
 
 \section{Global-Frame EKF}
 \label{sec:global}
@@ -378,6 +449,25 @@ indistinguishable.
   \label{fig:ekf_equiv}
 \end{figure}
 
+A word is in order about the \emph{shape} of these curves, because an error that
+rises monotonically over a run is easily mistaken for a diverging filter. The
+filter is not diverging in Figure~\ref{fig:ekf_equiv}, and the growth is neither a
+numerical defect nor a modeling error. It is the direct signature of the
+heteroscedastic measurement model \eqref{eq:rangenoise}. In this scenario the
+target recedes from the platform as the run proceeds, and since the range variance
+grows as $\sigma_\rho^2=\alpha_\rho\rho^2$, every additional meter of separation
+buys a proportionally noisier range measurement. The information delivered by each
+update therefore decreases with time, and the error the estimator can sustain in
+steady state rises to match: the filter is not losing track of the target, it is
+being fed progressively weaker measurements and is reporting, correctly, that it
+knows less. The decisive evidence that this behavior is intrinsic to the problem,
+rather than a failure of the estimator, comes from Section~\ref{sec:crlb}: the
+posterior Cram\'er--Rao bound, which no estimator can beat, rises with the same
+profile, and the achieved error stays close to it at every step
+(Figure~\ref{fig:crlb}). A genuinely diverging filter would separate from the
+bound and keep separating; this one tracks it. The same reading applies to the
+growth visible in Figure~\ref{fig:crlb} itself.
+
 \section{When the Formulations Diverge}
 \label{sec:diverge}
 
@@ -402,21 +492,40 @@ the unified treatment given here supersedes that earlier comparison.
 
 \subsection{Anisotropic Process Noise}
 
-Assumption~(ii) fails when the acceleration noise is directional in the inertial
-frame, for instance a target that accelerates predominantly along its track.
-Then $\bm{T}_k\bm{Q}\bm{T}_k^{\top}\neq\bm{Q}$, and the formulation whose frame
-diagonalizes $\bm{Q}$ is preferred: the global filter models inertial-frame
-directional noise correctly, whereas the local filter injects it in the rotating
-frame and is mismatched. With a strongly anisotropic intensity
-($\sigma_{a,x}=0.6$, $\sigma_{a,y}=\sigma_{a,z}=0.05~\mathrm{m/s^2}$) and a
-platform yawing at $0.6~\mathrm{rad/s}$, the global filter attains an RMSE of
-$0.380$~m against $0.534$~m for the local filter, a $41\%$ degradation
-(Figure~\ref{fig:aniso}). This along-track-dominant case is in fact the common
-one for real vehicles, whose acceleration noise is typically larger in the
-direction of travel than laterally, and which is often modeled with a
-speed-dependent intensity such as $\sigma_a^2 \propto v^2$. Symmetrically, noise
-that is diagonal in the body frame favors the local formulation. In short, the
+Assumption~(ii) fails when the acceleration noise is directional, and the
+essential point is that ``directional'' is only meaningful \emph{relative to a
+frame}. What breaks the equivalence is not anisotropy as such, but a mismatch
+between the frame in which the process noise is genuinely uncorrelated and the
+frame in which the filter carries its state. When
+$\bm{T}_k\bm{Q}\bm{T}_k^{\top}\neq\bm{Q}$, the formulation whose frame
+diagonalizes $\bm{Q}$ is the correct one, and the other is mismatched.
+
+In the experiment reported here the anisotropic intensity is specified in the
+\emph{global inertial frame}, which is the case of a target that accelerates
+predominantly along a fixed inertial direction; consequently it is the global
+filter that models the noise correctly, while the local filter injects it in a
+rotating frame and is mismatched. With a strongly anisotropic intensity
+($\sigma_{a,x}=0.6$, $\sigma_{a,y}=\sigma_{a,z}=0.05~\mathrm{m/s^2}$) defined in
+that inertial frame, and a platform yawing at $0.6~\mathrm{rad/s}$, the global
+filter attains an RMSE of $0.380$~m against $0.534$~m for the local filter, a
+$41\%$ degradation (Figure~\ref{fig:aniso}). The result is therefore a statement
+about frame matching and not a general ranking of the two formulations:
+symmetrically, process noise that is diagonal in the body frame favors the local
+formulation by exactly the same argument, and an experiment with the roles
+exchanged would show the local filter ahead by a comparable margin. In short, the
 state should be carried in the frame in which the process noise is uncorrelated.
+
+Which of the two situations actually arises depends on where the dominant
+uncertainty originates, and both occur in practice. Noise attached to the
+\emph{target}, such as the along-track acceleration of a vehicle following a
+road or a corridor, is naturally described in an inertial or target-aligned frame,
+and is often modeled with a speed-dependent intensity such as
+$\sigma_a^2\propto v^2$; this is the common case for cooperative traffic and it
+favors the global formulation. Noise attached to the \emph{observer}, by contrast,
+such as vibration or the attitude-dependent errors of a body-mounted inertial
+measurement unit, is naturally described in the body frame and favors the local
+one. The practical consequence for the designer is drawn together in
+Section~\ref{sec:frame_choice}.
 
 \begin{figure}[H]
   \centering
@@ -436,15 +545,17 @@ measurement equation \eqref{eq:hglobal} and the local reorientation
 \eqref{eq:reor_pos}, so in either frame the innovation covariance \eqref{eq:gSK}
 must be augmented with a term that propagates the pose covariance. The two
 formulations cease to be equivalent because the pose error enters these two
-equations through different Jacobians, so the augmenting terms differ. This is the
-setting of Chapter~\ref{cha:monocular}, where the monocular tracker explicitly propagates the
-six-degree-of-freedom camera-pose uncertainty into the filter.
+equations through different Jacobians, so the augmenting terms differ. Of the
+three regimes examined in this section, this is the one that dominates on a real
+aircraft, where the navigation solution is always an estimate; how the augmenting
+term is constructed for a concrete sensor, and how much it matters, is
+established experimentally later in this dissertation.
 
 \section{Cram\'er--Rao Lower Bound}
 \label{sec:crlb}
 
 To benchmark the filters against the best achievable accuracy, we compute the
-posterior Cram\'er--Rao bound (PCRB) for the discrete-time nonlinear
+Posterior Cram\'er--Rao Bound (PCRB) for the discrete-time nonlinear
 filtering problem \cite{tichavsky1998}. The Fisher information matrix obeys the
 recursion
 \begin{equation}
@@ -479,3 +590,59 @@ acceptable.
   range because of the distance-dependent measurement noise \eqref{eq:rangenoise}.}
   \label{fig:crlb}
 \end{figure}
+
+\section{Choice of Frame in Practice}
+\label{sec:frame_choice}
+
+The analysis above answers the question posed in Section~\ref{sec:selection} in a
+way that is easy to state but worth spelling out, since ``the two are equivalent''
+is not, by itself, engineering guidance.
+
+Under the assumptions of Proposition~\ref{prop:equiv} the choice is free, and it
+should then be made on grounds other than accuracy, because there are none to be
+had: the two filters produce the same numbers. On those other grounds the
+\emph{global} formulation is the more convenient default. Its process model is
+exact and time-invariant in the frame where the state lives, so no inter-frame
+reorientation has to be implemented, tested, or maintained; its state is directly
+interpretable by every downstream consumer, since a flight-planning or
+collision-avoidance module reasons about positions in a common inertial frame and
+would otherwise have to undo the rotation at every step; and, as the results here
+show, omitting the reorientation is an easy mistake to make, one that silently
+degrades accuracy and that was in fact made in the original conference
+version of this work \citen{delima2025fusion}. The global frame simply has fewer
+places to go wrong, and it is the formulation adopted in the pipeline of this
+dissertation.
+
+The local formulation nevertheless has genuine practical uses, and it is developed
+here for more than symmetry. Three are worth naming. First, when the dominant
+process noise is body-referenced, as discussed in Section~\ref{sec:diverge}, the
+local frame is the \emph{correct} one and the global filter is the mismatched
+alternative. Second, the local frame is the natural one when no reliable global
+position is available at all: a GNSS-denied aircraft may know its attitude and its
+velocity well while its absolute position drifts, and a tracker carried in the
+body frame degrades gracefully in that situation, since a slowly accumulating
+position error of the platform never enters the relative geometry, whereas a
+global-frame tracker inherits that drift directly. Third, the quantities that the
+avoidance layer ultimately needs, namely the relative range, bearing, and closing
+speed of the obstacle, are precisely the local-frame quantities; a local
+formulation reports them without any transformation, and reports their covariance
+in the same frame, which avoids rotating an uncertainty ellipsoid at the point
+where it is used to decide whether a maneuver is necessary. The recommendation is
+therefore conditional rather than absolute: carry the state in the frame in which
+the process noise is uncorrelated; where that criterion does not discriminate,
+prefer the global frame for its implementation simplicity, unless the platform's
+absolute position is untrustworthy, in which case prefer the local one.
+
+The one assumption that this guidance cannot dispose of is the first. Everything
+in this chapter presumes that the platform pose is \emph{known}, and on any real
+aircraft it is not: it is an estimate, delivered by a navigation filter, and it
+carries a covariance of its own. Section~\ref{sec:diverge} showed that this is the
+regime in which the two formulations genuinely part company and in which the
+innovation covariance must be augmented, but it stopped short of constructing that
+augmenting term or of measuring what is lost by ignoring it. That is exactly what
+the next chapter does. Chapter~\ref{cha:monocular} takes the estimator developed
+here out of simulation and onto a real quadrotor, where the sensor is a single
+monocular camera and the platform pose is estimated on board, derives the
+extrinsic Jacobian that carries the six-degree-of-freedom pose covariance into the
+filter's innovation, and shows through an ablation on real flight data that
+omitting that term leaves the filter overconfident by four orders of magnitude.

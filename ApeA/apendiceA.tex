@@ -80,13 +80,13 @@ others unchanged:
 \end{align}
 with $c_\bullet=\cos$ and $s_\bullet=\sin$. These are needed whenever the platform
 attitude is itself a state or an uncertain quantity; for the uncertain-pose
-analysis of Chapter~\ref{cha:monocular} the more compact $SE(3)$ tangent-space
-form of Section~\ref{ap:extrinsic_jac} is used instead.
+analysis of Chapter~\ref{cha:monocular} the more compact Lie-algebra
+($\mathfrak{se}(3)$) form of Section~\ref{ap:extrinsic_jac} is used instead.
 
 \section{Recursive Posterior Cram\'er--Rao Bound}
 \label{ap:crlb}
 
-The posterior Cram\'er--Rao bound (PCRB) lower-bounds the error covariance of any
+The Posterior Cram\'er--Rao Bound (PCRB) lower-bounds the error covariance of any
 estimator of $\bm{x}_k$ from the measurements $\bm{z}_{1:k}$:
 $\mathbb{E}\!\big[(\bm{x}_k-\hat{\bm{x}}_k)(\bm{x}_k-\hat{\bm{x}}_k)^{\top}\big]\succeq\bm{J}_k^{-1}$,
 where $\bm{J}_k$ is the Bayesian (posterior) Fisher information matrix. For the
@@ -127,9 +127,13 @@ projection with respect to the optical-frame point is
     \end{bmatrix},
 \end{equation}
 obtained by differentiating $\pi([X,Y,Z]^{\top})=[X/Z,\,Y/Z]^{\top}$ and scaling by
-the focal lengths. A small pose perturbation is represented in the tangent space of
-$SE(3)$ by $\bm{\xi}=[\bm{\delta\theta}^{\top}\ \bm{\delta t}^{\top}]^{\top}$, and
-to first order it displaces the optical-frame point by
+the focal lengths. A small pose perturbation is represented, as in
+Section~\ref{sec:pose_perturbations}, by the coordinate vector
+$\bm{\xi}=[\bm{\delta\theta}^{\top}\ \bm{\delta t}^{\top}]^{\top}\in\mathbb{R}^{6}$ of an
+element of the Lie algebra $\mathfrak{se}(3)$, that is, of the tangent space to
+$SE(3)$ at the identity, and to first order --- after truncating the exponential
+map as $\exp(\bm{\xi}^{\wedge})\approx\bm{I}_4+\bm{\xi}^{\wedge}$ --- it displaces
+the optical-frame point by
 $\delta\bm{p}^{\mathcal{O}}\approx-[\bm{p}^{\mathcal{O}}]_\times\bm{\delta\theta}+\bm{\delta t}$
 (Eq.~\eqref{eq:se3_pert}): a rotation error $\bm{\delta\theta}$ moves the point
 along $-[\bm{p}^{\mathcal{O}}]_\times\bm{\delta\theta}$, and a translation error
