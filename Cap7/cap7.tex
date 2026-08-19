@@ -688,12 +688,24 @@ The 2D detector and the frustum 3D networks are trained on the synthetic and
 collected data of Section~\ref{sec:dataset} and evaluated on the entire $60$-sequence
 campaign, which is disjoint from their training data and thus a fully held-out test.
 The single-stage voxel networks, lacking a separate large training corpus, are
-trained on the campaign itself under an $80/20$ split by sequence; to verify that
-this does not inflate their numbers, all voxel results were recomputed on the
-$12$ held-out sequences alone and agree with the full-campaign figures to within
-$0.02$ AMOTA and $0.02$~m RMSE (e.g., the best voxel model scores AMOTA $0.67$ and
-RMSE $0.85$~m held-out, against $0.68$ and $0.87$~m on the full set), confirming
-that the comparison below is not an artifact of in-sample evaluation. Inference
+trained on the campaign itself under an $80/20$ split by sequence: the held-out
+set is every fifth sequence in alphabetical order, $12$ of the $60$, which happens
+to be balanced at four per environment and to span the near, mid-fog and far
+regimes. Because those networks therefore see most of the campaign during
+training, every voxel result was recomputed on the $12$ held-out sequences alone,
+and the outcome is worth stating precisely rather than in summary, since it is not
+uniform. Held-out performance is \emph{consistently worse} than full-campaign
+performance for all five voxel variants, by between $0.005$ and $0.048$ AMOTA and
+between $0.01$ and $0.22$~m RMSE. The gap is widest for the weakest model
+(hand-crafted PointPillars: AMOTA $0.59$ against $0.63$, RMSE $1.42$~m against
+$1.19$~m) and narrowest for the two that carry the chapter's conclusions
+(PointPillars-PFN: AMOTA $0.67$ against $0.68$, RMSE $0.88$~m against $0.87$~m;
+dense 3D voxel: $0.67$ against $0.68$, $0.97$~m against $0.92$~m). The ranking is
+preserved: the same two models lead on the held-out subset as on the full
+campaign, and the temporal variant remains last. The conclusions drawn below are
+therefore not an artifact of in-sample evaluation, but the absolute voxel figures
+in Table~\ref{tab:arch} should be read as mildly optimistic, by roughly $0.01$
+AMOTA for the leading models and by as much as $0.05$ for the weakest. Inference
 runs offline: one heavy pass per sequence dumps detections, from which all metrics
 are recomputed cheaply while sweeping the detection threshold. The dataset-generation
 and detection code is released as open source.\footnote{\url{https://github.com/ericyoshida/airsim-uav-3d-detection}}
@@ -1141,6 +1153,28 @@ accuracies reported here were obtained with a noiseless, dense depth image, and
 confronting the same detectors with the sparse, noisy, dropout-prone returns of a
 real airborne LiDAR is a necessary step before any of these numbers is quoted as a
 prediction of field performance.
+
+A fourth caveat is about the numbers themselves rather than about the system, and
+it bounds how every figure in this chapter may be read. The comparison performed
+here is strictly \emph{internal}: the architectures are measured against one
+another, on a dataset built for this work, under one protocol. The metrics carry
+the names of the driving-benchmark literature --- AMOTA, MOTA, IDF1 --- and the
+choice was deliberate, so that the evaluation would be legible to readers of that
+literature; but the values are \emph{not} commensurable with the published values
+those names carry on KITTI \cite{geiger2012kitti} or nuScenes
+\cite{caesar2020nuscenes}. The differences run in several directions at once and
+do not cancel: this campaign has a single object class against a multi-class
+road-traffic benchmark, synthetic imagery against real, an idealized dense depth
+image against real sensor returns, and a difficulty set by our own randomization of
+range, illumination and weather rather than by an external protocol. An AMOTA of
+$0.81$ here therefore says that the frustum pipeline integrates well over recall
+\emph{on this campaign}, and nothing whatever about how it would place on a public
+leaderboard. Establishing that requires running the pipeline on an external
+benchmark, for which the only large-scale aerial three-dimensional option is
+UAV3D \cite{ye2024uav3d}; this was not done here, and
+Chapter~\ref{cha:conclusions} records it as a limitation and as the first item of
+future work rather than leaving the reader to assume a comparison that was never
+made.
 
 This chapter completes the last of the three studies, and with it the four stages
 of the pipeline of Chapter~\ref{cha:pipeline} have all been built and exercised:
