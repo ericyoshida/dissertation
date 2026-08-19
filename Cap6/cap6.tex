@@ -632,8 +632,8 @@ $1.6$ laps of the mat perimeter, as observed in the video.
 \subsection{Localization Accuracy against LiDAR-Referenced Ground Truth}
 \label{sec:mono_accuracy}
 
-The tracker produced a continuous ground-plane estimate over the flight, active
-in $626$ frames. Comparing it to the manual ground truth at the annotated instants
+The detector fired in $626$ frames of the flight, of which $520$ survive the
+geometric visibility test introduced below and form the reported track. Comparing it to the manual ground truth at the annotated instants
 (matched by timestamp to within $0.5$~s, $128$ paired samples) gives the
 ground-plane localization error reported in Figures~\ref{fig:mono_traj}
 and~\ref{fig:mono_errors}. The
@@ -670,10 +670,12 @@ low-altitude platform viewed the target.
 
 This intrinsic accuracy is not uniform with distance, and
 Figure~\ref{fig:error_range} makes the dependence explicit. Binning the per-frame
-projection error by the target's distance from the camera shows the error rising
-from a median of about $0.6$~m for targets at $10$--$12$~m to about $1.7$~m beyond
-$18$~m, with a sample correlation of $0.53$ between distance and error and a
-trend well described by a quadratic. This is the geometry predicted in
+projection error by the target's distance from the camera shows the error trending
+upward with range: the fitted curve rises from about $0.6$~m at $10$~m to about
+$1.6$~m at $24$~m, and the binned medians from $0.5$--$1.2$~m below $12$~m to
+$1.6$--$2.0$~m beyond $18$~m, with a sample correlation of $0.53$ between distance
+and error. The binned medians are not monotonic at either end, so the trend is a
+tendency over the whole range rather than a monotone increase. This is the geometry predicted in
 Section~\ref{sec:mono_meas}: a fixed vertical offset of the foot pixel subtends a
 ground-range error that grows with distance, and the growth is steepened by the
 shallow depression angle, where the viewing ray grazes the floor. It is the
@@ -685,8 +687,9 @@ degrades with range where a true range sensor would not.
   \includegraphics[width=0.78\linewidth]{Cap6/error_vs_range.pdf}
   \caption{Ground-plane localization error of the single-frame geometric lift, as a
   function of the target's distance from the camera (per manually annotated frame,
-  geometry only, no filtering). The error grows with range --- from a median of
-  ${\approx}0.6$~m at $10$--$12$~m to ${\approx}1.7$~m beyond $18$~m
+  geometry only, no filtering). The error trends upward with range --- the fitted
+  curve rises from ${\approx}0.6$~m at $10$~m to ${\approx}1.6$~m at $24$~m, and the
+  binned medians from $0.5$--$1.2$~m below $12$~m to $1.6$--$2.0$~m beyond $18$~m
   (correlation $0.53$) --- because
   a fixed foot-pixel offset maps to a ground error that increases with distance,
   an effect amplified by the grazing $\sim 6^\circ$ viewing angle.}
@@ -712,9 +715,10 @@ degrades with range where a true range sensor would not.
   the course of the platform's full-circle yaw sweeps and the detector fires on
   background structure instead; most of them fall far outside the plotted window,
   as the annotation in the figure records. \textbf{Dashed rectangle:} the surveyed perimeter
-  of the matted area. The estimate reproduces the perimeter walk; the straight
-  strays into the interior are the filter's excursions toward the false positives
-  and back (Figure~\ref{fig:mono_errors}).}
+  of the matted area. The estimate follows the perimeter walk along the bottom and
+  left edges of the mat; the filter's excursions toward the false positives run
+  outside the plotted window and are therefore not drawn, as the annotation in the
+  figure records (Figure~\ref{fig:mono_errors}).}
   \label{fig:mono_traj}
 \end{figure}
 
@@ -726,12 +730,15 @@ degrades with range where a true range sensor would not.
   (blue, right axis). The red curve is restricted to the frames in which the
   geometric visibility test places the target inside the camera's field of view,
   and is interrupted over the shaded intervals, in which it is not; the gray curve
-  retains every matched sample. The in-view error stays near $1$--$2$~m throughout
-  the flight, while the excursions reaching ${\approx}22$~m belong entirely to the
-  out-of-view intervals. Those excursions align with the loss-of-view intervals
+  retains every matched sample. The in-view error stays below $4$~m for all but one
+  episode near $t\approx63$~s, which reaches $6.9$~m, while the excursions reaching
+  ${\approx}22$~m belong entirely to the out-of-view intervals. Those excursions align with the loss-of-view intervals
   rather than with the instantaneous yaw-rate peaks: rotation is the cause, but the
   error follows the target's absence from the frame, which outlasts the sweep that
-  produced it. (b) Empirical CDF of the error, on a logarithmic abscissa, for both
+  produced it. The red curve is also interrupted wherever no annotated frame was
+  matched, so the long descent between $t\approx33$~s and $t\approx45$~s is a
+  straight join across a gap in the matched samples and not measured error.
+  (b) Empirical CDF of the error, on a logarithmic abscissa, for both
   regimes. With the target in view ($103$ of the $128$ matched samples) the median
   is $1.43$~m and the RMSE $2.46$~m; over all $128$ samples the median rises to
   $1.75$~m and the RMSE to $6.27$~m, the entire upper tail being set by the
@@ -784,7 +791,8 @@ one that characterizes the estimator.
   two reporting regimes. ``Target in view'' keeps the $103$ samples that the
   geometric visibility test accepts; ``all frames'' includes the $25$ samples from
   the loss-of-view intervals, in which the detector fires on background structure.
-  The per-frame geometric lift, given for reference, applies no filtering at all.}
+  The per-frame geometric lift, given for reference, applies no filtering at all and
+  is computed over all $135$ annotated frames.}
   \label{tab:mono_accuracy}
   \begin{tabular}{@{}lccc@{}}
     \toprule
@@ -840,13 +848,14 @@ be seen; they are not part of the track, and most of them lie far enough outside
 the mat to fall outside the plotted window entirely. The dashed rectangle is
 the surveyed perimeter of the matted area.
 
-Read this way, the plot shows that the estimate reproduces the perimeter walk and
-overlays the ground truth for most of the flight, with a handful of straight
-strays into the interior of the mat. The strays are not a drift of the filter but
-its response to the loss-of-view episodes: the estimate is pulled toward a
-spurious detection and then returns, and because the intervening frames are
-propagated by a constant-velocity model the excursion is drawn as a straight
-segment. The gray points cluster in exactly those intervals.
+Read this way, the plot shows that the estimate follows the ground truth along the
+perimeter walk over most of the flight, with a handful of straight excursions away
+from the mat. Those excursions are not a drift of the filter but its response to
+the loss-of-view episodes: the estimate is pulled toward a spurious detection and
+then returns, and because the intervening frames are propagated by a
+constant-velocity model the excursion is drawn as a straight segment. Most of them
+leave the plotted window and are therefore not visible; the gray points cluster in
+exactly those intervals.
 
 \paragraph*{Systematic effects and where the error comes from.} Three distinct
 mechanisms contribute to the error, and separating them is what the analysis above
@@ -889,8 +898,8 @@ is for.
 
 One further observation deserves recording, since it was raised during the
 examination. An earlier version of these results reported a median error of
-$4.3$~m and a $90$th percentile of $10.3$~m, roughly three times what is reported
-here. Those figures were not a property of the geometry. An audit of the
+$4.3$~m and a $90$th percentile of $10.3$~m --- roughly three times the median and
+a third again the $90$th percentile reported here. Those figures were not a property of the geometry. An audit of the
 projection against the independent floor-plan ground truth, carried out
 separately from the filter, established that the single-frame lift was correct all
 along (median $1.05$~m); what produced the larger numbers was the constant-velocity
@@ -929,7 +938,7 @@ flight.
 \begin{figure}[H]
   \centering
   \includegraphics[width=\linewidth]{Cap6/tracking_frames.pdf}
-  \caption{The monocular tracker in operation over the matted area. The on-board
+  \caption{The monocular tracker in operation over the matted area. The
   detector localizes the walking person; the foot point feeds the EKF; and the
   filter's state, reprojected into the image, follows the target across the
   platform's motion. Surveyed floor landmarks (rings) are shown for reference.}
@@ -952,7 +961,7 @@ Section~\ref{sec:mono_extrinsic}, because the pose-uncertainty term in
 \eqref{eq:Smono} acts entirely through $\bm{S}_k$.
 
 To isolate that term we performed an ablation over the pose-uncertainty scale
-$\sigma_{\mathrm{pose}}$ (with $\bm{\Sigma}=\sigma_{\mathrm{pose}}\bm{I}_6$),
+$\sigma_{\mathrm{pose}}$ (with $\bm{\Sigma}=\sigma_{\mathrm{pose}}^2\bm{I}_6$),
 re-running the filter on the recorded detections and poses; Figure~\ref{fig:mono_nis}
 reports the result. With the extrinsic term switched off
 ($\bm{\Sigma}=\bm{0}$), which treats the platform pose as exact, the mean NIS is
@@ -1007,9 +1016,10 @@ metric position to about a meter even at the grazing $\sim 6^\circ$ depression
 angle of this low-altitude flight.
 
 It is worth being blunt about how good these numbers are and are not. A median of
-roughly $1.4$~m is a respectable result for the sensing available, but it is an
-order of magnitude coarser than the ${\approx}0.2$~m the range-sensing tracker of
-Chapter~\ref{cha:tracking} achieves in simulation, and the error distribution has
+roughly $1.4$~m is a respectable result for the sensing available, but it is
+roughly an order of magnitude coarser than the range-sensing tracker of
+Chapter~\ref{cha:tracking} achieves in simulation (comparing like with like,
+an RMSE of $2.46$~m against $0.228$~m), and the error distribution has
 a heavy tail that a collision-avoidance function could not simply ignore: the
 $90$th percentile over all frames is $7.75$~m. Nor is the accuracy uniform, since
 it degrades roughly quadratically with target range and would degrade further at

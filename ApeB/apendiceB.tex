@@ -33,13 +33,18 @@ re-teleported to their planned poses, to keep image and reported poses consisten
 
 \paragraph*{Training and evaluation subsets.} The 2D detector is trained on
 $\approx2{,}500$ pixel-exact synthetic-composition frames ($196$ drone sprites
-spanning $12$~yaw~$\times$~$3$~pitch~$\times$~$3$~roll orientations at five ranges,
+sampled over $12$~yaw, $3$~pitch and $3$~roll orientations at five ranges,
 $1$--$5$ drones per frame). The point-cloud networks are trained on the collected
-multimodal set ($3$ scenes $\times\,1{,}000$ frames). Evaluation uses a disjoint
-campaign of $60$ video sequences ($20$ per environment, $75$--$110$ frames at
-${\approx}5$~Hz) that randomizes the range regime (near $18$--$32$~m, mid
+multimodal set ($3$ scenes $\times\,1{,}000$ frames). Evaluation uses a
+campaign of $60$ video sequences, disjoint from the training data of the
+two-dimensional and frustum stages, ($20$ per environment, $50$--$92$ frames each,
+median $72$, captured at $2.7$--$5.1$~Hz) that randomizes the range regime (near $18$--$32$~m, mid
 $32$--$50$~m, far $50$--$78$~m), time of day ($07$h--$18$h), weather (clear, light
 fog, light rain), and number of targets ($2$--$3$), with a \emph{moving} observer.
+The single-stage voxel networks, which have no separate training corpus, are
+instead trained on this campaign under an $80/20$ split by sequence, every fifth
+sequence in alphabetical order being held out ($12$ of the $60$, four per
+environment); the held-out figures are discussed in Chapter~\ref{cha:airsim}.
 
 \section{Network Training Hyperparameters}
 \label{ap:train_hyper}

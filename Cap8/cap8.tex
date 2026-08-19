@@ -58,7 +58,8 @@ consumes them and its real-world generalization.
   trade-off: the frustum pipeline is precise (AMOTA $0.81$, precision $0.90$) but
   inherits its 2D detector's recall ceiling (${\approx}0.49$), whereas a
   learned-feature voxel detector recalls far more targets ($0.80$) and localizes
-  them best ($0.87$~m RMSE) at the cost of noisier identities, with a late fusion
+  them best ($0.87$~m RMSE, $0.88$~m on the twelve sequences held out from its own
+  training) at the cost of noisier identity association, with a late fusion
   recovering much of both. Crucially, the localization error is essentially flat in
   both of the variables that could have degraded it: it does not grow with range,
   and it does not drift along a sequence --- over the $5{,}359$ matched pairs of
@@ -200,8 +201,8 @@ work does not yet establish.
   single-target filter.} The data association and track lifecycle of
   Chapter~\ref{cha:airsim} are a heuristic, SORT-style layer; the
   Cram\'er--Rao and consistency analysis of Chapter~\ref{cha:tracking} applies to
-  the per-track filter, not to the association problem, whose identity switches
-  remain a measured weakness of the voxel detectors.
+  the per-track filter, not to the association problem, whose identity performance
+  remains a measured weakness of the voxel detectors.
   \item \textbf{Pose-uncertainty propagation has not been carried into the 3D
   pipeline.} The extrinsic-aware innovation covariance of
   Chapter~\ref{cha:monocular} was derived for the monocular projective
@@ -287,17 +288,19 @@ immediate to the most ambitious.
   self-contained. Before those results are submitted for publication they should be
   anchored to the wider literature in two ways: by evaluating the same pipeline on
   a public aerial three-dimensional benchmark, of which UAV3D
-  \cite{ye2024uav3d} is currently the only large-scale option, and by reporting the
-  driving-domain baselines the frustum and voxel families were originally
-  validated on, so that the aerial numbers can be read against the ground-vehicle
-  numbers the methods are known for on KITTI \cite{geiger2012kitti} and nuScenes
-  \cite{caesar2020nuscenes}. A published reference point is what turns a ranking
-  among one's own variants into a contribution a reviewer can situate.
+  \cite{ye2024uav3d} is currently the only large-scale option, and by running the
+  same pipeline end to end on the driving benchmarks the frustum and voxel families
+  were originally validated on, KITTI \cite{geiger2012kitti} and nuScenes
+  \cite{caesar2020nuscenes}, so that a like-for-like comparison becomes possible.
+  Merely quoting their published numbers alongside the ones reported here would not
+  provide it, for the reason given in Section~\ref{sec:discussion}. A published
+  reference point obtained this way is what turns a ranking among one's own
+  variants into a contribution a reviewer can situate.
 
   \item \textbf{Realistic range sensing.} The idealized depth camera of
   Section~\ref{sec:sensor_caveat} should give way to a validated LiDAR model, and
   ultimately to real returns from one of the light UAV-grade units now available,
-  such as the Livox Mid-360 already carried by the platform of
+  such as the Livox Mid-360 already used in the survey of
   Chapter~\ref{cha:monocular} \cite{livox_mid360}. Sparsity, dropouts, and
   incidence-angle effects are exactly the conditions under which the
   frustum-versus-voxel trade-off could reorder, since the voxel design depends on

@@ -12,8 +12,8 @@ three-dimensional aerial data are scarce (Chapter~\ref{cha:relatedwork}), the
 chapter first constructs a fully-annotated synthetic dataset in the AirSim
 simulator \cite{shah2018airsim}, then trains and evaluates the
 two-dimensional detector, the frustum-based three-dimensional detector, and a set
-of principled alternatives, on a held-out campaign of $60$ video sequences with a
-moving observer. The treatment is self-contained but reuses the coordinate-frame,
+of principled alternatives, on a campaign of $60$ video sequences with a moving
+observer, held out from the training of the two-dimensional and frustum stages. The treatment is self-contained but reuses the coordinate-frame,
 network, and metric conventions fixed in Chapter~\ref{cha:background}.
 
 \section{Overview and Objectives}
@@ -24,8 +24,8 @@ point cloud cropped by that frustum, following the Frustum~PointNets lineage
 \cite{qi2018frustum,qi2017pointnetpp}. Training this front-end for the aerial,
 urban sense-and-avoid setting raises three obstacles that this chapter
 addresses in turn: (i) there is no large-scale annotated aerial 3D dataset
-(as established in Chapter~\ref{cha:relatedwork}, the only such benchmark is one
-year old and itself synthetic \cite{ye2024uav3d}); (ii) the simulator's own
+(as established in Chapter~\ref{cha:relatedwork}, the only such benchmark dates
+from $2024$ and is itself synthetic \cite{ye2024uav3d}); (ii) the simulator's own
 annotation interfaces are unreliable for the small drone meshes used here, which
 forces a synthetic-composition strategy for the 2D detector and a manual
 geometric construction for the 3D boxes; and (iii) the natural point-cloud
@@ -142,8 +142,8 @@ validate them.
 The adopted solution decouples labeling from the simulator entirely by
 \emph{synthetic composition}, illustrated in Figure~\ref{fig:dataset}. A library
 of $196$ drone \emph{sprites} (cropped 2D image patches of the drone, in the
-sense used in computer graphics) is captured once, spanning $12$ yaw $\times$ $3$
-pitch $\times$ $3$ roll orientations at five ranges; each sprite is segmented from
+sense used in computer graphics) is captured once, sampled over $12$ yaw, $3$
+pitch and $3$ roll orientations at five ranges; each sprite is segmented from
 the sky by a brightness threshold and stored as an RGBA patch with its capture range.
 The VisQuad mesh is near-black against a bright sky, so a single grayscale cut
 separates it cleanly, whereas an RGB difference (which requires two synchronized
@@ -241,7 +241,7 @@ between the frustum and voxel paradigms is a comparison under uniformly favorabl
 sensing rather than under the degraded, sparse returns in which the two might
 well rank differently. Quantifying that gap requires either a validated sensor
 model or, better, a campaign flown with one of the light UAV-grade units that are
-now available, such as the Livox Mid-360 used by the platform of
+now available, such as the Livox Mid-360 used to survey the arena of
 Chapter~\ref{cha:monocular} \cite{livox_mid360}; both are identified as future
 work in Chapter~\ref{cha:conclusions}. What the simulated setting does establish,
 and what it was built to establish, is the comparative behavior of the detection
@@ -590,8 +590,8 @@ the filter \cite{weng2020ab3dmot}.
 To be explicit about integration: \emph{every} detection variant evaluated in this
 chapter, both the two-stage frustum detectors and the single-stage voxel
 detectors, is run through this same tracking stage (SORT-style association
-followed by the per-track EKF of Chapter~\ref{cha:tracking}). The AMOTA, MOTA,
-IDF1, and identity-switch figures reported throughout are therefore end-to-end
+followed by the per-track EKF of Chapter~\ref{cha:tracking}). The AMOTA, MOTA and
+IDF1 figures reported throughout are therefore end-to-end
 \emph{detection-plus-tracking} results, not single-frame detection scores; the
 detectors are not left unintegrated.
 
@@ -639,14 +639,15 @@ practice of \citen{weng2020ab3dmot}:
 \begin{itemize}
   \item \textbf{Detection:} precision, recall, and $F_1$ at a fixed operating
   point.
-  \item \textbf{Tracking:} the average multi-object tracking accuracy and
-  precision (AMOTA, AMOTP), which integrate the CLEAR-MOT accuracy over the full
-  recall range and are therefore largely detector-threshold independent; the
-  single-operating-point MOTA at a $0.5$ association threshold; the identity score
-  IDF1; and the number of identity switches.
-  \item \textbf{Localization:} the Root-Mean-Square Error (RMSE) and mean
-  absolute error of the 3D centroid against ground truth, stratified by range,
-  with ground-truth/track association by 3D distance under a gate of a few meters.
+  \item \textbf{Tracking:} the Average Multi-Object-Tracking Accuracy (AMOTA),
+  which integrates the CLEAR-MOT accuracy over the full recall range and is
+  therefore largely independent of the detector's threshold; the
+  single-operating-point MOTA at a $0.5$ association threshold; and the identity
+  score IDF1.
+  \item \textbf{Localization:} the Root-Mean-Square Error (RMSE) of the 3D
+  centroid against ground truth, stratified by range and, in
+  Section~\ref{sec:results-temporal}, by position within the sequence, with
+  ground-truth/track association by 3D distance under a $4$~m gate.
 \end{itemize}
 AMOTA is the headline tracking number because, by sweeping the detection
 threshold, it measures the quality of the detector--tracker chain rather than a
@@ -695,8 +696,8 @@ regimes. Because those networks therefore see most of the campaign during
 training, every voxel result was recomputed on the $12$ held-out sequences alone,
 and the outcome is worth stating precisely rather than in summary, since it is not
 uniform. Held-out performance is \emph{consistently worse} than full-campaign
-performance for all five voxel variants, by between $0.005$ and $0.048$ AMOTA and
-between $0.01$ and $0.22$~m RMSE. The gap is widest for the weakest model
+performance for all five voxel variants, by up to $0.05$ AMOTA and up to
+$0.23$~m RMSE. The gap is widest for the hand-crafted pillar encoder
 (hand-crafted PointPillars: AMOTA $0.59$ against $0.63$, RMSE $1.42$~m against
 $1.19$~m) and narrowest for the two that carry the chapter's conclusions
 (PointPillars-PFN: AMOTA $0.67$ against $0.68$, RMSE $0.88$~m against $0.87$~m;
@@ -705,7 +706,7 @@ preserved: the same two models lead on the held-out subset as on the full
 campaign, and the temporal variant remains last. The conclusions drawn below are
 therefore not an artifact of in-sample evaluation, but the absolute voxel figures
 in Table~\ref{tab:arch} should be read as mildly optimistic, by roughly $0.01$
-AMOTA for the leading models and by as much as $0.05$ for the weakest. Inference
+AMOTA for the leading models and by as much as $0.05$ for the hand-crafted encoder. Inference
 runs offline: one heavy pass per sequence dumps detections, from which all metrics
 are recomputed cheaply while sweeping the detection threshold. The dataset-generation
 and detection code is released as open source.\footnote{\url{https://github.com/ericyoshida/airsim-uav-3d-detection}}
@@ -811,7 +812,9 @@ the 2D stage and is the principal limitation of the two-stage design.
 \begin{table}[H]
   \centering
   \caption{Full frustum pipeline on the $60$-sequence campaign, by environment
-  (depth-band configuration). RMSE is the 3D centroid error.}
+  (depth-band configuration). RMSE is the 3D centroid error. Precision and RMSE in
+  the last row are pooled over all matched samples; the remaining columns are
+  arithmetic means over the three environments.}
   \label{tab:main}
   \begin{tabular}{@{}lcccccc@{}}
     \toprule
@@ -942,7 +945,8 @@ gain comes from the learned local representation rather than grid resolution. Th
 two negative controls bear this out: a finer grid does not help (the bottleneck is
 point sparsity on the target, not quantization) and naive temporal accumulation
 hurts (ego-only compensation smears the moving target across cells). The voxel
-detectors remain noisier in identity (higher switch counts), which is why their
+detectors remain noisier in identity association, visible in their lower IDF1 and
+MOTA, which is why their
 AMOTA ($0.63$--$0.68$) trails the frustum's despite their stronger single-frame
 detection. A late fusion that confirms frustum detections with voxel ones lifts
 recall to $0.66$ at the frustum's precision, giving the best AMOTA among
@@ -953,7 +957,9 @@ high-recall configurations ($0.75$).
   \footnotesize
   \caption{Architectural comparison on the campaign (mean over the three
   environments). Frustum: two-stage (YOLO-gated). Voxel: single-stage,
-  whole-scene. ID-sw is the identity-switch count. Best per column in bold.}
+  whole-scene. Best per column in bold. $F_1$ is the mean of the per-environment
+  $F_1$ values and is therefore not the harmonic mean of the precision and recall
+  printed in the same row.}
   \label{tab:arch}
   \begin{tabular}{@{}llcccccc@{}}
     \toprule
@@ -1057,13 +1063,15 @@ range.
   \includegraphics[width=0.92\linewidth]{Cap7/pipeline_frames.pdf}
   \caption{Camera--point-cloud input for three real detections at increasing range
   (top to bottom, $15$, $34$, and $52$~m). Left: the RGB frame with the drone
-  enclosed by its detection box. Right: the point cloud the frustum stage extracts
-  behind that box --- the actual LiDAR returns falling on the target --- shown in
-  the sensor frame and colored by height. The simulated LiDAR resolves the
-  quadrotor's body and rotor arms clearly at close range; as range grows the target
-  is captured by progressively fewer returns and degrades to a sparse cluster. This
-  degradation, rather than the regressor, ultimately limits 3D localization
-  at range.}
+  enclosed by its detection box. Right: the returns falling on the target behind
+  that box --- these come from the auxiliary simulated LiDAR and are shown for
+  visualization only, since the detectors consume the dense depth-image cloud of
+  Section~\ref{sec:sensor_caveat} --- in the sensor frame and colored by height.
+  The simulated LiDAR resolves the quadrotor's body and rotor arms clearly at close
+  range; as range grows the target is captured by progressively fewer returns and
+  degrades to a sparse cluster. This is the degradation a real beam-based sensor
+  would impose, and it is precisely what the idealized depth input of these
+  experiments does not exercise.}
   \label{fig:pipeline_frames}
 \end{figure}
 
@@ -1154,7 +1162,7 @@ confronting the same detectors with the sparse, noisy, dropout-prone returns of 
 real airborne LiDAR is a necessary step before any of these numbers is quoted as a
 prediction of field performance.
 
-A fourth caveat is about the numbers themselves rather than about the system, and
+A further caveat is about the numbers themselves rather than about the system, and
 it bounds how every figure in this chapter may be read. The comparison performed
 here is strictly \emph{internal}: the architectures are measured against one
 another, on a dataset built for this work, under one protocol. The metrics carry
@@ -1172,7 +1180,7 @@ $0.81$ here therefore says that the frustum pipeline integrates well over recall
 leaderboard. Establishing that requires running the pipeline on an external
 benchmark, for which the only large-scale aerial three-dimensional option is
 UAV3D \cite{ye2024uav3d}; this was not done here, and
-Chapter~\ref{cha:conclusions} records it as a limitation and as the first item of
+Chapter~\ref{cha:conclusions} records it as a limitation and among the items of
 future work rather than leaving the reader to assume a comparison that was never
 made.
 
