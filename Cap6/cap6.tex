@@ -602,8 +602,11 @@ quadrotor hovered and maneuvered over a matted area ($\approx 11.9\times12.8$~m,
 whose extent was surveyed on site from the LiDAR map) while a single person walked along its
 perimeter.\footnote{A video of the real-flight experiment is available at
 \url{https://www.dropbox.com/scl/fo/r9j7sqlwngrz60ltsldpr/AOwC3mAlRbmpuSl3Xv06cKo?rlkey=rez4d1ao6k2ccnpku2qlmbpvm&dl=0}.}
-The flight lasted
-about $150$~s. Importantly for the analysis below, the platform executed full
+The recording lasts
+about $150$~s ($3{,}038$ frames at $20$~Hz), of which the segment analyzed here
+spans about $90$~s; it is that segment, and not the whole recording, that the
+flight-time axes of Figures~\ref{fig:mono_traj} and~\ref{fig:mono_errors} cover.
+Importantly for the analysis below, the platform executed full
 $360^\circ$ yaw rotations, so the target traversed the entire field of view and
 the platform pose varied over its whole range, which is a demanding test of the
 pose-uncertainty handling. Although this flight contains a single target, the
@@ -618,16 +621,15 @@ the reference. A dense LiDAR point-cloud map of the hall (acquired with a
 Livox Mid-360, $\sim 1.8\times10^{6}$ points) provides a centimeter-accurate
 metric model of the floor and its landmarks. Reference positions were then
 obtained by manual annotation: for a set of $135$ frames spread across the
-flight, an operator marked the target's foot point in the image and the
+analyzed segment, an operator marked the target's foot point in the image and the
 corresponding floor location in a top-down rendering of the LiDAR map, which
 yields a paired image/world ground-truth sample per annotated frame. The
 annotation uses neither the camera pose nor the detector, so it is independent of
 the tracker and provides an unbiased reference. A consistency check confirms its
-validity: the annotated trajectory spans $11.9\times12.8$~m, so it covers the full
-extent of the surveyed mat (here and below, ``surveyed'' means measured on site
-from the LiDAR map); the implied walking speed averages $1.04$~m/s with a maximum of
-$3.8$~m/s, consistent with a walking person; and the path forms approximately
-$1.6$ laps of the mat perimeter, as observed in the video.
+validity: the implied walking speed averages $1.04$~m/s, the pace of an unhurried
+walk, and the path forms approximately $1.6$ laps of the mat perimeter, as
+observed in the video. (Here and below, ``surveyed'' means measured on site from
+the LiDAR map.)
 
 \subsection{Localization Accuracy against LiDAR-Referenced Ground Truth}
 \label{sec:mono_accuracy}
@@ -730,9 +732,9 @@ degrades with range where a true range sensor would not.
   (blue, right axis). The red curve is restricted to the frames in which the
   geometric visibility test places the target inside the camera's field of view,
   and is interrupted over the shaded intervals, in which it is not; the gray curve
-  retains every matched sample. The in-view error stays below $4$~m for all but one
-  episode near $t\approx63$~s, which reaches $6.9$~m, while the excursions reaching
-  ${\approx}22$~m belong entirely to the out-of-view intervals. Those excursions align with the loss-of-view intervals
+  retains every matched sample. The in-view error stays below $4$~m except at two
+  episodes, near $t\approx31$~s ($5.2$~m) and near $t\approx63$~s ($6.9$~m), while the
+  excursions reaching ${\approx}22$~m occur during the out-of-view intervals. Those excursions align with the loss-of-view intervals
   rather than with the instantaneous yaw-rate peaks: rotation is the cause, but the
   error follows the target's absence from the frame, which outlasts the sweep that
   produced it. The red curve is also interrupted wherever no annotated frame was
@@ -776,8 +778,14 @@ has lost sight of the target, and it is applied here to the error metric exactly
 as it would be applied in flight.
 
 Of the $626$ frames in which the detector fired, this test rejects $106$
-($16.9\%$): $37$ because the ray never meets the floor, and $69$ because it meets
-it far outside the hall. The rejected detections sit high in the image (median row
+($16.9\%$). The three criteria are evaluated in order, so the counts are
+first-failure counts: $37$ frames fail the first, the ray never meeting the floor
+ahead of the camera, and $69$ fail the second, meeting it more than $2$~m outside
+the surveyed mat. No surviving frame fails the third, which is expected rather
+than surprising: a ray that lands on the mat already implies the mat lies ahead of
+the camera. The third criterion is retained because it is the one that would
+matter on a longer engagement, where the arena can leave the frame while a
+spurious detection still back-projects onto it. The rejected detections sit high in the image (median row
 $v\approx185$, against $v\approx354$ for the accepted ones), that is, at or above
 the horizon --- the signature of a detector firing on background structure rather
 than on a person standing on the floor.
@@ -867,8 +875,8 @@ is for.
   that grows with distance, and the growth is amplified by the $\sim 6^\circ$
   depression angle at which this low-altitude platform views the floor, where the
   viewing ray is nearly parallel to the plane it is being intersected with. The
-  measured dependence, from a median of about $0.6$~m at $10$--$12$~m to about
-  $1.7$~m beyond $18$~m with a correlation of $0.53$, is reported in
+  measured dependence, from binned medians of $0.5$--$1.2$~m below $12$~m to
+  $1.6$--$2.0$~m beyond $18$~m with a correlation of $0.53$, is reported in
   Figure~\ref{fig:error_range}. Because the mat is walked around its perimeter
   while the platform hovers near one side, range and error co-vary through the
   flight, which is why the error series shows a slow modulation on top of its
@@ -886,7 +894,7 @@ is for.
   exactly what the consistency analysis of
   Section~\ref{sec:mono_consistency} exposes, and it is the reason the pose
   covariance must be propagated.
-  \item \textbf{Detector precision under loss of view.} The cause of the two large
+  \item \textbf{Detector precision under loss of view.} The cause of the large
   excursions, and of the entire RMSE tail. It is a failure of the
   \emph{detector}, not of the geometry or of the filter: the per-frame geometric
   projection on correctly detected frames never exceeds $3.1$~m, and the filter's
@@ -898,8 +906,8 @@ is for.
 
 One further observation deserves recording, since it was raised during the
 examination. An earlier version of these results reported a median error of
-$4.3$~m and a $90$th percentile of $10.3$~m --- roughly three times the median and
-a third again the $90$th percentile reported here. Those figures were not a property of the geometry. An audit of the
+$4.3$~m and a $90$th percentile of $10.3$~m --- about two and a half times the
+all-frames median and a third again its $90$th percentile reported here. Those figures were not a property of the geometry. An audit of the
 projection against the independent floor-plan ground truth, carried out
 separately from the filter, established that the single-frame lift was correct all
 along (median $1.05$~m); what produced the larger numbers was the constant-velocity
@@ -920,8 +928,9 @@ drawn inside the map lies that far from any ground-truth sample. The two were
 checked against each other sample by sample, and they agree exactly; the
 appearance of a contradiction is an artifact of the map's axes. During the
 loss-of-view intervals the filter is dragged to positions tens of meters outside
-the hall --- the extreme case is $(40.4,\,17.4)$~m, against a ground truth at
-$(19.5,\,10.9)$~m --- and those estimates simply fall outside the plotted window.
+the hall --- one such estimate is $(40.4,\,17.4)$~m, against a ground truth at
+$(19.5,\,10.9)$~m, an error of $21.9$~m --- and those estimates simply fall
+outside the plotted window.
 Of the $106$ rejected estimates, $85$ lie outside it. This is precisely why the
 out-of-view frames are now identified by an explicit geometric test and reported
 as a separate regime rather than folded into a single aggregate: an error
@@ -1047,7 +1056,7 @@ Chapter~\ref{cha:tracking} achieves in simulation (comparing like with like,
 an RMSE of $2.46$~m against $0.228$~m), and the error distribution has
 a heavy tail that a collision-avoidance function could not simply ignore: the
 $90$th percentile over all frames is $7.75$~m. Nor is the accuracy uniform, since
-it degrades roughly quadratically with target range and would degrade further at
+it trends upward with target range and would degrade further at
 the larger standoffs a real sense-and-avoid engagement involves. The honest
 summary is that monocular ground-plane tracking is adequate for the
 search-and-rescue task it was built for, where the objective is to \emph{find} a

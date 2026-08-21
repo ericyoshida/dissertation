@@ -133,8 +133,9 @@ measurement noise $\bm{R}_{\mathrm{cam}}=\sigma_{\mathrm{cam}}^2\bm{I}_2$; the
 $6$-DoF pose covariance is modeled as isotropic,
 $\bm{\Sigma}=\sigma_{\mathrm{pose}}^2\bm{I}_6$, with $\sigma_{\mathrm{pose}}$ tuned
 by the NIS consistency analysis of Section~\ref{sec:mono_consistency} to
-$\sigma_{\mathrm{pose}}\approx10^{-3}$, the value at which the mean NIS crosses the
-consistent value $\bar\eta=2$. The first detection is initialized by ray--plane
+$\sigma_{\mathrm{pose}}\approx10^{-3}$, marginally on the conservative side of the
+value at which the mean NIS crosses the consistent value $\bar\eta=2$
+(Section~\ref{sec:mono_consistency}). The first detection is initialized by ray--plane
 intersection with a large initial covariance so that early measurements dominate.
 
 \section{Code and Data Availability}

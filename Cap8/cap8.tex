@@ -59,7 +59,7 @@ consumes them and its real-world generalization.
   inherits its 2D detector's recall ceiling (${\approx}0.49$), whereas a
   learned-feature voxel detector recalls far more targets ($0.80$) and localizes
   them best ($0.87$~m RMSE, $0.88$~m on the twelve sequences held out from its own
-  training) at the cost of noisier identity association, with a late fusion
+  training) at the cost of a lower AMOTA, with a late fusion
   recovering much of both. Crucially, the localization error is essentially flat in
   both of the variables that could have degraded it: it does not grow with range,
   and it does not drift along a sequence --- over the $5{,}359$ matched pairs of
@@ -201,8 +201,9 @@ work does not yet establish.
   single-target filter.} The data association and track lifecycle of
   Chapter~\ref{cha:airsim} are a heuristic, SORT-style layer; the
   Cram\'er--Rao and consistency analysis of Chapter~\ref{cha:tracking} applies to
-  the per-track filter, not to the association problem, whose identity performance
-  remains a measured weakness of the voxel detectors.
+  the per-track filter, not to the association problem; identity performance
+  (IDF1) was measured for the frustum pipeline only and not for the voxel
+  detectors.
   \item \textbf{Pose-uncertainty propagation has not been carried into the 3D
   pipeline.} The extrinsic-aware innovation covariance of
   Chapter~\ref{cha:monocular} was derived for the monocular projective

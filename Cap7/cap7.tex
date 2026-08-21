@@ -696,7 +696,7 @@ regimes. Because those networks therefore see most of the campaign during
 training, every voxel result was recomputed on the $12$ held-out sequences alone,
 and the outcome is worth stating precisely rather than in summary, since it is not
 uniform. Held-out performance is \emph{consistently worse} than full-campaign
-performance for all five voxel variants, by up to $0.05$ AMOTA and up to
+performance for all five voxel variants, by up to $0.04$ AMOTA and up to
 $0.23$~m RMSE. The gap is widest for the hand-crafted pillar encoder
 (hand-crafted PointPillars: AMOTA $0.59$ against $0.63$, RMSE $1.42$~m against
 $1.19$~m) and narrowest for the two that carry the chapter's conclusions
@@ -706,7 +706,17 @@ preserved: the same two models lead on the held-out subset as on the full
 campaign, and the temporal variant remains last. The conclusions drawn below are
 therefore not an artifact of in-sample evaluation, but the absolute voxel figures
 in Table~\ref{tab:arch} should be read as mildly optimistic, by roughly $0.01$
-AMOTA for the leading models and by as much as $0.05$ for the hand-crafted encoder. Inference
+AMOTA for the leading models and by $0.04$ for the hand-crafted encoder. Two
+limits of this recomputation should be stated with it. Only AMOTA and RMSE were
+recomputed on the held-out subset, so the recall, precision and $F_1$ columns of
+Table~\ref{tab:arch} for the voxel rows remain in-sample figures --- including the
+recall gap on which the recommendation of Section~\ref{sec:discussion} rests, which
+should be read with the same caution. And the late-fusion configuration contains
+the same learned-pillar network but is not one of the five variants and was not
+recomputed separately, so its figures carry the same in-sample optimism as the PFN
+row. A further asymmetry is worth naming: the frustum figures come from all $60$
+sequences and the corrected voxel figures from $12$, so the two halves of the
+comparison are not evaluated on identical data. Inference
 runs offline: one heavy pass per sequence dumps detections, from which all metrics
 are recomputed cheaply while sweeping the detection threshold. The dataset-generation
 and detection code is released as open source.\footnote{\url{https://github.com/ericyoshida/airsim-uav-3d-detection}}
@@ -936,19 +946,23 @@ paradigms occupy opposite regimes (Figure~\ref{fig:regimes}). The frustum method
 are precise but recall-limited: the T-Net segmentation and the depth band attain
 the highest frustum AMOTA ($0.81$) and precision ($0.90$), but their recall is
 capped near $0.49$ by the 2D detector. The voxel methods, detecting in the whole
-scene without a 2D proposal, reach a far higher recall ($0.76$--$0.80$) and
-detection $F_1$ ($0.79$--$0.83$); among them, replacing the hand-crafted pillar
+scene without a 2D proposal, reach a far higher recall ($0.71$--$0.80$) and
+detection $F_1$ ($0.73$--$0.83$); among them, replacing the hand-crafted pillar
 features by a learned encoder (PFN) is the main driver of accuracy, cutting the
 localization error from $1.19$~m to $0.87$~m, the best of \emph{any} method,
 frustum or voxel. A dense 3D backbone matches it ($0.92$~m) and confirms that the
 gain comes from the learned local representation rather than grid resolution. The
 two negative controls bear this out: a finer grid does not help (the bottleneck is
 point sparsity on the target, not quantization) and naive temporal accumulation
-hurts (ego-only compensation smears the moving target across cells). The voxel
-detectors remain noisier in identity association, visible in their lower IDF1 and
-MOTA, which is why their
-AMOTA ($0.63$--$0.68$) trails the frustum's despite their stronger single-frame
-detection. A late fusion that confirms frustum detections with voxel ones lifts
+hurts (ego-only compensation smears the moving target across cells). Their
+stronger single-frame detection does not carry over to the tracking score: their
+AMOTA ($0.51$--$0.68$) trails the best frustum configuration ($0.81$) even though
+their MOTA@$0.5$ at the operating point is higher ($0.45$--$0.68$ against
+$0.40$--$0.46$). AMOTA integrates over the confidence sweep and therefore charges
+the whole-scene detectors for the low-confidence false positives they emit outside
+any 2D gate, which MOTA at a single threshold does not. Identity stability was
+measured only for the frustum pipeline (Table~\ref{tab:main}), so no comparative
+claim is made for the voxel detectors. A late fusion that confirms frustum detections with voxel ones lifts
 recall to $0.66$ at the frustum's precision, giving the best AMOTA among
 high-recall configurations ($0.75$).
 
@@ -1089,7 +1103,7 @@ a learned segmentation layered on top of that crop refines it further. Third,
 two-stage frustum design is precise and tracks well but inherits the 2D detector's
 recall ceiling, whereas the single-stage voxel design, particularly with
 learned pillar features, recalls more targets and localizes them best, at the
-cost of noisier identities; a late fusion captures much of both.
+cost of a lower AMOTA; a late fusion captures much of both.
 
 For the detect-and-avoid application this trade-off has a clear resolution, and it
 is worth stating as a recommendation rather than as an observation. A missed
@@ -1103,7 +1117,7 @@ cost: the voxel detector recalls $0.80$ of the targets against $0.49$ for the be
 frustum configuration, a difference of roughly three obstacles in ten, and it pays
 for that with a localization error that is in fact \emph{smaller}
 ($0.87$~m against $1.05$~m), not larger. The frustum pipeline's advantage lies
-elsewhere, in identity stability and in a cleaner, more interpretable geometric
+elsewhere, in its higher AMOTA and in a cleaner, more interpretable geometric
 construction, and it remains the better choice where a stable track matters more
 than exhaustive detection.
 
