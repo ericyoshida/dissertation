@@ -19,12 +19,6 @@ ponto de partida da leitura: permite localizar rapidamente o tratamento dado a c
 percorrer o documento inteiro. A última linha traz o mapa de renumeração das figuras, já que ela
 mudou com as inserções.
 
-Todos os pontos levantados foram incorporados, com uma exceção que prefiro declarar: a comparação
-contra um benchmark público, pedida pelo Prof. Bruno, não foi executada. Está registrada como
-limitação no Capítulo 8 e como trabalho futuro, com os caminhos indicados. Como o professor a colocou
-como pré-requisito para a submissão dos resultados a publicação, optei por declarar a lacuna; se a
-banca entender que ela deve ser fechada antes da entrega, eu a executo.
-
 Dois registros de transparência. A discrepância entre o gráfico do slide 35 e a Figura 6.6 da
 dissertação, apontada pelo Prof. Alberto, era um erro dos slides: a figura do texto já era a versão
 corrigida por uma auditoria de geometria e do filtro. E, ao revisar os números contra os dados

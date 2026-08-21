@@ -176,15 +176,6 @@ work does not yet establish.
   avoidance is fundamentally a decision about the \emph{future} conflict geometry
   and not about the present position, this is a real gap between what the
   perception layer delivers and what a complete detect-and-avoid function needs.
-  \item \textbf{No comparison against an external benchmark.} The detection and
-  tracking results of Chapter~\ref{cha:airsim} are internally comparative: the
-  architectures are compared against each other, on a purpose-built dataset, under
-  an identical protocol. They are not placed against any published method on any
-  public benchmark, because no aerial three-dimensional benchmark with the
-  required annotations was available when the campaign was run and because the
-  synthetic dataset is this work's own. The consequence is that the reported
-  numbers establish a ranking among the alternatives implemented here but do not
-  situate the pipeline within the wider literature in absolute terms.
   \item \textbf{Recall, not precision, limits the two-stage design.} The frustum
   pipeline's recall falls to $0.31$--$0.58$ under tree clutter and fog, inherited
   almost entirely from the 2D stage. In a collision-avoidance application a missed
