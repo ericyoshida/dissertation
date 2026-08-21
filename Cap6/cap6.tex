@@ -598,8 +598,8 @@ the pose-uncertainty term of Section~\ref{sec:mono_extrinsic} is put to the test
 \label{sec:mono_scenario}
 
 The tracker was evaluated on a real flight in an indoor sports hall, in which the
-quadrotor hovered and maneuvered over a matted area ($\approx 11.0\times12.0$~m,
-whose extent was measured on site) while a single person walked along its
+quadrotor hovered and maneuvered over a matted area ($\approx 11.9\times12.8$~m,
+whose extent was surveyed on site from the LiDAR map) while a single person walked along its
 perimeter.\footnote{A video of the real-flight experiment is available at
 \url{https://www.dropbox.com/scl/fo/r9j7sqlwngrz60ltsldpr/AOwC3mAlRbmpuSl3Xv06cKo?rlkey=rez4d1ao6k2ccnpku2qlmbpvm&dl=0}.}
 The flight lasted
@@ -623,9 +623,9 @@ corresponding floor location in a top-down rendering of the LiDAR map, which
 yields a paired image/world ground-truth sample per annotated frame. The
 annotation uses neither the camera pose nor the detector, so it is independent of
 the tracker and provides an unbiased reference. A consistency check confirms its
-validity: the annotated trajectory spans $11.9\times12.8$~m, matching the
-surveyed mat (here and below, ``surveyed'' means measured on site from the
-LiDAR map); the implied walking speed averages $1.04$~m/s with a maximum of
+validity: the annotated trajectory spans $11.9\times12.8$~m, so it covers the full
+extent of the surveyed mat (here and below, ``surveyed'' means measured on site
+from the LiDAR map); the implied walking speed averages $1.04$~m/s with a maximum of
 $3.8$~m/s, consistent with a walking person; and the path forms approximately
 $1.6$ laps of the mat perimeter, as observed in the video.
 
@@ -831,8 +831,8 @@ uninstrumented camera, recovering metric position through a ground-plane lift, o
 a platform undergoing full rotations, with a navigation pose that is itself
 estimated. A median of about $1.4$~m over a $\sim 12$~m working area, with the
 target $10$--$20$~m from the camera and the line of sight grazing the floor at
-about $6^\circ$, is an accurate localization from monocular cues alone, and it
-improves on consumer GNSS, which this pipeline does not use.
+about $6^\circ$, is an accurate localization from monocular cues alone, obtained
+without GNSS, which this pipeline does not use.
 
 \paragraph*{Reading the trajectory plot.} Figure~\ref{fig:mono_traj} shows the
 estimated track against the ground truth in the plane of the floor, and it repays
@@ -971,10 +971,28 @@ covariance while the actual innovations, driven by the unmodeled pose error, are
 large. As $\sigma_{\mathrm{pose}}$ increases, the mean NIS falls monotonically and
 crosses the consistent value $\bar\eta=2$ near
 $\sigma_{\mathrm{pose}}\approx10^{-3}$; beyond that the filter becomes
-conservative (underconfident). The time series
-(Figure~\ref{fig:mono_nis}b) confirms that the pose-off filter sits far above the
-$95\%$ $\chi^2_2$ gate throughout the flight, while the calibrated filter stays
-near the consistent regime.
+conservative (underconfident). The value $\sigma_{\mathrm{pose}}\approx10^{-3}$
+adopted throughout this chapter therefore sits marginally on the conservative side
+of the crossing rather than exactly on it.
+
+The time series (Figure~\ref{fig:mono_nis}b) shows how that average is composed,
+and it is worth reading in detail rather than as a summary, because the two traces
+behave differently in the two halves of the record. The pose-off filter is close
+to the $95\%$ $\chi^2_2$ gate, crossing it in both directions, over the earlier
+part of the record, and only afterward departs from it entirely, running four to
+six orders of magnitude above the consistent value for the remainder. The mean of
+$3.4\times10^{4}$ is therefore dominated by that later regime, which is also where
+the platform's rotation is most aggressive: the pose-off filter is not uniformly
+overconfident but becomes catastrophically so exactly when the pose is least
+trustworthy, which is the sharper form of the same conclusion. The calibrated
+filter, by contrast, spends most of the record \emph{below} the consistent value,
+typically between $10^{-3}$ and $10^{0}$, and does not exhibit the excursions of
+the pose-off trace. It is therefore conservative rather than tight: the single
+isotropic scale buys statistical safety at the cost of a gate wider than strictly
+necessary for much of the flight, which is the price of the constant
+$\bm{\Sigma}$ discussed in Section~\ref{sec:mono_extrinsic}. For a
+collision-avoidance consumer this is the correct direction in which to err, but it
+is a weaker claim than exact consistency and is stated as such.
 
 \begin{figure}[H]
   \centering
@@ -985,8 +1003,14 @@ near the consistent regime.
   ``OFF'') the filter is overconfident by four orders of magnitude; propagating
   the pose covariance brings the filter to statistical consistency
   ($\bar\eta=2$, green) near $\sigma_{\mathrm{pose}}\approx10^{-3}$. (b) NIS over
-  the flight for the pose-off and calibrated filters; the consistent band and the
-  $95\%$ $\chi^2_2$ gate are shown for reference.}
+  the flight for the pose-off and calibrated filters, with the consistent value and
+  the $95\%$ $\chi^2_2$ gate shown for reference. The pose-off trace straddles the
+  gate early in the record and then departs from it by four to six orders of
+  magnitude; the calibrated trace stays largely below the consistent value, that
+  is, on the conservative side. Panel (b) carries the raw acquisition clock of the
+  navigation stream, whose origin differs from the flight-time origin used in
+  Figures~\ref{fig:mono_traj} and~\ref{fig:mono_errors}, so the two time axes are
+  offset and should not be read against each other directly.}
   \label{fig:mono_nis}
 \end{figure}
 
@@ -994,7 +1018,8 @@ The ablation makes the methodological point concrete. The extrinsic term of
 \eqref{eq:Smono} is not a cosmetic refinement. Omitting it renders the filter
 statistically meaningless, with a covariance that understates the true error by
 four orders of magnitude, whereas including it, with a single scalar tuned to the
-navigation solution's quality, restores consistency. The downstream avoidance
+navigation solution's quality, brings the filter back to the consistent regime and,
+for much of the flight, slightly past it onto the conservative side. The downstream avoidance
 logic depends on this kind of consistent covariance, as emphasized in the
 introduction, so propagating the pose uncertainty is what makes the monocular
 estimate trustworthy as well as accurate.
