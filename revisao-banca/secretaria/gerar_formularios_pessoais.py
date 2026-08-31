@@ -80,7 +80,10 @@ overlay(ORIG / "Capes1_Identificacao.pdf", SAI / "Capes1_Identificacao.pdf", [
   cpf_banca("Marcos Ricardo Omena de Albuquerque Maximo")[1]),
  (115, 527, "Stiven Schwanz Dias"),
  (117, 546, "X"), (370, 547, "Brasil"), (115, 567, cpf_banca("Stiven Schwanz Dias")[0], 9, cpf_banca("Stiven Schwanz Dias")[1]),
- (163, 683, "PREENCHER: financiador, ou deixar em branco se nao houve bolsa", 7, True),
+ (163, 683, v("financiador")[0], 9, v("financiador")[1]),
+ (117, 703, "X" if D.get("financiador_natureza") == "B" else ""),   # Natureza: B - Bolsa
+ (518, 705, (D.get("financiador_meses") or "??").strip(), 8,
+  not (D.get("financiador_meses") or "").strip()),   # caixa estreita: marcador curto
 ])
 
 # ---- CAPES 2 ----
