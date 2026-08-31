@@ -91,8 +91,8 @@ it2 += [
  # dominios oficiais do Manual do Coleta de Dados da CAPES (aba Atividade Futura):
  #  Vinculo: CLT | Servidor Publico | Aposentado | Colaborador | Bolsa de fixacao
  #  Expectativa: Ensino e Pesquisa | Pesquisa | Empresa | Profissional autonomo | Outras
- (163, 556, "CLT"),
- (163, 578, "Empresa"),
+ (175, 556, "CLT"),
+ (175, 578, "Empresa"),
  (533, 578, "X"),                       # Mesma Area da Titulacao: Sim
 
  (115, 635, D["logradouro"]), (115, 657, bai, 9, bai_r), (370, 657, D["cidade"]),
