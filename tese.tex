@@ -86,6 +86,28 @@
 \emergencystretch=3em
 
 %++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+% Paginação conforme o manual do ITA (Seção 4.1):
+%   - todas as folhas contam a partir da folha de rosto, inclusive;
+%   - da folha da banca em diante o número é impresso, no canto superior direito;
+%   - a folha de rosto e o seu verso são contados, mas não numerados;
+%   - a Folha de Registro, no fim, não conta e não é numerada.
+% A classe usa \thispagestyle{empty} nas folhas de abertura (banca, dedicatória,
+% agradecimentos, epígrafe, resumo, listas, sumário) e o estilo plain no início
+% de cada capítulo, e ambos escondem o número. Os dois passam a imprimi-lo.
+%++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+\makeatletter
+\newcommand{\ita@numnohead}{%
+  \renewcommand{\@oddhead}{\hfill\thepage}%
+  \renewcommand{\@evenhead}{\thepage\hfill}%
+  \renewcommand{\@oddfoot}{}\renewcommand{\@evenfoot}{}}
+\renewcommand{\ps@empty}{%
+  \renewcommand{\@oddhead}{\ifnum\value{page}>2\hfill\thepage\fi}%
+  \renewcommand{\@evenhead}{\ifnum\value{page}>2\thepage\hfill\fi}%
+  \renewcommand{\@oddfoot}{}\renewcommand{\@evenfoot}{}}
+\renewcommand{\ps@plain}{\ita@numnohead}
+\makeatother
+
+%++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 % Identificações (trabalho em inglês -> dados em inglês)
 %++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 \course{Electronic Engineering and Computer Science}  % Programa de PG em Engenharia Eletrônica e Computação
@@ -128,12 +150,13 @@
 \kwcip{Sensor fusion}
 \kwcip{Convolutional neural networks}
 
-% Membros da banca examinadora (a ordem na folha: Presidente, Orientador, Coorientador, demais membros)
+% Membros da banca examinadora (a ordem na folha: Presidente, Orientador, Coorientador,
+% demais membros). Somente quem participou da defesa entra na folha da banca; os
+% suplentes Cesar Augusto Cavalheiro Marcondes (ITA) e Thiago Oliveira Santos (UFES)
+% foram retirados a pedido da Secretaria da Pós-Graduação.
 \examiner{Prof.~Dr.}{Paulo Marcelo Tasinaffo}{President}{ITA}
 \examiner{Prof.~Dr.}{Marcelo Gomes da Silva Bruno}{Internal Member}{ITA}
 \examiner{Prof.~Dr.}{Alberto Ferreira de Souza}{External Member}{UFES}
-\examiner{Prof.~Dr.}{Cesar Augusto Cavalheiro Marcondes}{Internal Substitute}{ITA}
-\examiner{Prof.~Dr.}{Thiago Oliveira Santos}{External Substitute}{UFES}
 
 % Data da defesa (mês em maiúsculo, pois o trabalho é em inglês)
 \date{28}{July}{2026}                   % Data da defesa
@@ -196,7 +219,11 @@
 %\itaglossary
 %\printglossary
 
-% Folha de Registro do Documento (FRD)
+% Folha de Registro do Documento (FRD) --- nao conta e nao e numerada
+\makeatletter
+\renewcommand{\ps@empty}{\renewcommand{\@oddhead}{}\renewcommand{\@evenhead}{}%
+  \renewcommand{\@oddfoot}{}\renewcommand{\@evenfoot}{}}
+\makeatother
 \FRDitadata{31 de agosto de 2026}                                 % campo 2: fornecido pela Biblioteca
 \FRDitadocnro{DCTA/ITA/DM-077/2026}                              % campo 3: fornecido pela Biblioteca
 \FRDitaorgaointerno{Instituto Tecnológico de Aeronáutica -- ITA}

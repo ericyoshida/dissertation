@@ -33,7 +33,19 @@ cópias sem dado pessoal, versionadas no Git; os de envio ficam fora do Git.
 Depois do envio, a Secretaria confirma se está tudo no padrão e manda o **link do Stratus** para o
 upload final.
 
-### 2. A única pendência antes de mandar
+### 2. Correções pedidas pela Secretaria em 31/08 — feitas
+
+- **Folha da banca**: só entra quem participou da defesa. Os dois suplentes (Marcondes e Thiago
+  Oliveira Santos) foram retirados do `tese.tex` e do editável. Ficaram cinco.
+- **Paginação** (manual, §4.1): a contagem começa na folha de rosto; folha de rosto e verso contam
+  mas não são numerados; da folha da banca em diante imprime-se romano (a banca é a **iii**); da
+  Introdução em diante continua em arábico no canto superior direito (a Introdução é a **31**); a
+  Folha de Registro não conta nem é numerada. A classe escondia o número nas folhas de abertura e no
+  início de capítulo — os estilos `empty` e `plain` foram redefinidos no preâmbulo.
+
+Texto de reenvio pronto em `EMAIL_5_reenvio.md`.
+
+### 3. A única pendência antes de mandar
 
 ⬜ **Assinatura digital do Prof. Maximo no `tese.pdf`.** O manual do ITA exige que o arquivo final
 contenha a assinatura digital do orientador. É o último passo.
