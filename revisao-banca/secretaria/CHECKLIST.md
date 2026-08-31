@@ -81,19 +81,31 @@ dado pessoal; use os de `COM_DADOS_PESSOAIS/` para enviar.
   ⚠️ Os CPFs que você receber **não devem ser commitados**. Digite-os direto no PDF, ou me peça
   para preencher e o arquivo fica fora do Git.
 
-**Campos "(*) Ver Tabela"** — três dos cinco já resolvidos:
+**Campos "(*) Ver Tabela"** — quatro dos cinco resolvidos, com fonte:
 
-- ✅ **Área de Conhecimento (CAPES 3)** — códigos tirados da Tabela de Áreas do Conhecimento do
-  CNPq (Plataforma Lattes): `1.03.03.00-6` Metodologia e Técnicas da Computação,
-  `3.04.02.05-0` Sistemas Eletrônicos de Medida e de Controle, `3.12.00.00-1` Engenharia
-  Aeroespacial.
-- ✅ **Linha de Pesquisa (CAPES 1)** — "Sistemas Autônomos e Ciência de Dados", uma das quatro
-  linhas do PG/EEC na área de Informática. Vale uma conferida rápida com a Secretaria.
-- ❌ **Projeto de Pesquisa (CAPES 1)** — é o projeto registrado pelo programa no Sucupira, não uma
-  tabela pública. Se for para indicar o guarda-chuva do trabalho, o FlyMov (ITA/Embraer/FAPESP) é o
-  candidato; confirme.
-- ❌ **Vínculo Atual e Expectativa de Atuação (CAPES 2)** — domínios do sistema SAV Coleta, que não
-  são publicados. O `EMAIL_2_secretaria.md` já pergunta quais valores usar.
+- ✅ **Área de Conhecimento (CAPES 3)** — Tabela de Áreas do Conhecimento do CNPq (Lattes):
+  `1.03.03.00-6` Metodologia e Técnicas da Computação, `3.04.02.05-0` Sistemas Eletrônicos de
+  Medida e de Controle, `3.12.00.00-1` Engenharia Aeroespacial.
+- ✅ **Linha de Pesquisa (CAPES 1)** — "Sistemas Autônomos e Ciência de Dados". Confirmada num
+  registro real do PG/EEC na Plataforma Sucupira, que também confirma a Área de Concentração
+  como INFORMÁTICA.
+- ✅ **Vínculo Atual (CAPES 2)** — "CLT". O Manual do Coleta de Dados da CAPES (aba Atividade
+  Futura) dá as cinco opções: CLT, Servidor Público, Aposentado, Colaborador, Bolsa de fixação.
+  Troque se você for servidor público ou colaborador.
+- ✅ **Expectativa de Atuação (CAPES 2)** — "Empresa". As opções são: Ensino e Pesquisa, Pesquisa,
+  Empresa, Profissional autônomo, Outras. Marquei também "Mesma Área da Titulação: sim".
+  Se a ideia for seguir em pesquisa ou docência, troque para "Pesquisa" ou "Ensino e Pesquisa".
+- ⚠️ **Projeto de Pesquisa (CAPES 1)** — este **não** é preenchido pelo aluno. É o projeto que o
+  programa mantém registrado no Sucupira e ao qual o discente é vinculado; nos registros públicos
+  ele varia por orientador (o de outro professor da mesma linha, por exemplo, é "Inteligência
+  Artificial Aplicada a Biotecnologia e Finanças"). O do Prof. Maximo não está publicado. O campo
+  está marcado como "(a preencher pelo PG/EEC)".
+
+Fontes: Tabela de Áreas do Conhecimento do CNPq (Plataforma Lattes); Plataforma Sucupira,
+programa 33011010005P0; Manual do Coleta de Dados da CAPES, aba Atividade Futura.
+
+Nota do manual: os campos de Atividade Futura **não são obrigatórios** — no registro do PG/EEC que
+consultei eles estão em branco.
 
 **Financiamento** (CAPES 1)
 - Se houve bolsa: financiador, natureza (bolsa ou auxílio) e número de meses. Se não houve, deixe

@@ -66,7 +66,7 @@ overlay(ORIG / "Capes1_Identificacao.pdf", SAI / "Capes1_Identificacao.pdf", [
  (115, 213, "07/2026", 8), (369, 212, "X"),
  (115, 237, TIT, 9),
  (163, 289, "Sistemas Autonomos e Ciencia de Dados", 8),
- (163, 308, "PREENCHER: projeto de pesquisa registrado pelo PG/EEC", 7, True),
+ (163, 308, "(a preencher pelo PG/EEC: projeto registrado no Sucupira)", 7, True),
  (163, 327, "Informatica"), (163, 378, "Biblioteca Central do ITA"),
  (160, 397, "1"), (262, 397, "155"), (380, 397, "Ingles"), (163, 416, kw, 6.5),
  (115, 468, "Marcos Ricardo Omena de Albuquerque Maximo"),
@@ -88,8 +88,13 @@ for nome, yn, ycb, yp, yd in banca:
             (115, yd, "PREENCHER: CPF", 9, True)]
 bai, bai_r = v("bairro"); tel, tel_r = v("telefone")
 it2 += [
- (163, 556, "PREENCHER: dominio SAV (perguntar a Secretaria)", 7, True),
- (163, 578, "PREENCHER: dominio SAV (perguntar a Secretaria)", 7, True),
+ # dominios oficiais do Manual do Coleta de Dados da CAPES (aba Atividade Futura):
+ #  Vinculo: CLT | Servidor Publico | Aposentado | Colaborador | Bolsa de fixacao
+ #  Expectativa: Ensino e Pesquisa | Pesquisa | Empresa | Profissional autonomo | Outras
+ (163, 556, "CLT"),
+ (163, 578, "Empresa"),
+ (533, 578, "X"),                       # Mesma Area da Titulacao: Sim
+
  (115, 635, D["logradouro"]), (115, 657, bai, 9, bai_r), (370, 657, D["cidade"]),
  (115, 679, D["uf"]), (370, 679, "Brasil"), (370, 701, D["cep"]),
  (115, 723, tel, 9, tel_r), (115, 788, D["email"]),
@@ -103,9 +108,10 @@ it3 = [
  (105, 143, "3.04.02.05-0"), (245, 143, "Sistemas Eletronicos de Medida e de Controle"),
  (105, 165, "3.12.00.00-1"), (245, 165, "Engenharia Aeroespacial"),
 ]
+# pautas do quadro RESUMO vao de 41.8pt a 552.2pt; recuo de ~26pt em cada lado
 y = 225.2
-for linha in textwrap.wrap(resumo, 125):
-    it3.append((52, y, linha, 7.5)); y += 13.68
+for linha in textwrap.wrap(resumo, 118):
+    it3.append((68, y, linha, 7.5)); y += 13.68
 overlay(ORIG / "Capes3_Area.pdf", SAI / "Capes3_Area.pdf", it3)
 
 # ---- Termo de autorizacao ----
