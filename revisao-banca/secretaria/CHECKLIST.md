@@ -16,17 +16,17 @@ A Folha de Registro **não é preenchida por você sozinho**. O fluxo é:
    indexação)** preenchidos
 3. Essa folha devolvida vira a **última página** do PDF, sem paginação e fora do sumário
 
-⚠️ **Faltam o campo 2 e o campo 3, ambos da Biblioteca.** O manual é explícito: a data (campo 2) é
-a *data de registro*, não a da defesa, e tanto ela quanto o número (campo 3) são "preenchimento de
-responsabilidade do processo de registro". O campo 2 agora está em branco na dissertação e na folha;
-o campo 3 está como `DCTA/ITA/DM - XXX/2026`. Quando a Biblioteca responder, escreva os dois valores
-em `tese.tex` (`\FRDitadata` e `\FRDitadocnro`), recompile e rode
-`python3 revisao-banca/secretaria/gerar_folha_registro.py` — o script relê o `tese.tex` e regenera o
-`.docx`, garantindo que os dois continuem idênticos.
+✅ **Folha de registro concluída.** A Biblioteca respondeu em 31/08 e devolveu os campos que lhe
+cabiam: data **31 de agosto de 2026**, registro **DCTA/ITA/DM-077/2026** e as palavras-chave de
+indexação. Aproveitou para reescrever o campo 10 em português ("Programa de Pós-Graduação em
+Eletrônica e Computação. Área de Informática"), o que também corrigiu a mistura de português e
+inglês que havia ali. Tudo isso foi transposto para o `tese.tex`, então a folha impressa na última
+página da dissertação é idêntica à emitida pela Biblioteca — conferido campo a campo, os dezesseis
+batem. Não é preciso colar página nenhuma: o PDF já sai completo.
 
-Sobre o campo 9: o manual também o atribui à Biblioteca, mas a dissertação já o traz preenchido com
-as palavras-chave de indexação. Deixei como está, igual nos dois documentos; se a Biblioteca pedir
-para esvaziar, basta limpar `\FRDitapalavrasresult` e rodar o script de novo.
+Uma diferença deliberada: a Biblioteca escreveu "Máximo" com acento no campo 10. A dissertação usa
+"Maximo" sem acento em todo o documento, a pedido da banca, e assim foi mantido para não haver duas
+grafias no mesmo trabalho.
 
 ✅ **Idioma do resumo resolvido.** O manual pede o campo 11 no idioma do trabalho, que é o inglês.
 A dissertação foi ajustada para usar o abstract condensado (`PreTextuais/abstract_frd.tex`) na sua
