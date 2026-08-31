@@ -81,12 +81,19 @@ dado pessoal; use os de `COM_DADOS_PESSOAIS/` para enviar.
   ⚠️ Os CPFs que você receber **não devem ser commitados**. Digite-os direto no PDF, ou me peça
   para preencher e o arquivo fica fora do Git.
 
-**Códigos das tabelas CAPES** (os campos marcados "(*) Ver Tabela")
-- Linha de Pesquisa e Projeto de Pesquisa (CAPES 1)
-- Vínculo Atual e Expectativa de Atuação (CAPES 2)
-- Os três códigos de Área de Conhecimento (CAPES 3) — preenchi as descrições sugeridas
-  (Ciência da Computação / Engenharia Elétrica-Eletrônica / Engenharia Aeroespacial), mas os
-  códigos numéricos vêm da tabela do CNPq
+**Campos "(*) Ver Tabela"** — três dos cinco já resolvidos:
+
+- ✅ **Área de Conhecimento (CAPES 3)** — códigos tirados da Tabela de Áreas do Conhecimento do
+  CNPq (Plataforma Lattes): `1.03.03.00-6` Metodologia e Técnicas da Computação,
+  `3.04.02.05-0` Sistemas Eletrônicos de Medida e de Controle, `3.12.00.00-1` Engenharia
+  Aeroespacial.
+- ✅ **Linha de Pesquisa (CAPES 1)** — "Sistemas Autônomos e Ciência de Dados", uma das quatro
+  linhas do PG/EEC na área de Informática. Vale uma conferida rápida com a Secretaria.
+- ❌ **Projeto de Pesquisa (CAPES 1)** — é o projeto registrado pelo programa no Sucupira, não uma
+  tabela pública. Se for para indicar o guarda-chuva do trabalho, o FlyMov (ITA/Embraer/FAPESP) é o
+  candidato; confirme.
+- ❌ **Vínculo Atual e Expectativa de Atuação (CAPES 2)** — domínios do sistema SAV Coleta, que não
+  são publicados. O `EMAIL_2_secretaria.md` já pergunta quais valores usar.
 
 **Financiamento** (CAPES 1)
 - Se houve bolsa: financiador, natureza (bolsa ou auxílio) e número de meses. Se não houve, deixe
@@ -106,5 +113,5 @@ dado pessoal; use os de `COM_DADOS_PESSOAIS/` para enviar.
   Alberto Ferreira de Souza (Externo); suplentes Marcondes e Thiago Oliveira Santos
 - Páginas: 155 · Volumes: 1 · Idioma: Inglês
 - Biblioteca Depositária: Biblioteca Central do ITA
-- Endereço: Rua Francisco Ricci, 181, Apto. 194D, Dado — São José dos Campos/SP — CEP 12.243-261
+- Endereço: Rua Francisco Ricci, 181, Apto. 194D, Vila Ema — São José dos Campos/SP — CEP 12.243-261
 - E-mail: eric_lima20@yahoo.com

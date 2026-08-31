@@ -29,6 +29,16 @@ def v(chave, rotulo=None):
     x = (D.get(chave) or "").strip()
     return (x, False) if x else (f"PREENCHER: {rotulo or chave}", True)
 
+def limpa_tex(s):
+    import re as _re
+    s = _re.sub(r"(?m)%.*$", "", s)
+    s = _re.sub(r"\\emph\{([^}]*)\}", lambda m: m.group(1), s)
+    s = s.replace("\\'e", "e").replace("--", "-")
+    s = _re.sub(r"\\[a-zA-Z]+\*?", "", s)
+    s = s.replace("{", "").replace("}", "").replace("~", " ")
+    return _re.sub(r"\s+", " ", s).strip()
+
+
 def overlay(src, dst, itens):
     buf = io.BytesIO(); c = canvas.Canvas(buf, pagesize=(595, 842))
     for it in itens:
@@ -55,8 +65,8 @@ overlay(ORIG / "Capes1_Identificacao.pdf", SAI / "Capes1_Identificacao.pdf", [
  (115, 191, cpf, 9, cpf_r), (381, 191, mes, 8, mes_r), (424, 191, ano, 8, ano_r),
  (115, 213, "07/2026", 8), (369, 212, "X"),
  (115, 237, TIT, 9),
- (163, 289, "PREENCHER: ver tabela CAPES", 8, True),
- (163, 308, "PREENCHER: ver tabela CAPES", 8, True),
+ (163, 289, "Sistemas Autonomos e Ciencia de Dados", 8),
+ (163, 308, "PREENCHER: projeto de pesquisa registrado pelo PG/EEC", 7, True),
  (163, 327, "Informatica"), (163, 378, "Biblioteca Central do ITA"),
  (160, 397, "1"), (262, 397, "155"), (380, 397, "Ingles"), (163, 416, kw, 6.5),
  (115, 468, "Marcos Ricardo Omena de Albuquerque Maximo"),
@@ -78,13 +88,25 @@ for nome, yn, ycb, yp, yd in banca:
             (115, yd, "PREENCHER: CPF", 9, True)]
 bai, bai_r = v("bairro"); tel, tel_r = v("telefone")
 it2 += [
- (163, 556, "PREENCHER: ver tabela CAPES", 8, True),
- (163, 578, "PREENCHER: ver tabela CAPES", 8, True),
+ (163, 556, "PREENCHER: dominio SAV (perguntar a Secretaria)", 7, True),
+ (163, 578, "PREENCHER: dominio SAV (perguntar a Secretaria)", 7, True),
  (115, 635, D["logradouro"]), (115, 657, bai, 9, bai_r), (370, 657, D["cidade"]),
  (115, 679, D["uf"]), (370, 679, "Brasil"), (370, 701, D["cep"]),
  (115, 723, tel, 9, tel_r), (115, 788, D["email"]),
 ]
 overlay(ORIG / "Capes2_Banca.pdf", SAI / "Capes2_Banca.pdf", it2)
+
+# ---- CAPES 3 (codigos da Tabela de Areas do Conhecimento do CNPq) ----
+resumo = limpa_tex((RAIZ / "PreTextuais/abstract_frd.tex").read_text())
+it3 = [
+ (105, 122, "1.03.03.00-6"), (245, 122, "Metodologia e Tecnicas da Computacao"),
+ (105, 143, "3.04.02.05-0"), (245, 143, "Sistemas Eletronicos de Medida e de Controle"),
+ (105, 165, "3.12.00.00-1"), (245, 165, "Engenharia Aeroespacial"),
+]
+y = 225.2
+for linha in textwrap.wrap(resumo, 125):
+    it3.append((52, y, linha, 7.5)); y += 13.68
+overlay(ORIG / "Capes3_Area.pdf", SAI / "Capes3_Area.pdf", it3)
 
 # ---- Termo de autorizacao ----
 RED = RGBColor(0xC0, 0, 0)
