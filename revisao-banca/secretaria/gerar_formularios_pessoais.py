@@ -24,6 +24,11 @@ SAI  = AQUI / "COM_DADOS_PESSOAIS"; SAI.mkdir(exist_ok=True)
 D = json.loads((AQUI / ".dados_pessoais.json").read_text(encoding="utf-8"))
 H = 842.0
 
+def cpf_banca(nome):
+    """CPF de um membro da banca, ou marcador vermelho se ainda nao informado."""
+    x = (D.get("cpfs_banca", {}).get(nome) or "").strip()
+    return (x, False) if x else ("PREENCHER: CPF", True)
+
 def v(chave, rotulo=None):
     """Valor do JSON, ou marcador vermelho se ainda vazio."""
     x = (D.get(chave) or "").strip()
@@ -71,9 +76,10 @@ overlay(ORIG / "Capes1_Identificacao.pdf", SAI / "Capes1_Identificacao.pdf", [
  (163, 327, "Informatica"), (163, 378, "Biblioteca Central do ITA"),
  (160, 397, "1"), (262, 397, "155"), (380, 397, "Ingles"), (163, 416, kw, 6.5),
  (115, 468, "Marcos Ricardo Omena de Albuquerque Maximo"),
- (117, 486, "X"), (370, 488, "Brasil"), (115, 507, "PREENCHER: CPF do orientador", 9, True),
+ (117, 486, "X"), (370, 488, "Brasil"), (115, 507, cpf_banca("Marcos Ricardo Omena de Albuquerque Maximo")[0], 9,
+  cpf_banca("Marcos Ricardo Omena de Albuquerque Maximo")[1]),
  (115, 527, "Stiven Schwanz Dias"),
- (117, 546, "X"), (370, 547, "Brasil"), (115, 567, "PREENCHER: CPF do coorientador", 9, True),
+ (117, 546, "X"), (370, 547, "Brasil"), (115, 567, cpf_banca("Stiven Schwanz Dias")[0], 9, cpf_banca("Stiven Schwanz Dias")[1]),
  (163, 683, "PREENCHER: financiador, ou deixar em branco se nao houve bolsa", 7, True),
 ])
 
@@ -85,8 +91,9 @@ banca = [("Paulo Marcelo Tasinaffo",127,147,148,170),
          ("Alberto Ferreira de Souza",389,409,411,432)]
 it2 = []
 for nome, yn, ycb, yp, yd in banca:
+    doc, doc_r = cpf_banca(nome)
     it2 += [(115, yn, nome), (117, ycb, "X"), (370, yp, "Brasil"),
-            (115, yd, "PREENCHER: CPF", 9, True)]
+            (115, yd, doc, 9, doc_r)]
 bai, bai_r = v("bairro"); tel, tel_r = v("telefone")
 it2 += [
  # dominios oficiais do Manual do Coleta de Dados da CAPES (aba Atividade Futura):
