@@ -1,0 +1,19 @@
+% Condensed abstract for the Folha de Registro do Documento (FRD).
+% The FRD's "RESUMO" box has a fixed height and the full Abstract does not fit.
+% The ITA manual requires this field in the language of the work, i.e. English,
+% so this file — not PreTextuais/resumo_frd.tex — is what feeds \FRDitaresumo.
+
+This dissertation develops the perception (\emph{sense}) layer of detect-and-avoid for urban
+unmanned aerial vehicles, structured as a modular camera--point-cloud pipeline: a convolutional
+neural network locates the obstacle in the image, the detected region is extended into space as a
+viewing frustum that crops the point cloud, a second network fits a metric three-dimensional box,
+and an Extended Kalman Filter turns the detections into trajectories with calibrated uncertainty.
+Three self-contained studies validate the pipeline. The first formulates tracking from a moving
+platform in the global and local reference frames, proves that the two formulations are
+mathematically equivalent under a known pose and isotropic process noise, characterizes the regimes
+in which that equivalence fails, and shows the filter to be near-optimal against the posterior
+Cram\'er--Rao bound. The second takes the same estimator onto real quadrotor flights, tracking a
+person with a single camera and an onboard pose estimate, and demonstrates that propagating the
+pose uncertainty into the innovation is necessary for statistical consistency. The third builds a
+synthetic dataset in the AirSim simulator, trains the detection stages, and identifies foreground
+extraction, rather than the box regressor, as the dominant factor in 3D localization accuracy.

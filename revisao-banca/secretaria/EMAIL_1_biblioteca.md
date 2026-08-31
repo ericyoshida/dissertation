@@ -13,14 +13,13 @@ Autor: Eric Ezequiel Yoshida de Lima
 Orientador: Prof. Dr. Marcos Ricardo Omena de Albuquerque Maximo
 Coorientador: Dr. Stiven Schwanz Dias
 
-Solicito o preenchimento dos campos 2 (data), 3 (registro nº) e 9 (palavras-chave resultantes de
-indexação), para que eu possa incluir a folha como última página do arquivo final.
+Solicito o número de registro (campo 3), hoje preenchido provisoriamente como
+DCTA/ITA/DM - XXX/2026, para que eu possa completar a folha e incluí-la como última página do
+arquivo final. Os demais campos já estão preenchidos e conferem exatamente com a folha de registro
+que consta da dissertação; peço que confirmem também os campos 2 e 9, caso precisem de ajuste.
 
 Como hoje é o prazo limite para a entrega da versão final à Secretaria da Pós-Graduação, agradeço
 muito se puderem dar prioridade ao pedido.
-
-Uma dúvida: o campo 11 deve trazer o resumo no idioma do trabalho, que é o inglês; preenchi com o
-abstract. Confirmo se está correto ou se devo usar o resumo em português.
 
 Atenciosamente,
 Eric Ezequiel Yoshida de Lima

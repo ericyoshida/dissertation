@@ -16,14 +16,16 @@ A Folha de Registro **não é preenchida por você sozinho**. O fluxo é:
    indexação)** preenchidos
 3. Essa folha devolvida vira a **última página** do PDF, sem paginação e fora do sumário
 
-⚠️ **A dissertação hoje já tem uma Folha de Registro gerada pelo LaTeX, mas com o número de
-registro como `DCTA/ITA/DM - XXX/2026`.** Esse `XXX` só a Biblioteca fornece. Ou você substitui
-aquela página pela que a Biblioteca devolver, ou preenche o número no `tese.tex` e recompila.
+⚠️ **Só falta o número de registro.** A folha dentro da dissertação já traz preenchidos a data
+(campo 2) e as palavras-chave de indexação (campo 9); o que está pendente é o campo 3, hoje impresso
+como `DCTA/ITA/DM - XXX/2026`. Quando a Biblioteca devolver o número, ou você substitui a última
+página pela folha devolvida, ou escreve o número no `tese.tex` e recompila — o segundo caminho
+mantém o PDF num arquivo só.
 
-⚠️ **Divergência a resolver:** a Folha de Registro dentro da dissertação traz o resumo em
-**português**; o manual do ITA pede o resumo "no idioma de apresentação do trabalho", que é
-**inglês**. O `.docx` que preparei usa o **abstract em inglês**, seguindo o manual. Confirme com a
-Biblioteca qual vale e deixe os dois iguais.
+✅ **Idioma do resumo resolvido.** O manual pede o campo 11 no idioma do trabalho, que é o inglês.
+A dissertação foi ajustada para usar o abstract condensado (`PreTextuais/abstract_frd.tex`) na sua
+própria folha de registro, e o `.docx` é transcrição literal dessa página. Conferi os treze campos
+um a um: estão idênticos.
 
 ---
 
