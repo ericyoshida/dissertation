@@ -1,16 +1,29 @@
 # Pedido de CPF aos membros da banca
 
-Mandar individualmente (e-mail ou WhatsApp). Cinco destinatários:
-Tasinaffo, Maximo, Stiven Dias, Marcelo Bruno, Alberto Ferreira de Souza.
+Uma mensagem só, para copiar e mandar separadamente ao Prof. Tasinaffo, ao Prof. Bruno e ao
+Prof. Alberto. Não precisa personalizar — só o "Prof." no início já serve para os três.
 
-**Assunto:** CPF para o formulário CAPES — dissertação Eric E. Y. de Lima
+O Prof. Maximo e o Dr. Stiven já enviaram os deles.
 
-Prof., tudo bem?
+---
 
-Estou fechando hoje a entrega da versão final da minha dissertação na Secretaria da Pós-Graduação, e
-o formulário CAPES de Banco de Teses pede o CPF de cada membro da banca examinadora.
+**Assunto:** CPF para o formulário CAPES — dissertação de Eric E. Y. de Lima
 
-O senhor poderia me enviar o seu? Desculpe a pressa — o prazo é hoje, 31/08.
+Prezado Professor,
+
+Espero que esteja bem. Sou o Eric Ezequiel Yoshida de Lima; o senhor participou da minha banca de
+mestrado no PG/EEC, defendida em 28 de julho, sob orientação do Prof. Marcos Maximo.
+
+Estou finalizando hoje a entrega da versão final na Secretaria da Pós-Graduação, e um dos
+formulários da CAPES para o Banco de Teses pede o CPF de cada membro da banca examinadora. O senhor
+poderia me informar o seu?
+
+Desculpe a pressa e o incômodo — hoje é o prazo limite para a entrega, por isso o pedido de última
+hora.
+
+Aproveito para agradecer novamente pela leitura atenta e pelos comentários na defesa; eles
+melhoraram bastante o texto final.
 
 Muito obrigado,
+
 Eric Ezequiel Yoshida de Lima
