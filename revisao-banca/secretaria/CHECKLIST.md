@@ -69,8 +69,11 @@ Tudo o que falta está marcado **em vermelho** dentro dos arquivos. Lista comple
 - Confirmar nacionalidade (preenchi "brasileiro")
 
 **De terceiros**
-- CPF do orientador (Marcos Maximo) e do coorientador (Stiven Dias)
-- CPF dos cinco membros da banca (Tasinaffo, Maximo, Dias, Bruno, Alberto)
+- CPF dos cinco membros da banca (Tasinaffo, Maximo, Dias, Bruno, Alberto), que são os mesmos do
+  orientador e do coorientador nos formulários CAPES 1 e 2. Peça a cada um com o texto de
+  `EMAIL_3_pedido_cpf.md`, e pergunte à Secretaria se ela já os tem do processo de nomeação da
+  banca — é o caminho mais rápido. **Não é motivo para segurar a entrega:** mande hoje com esses
+  campos em branco (o `EMAIL_2_secretaria.md` já avisa) e complete depois.
 
 **Códigos das tabelas CAPES** (os campos marcados "(*) Ver Tabela")
 - Linha de Pesquisa e Projeto de Pesquisa (CAPES 1)
