@@ -72,8 +72,14 @@ Tudo o que falta está marcado **em vermelho** dentro dos arquivos. Lista comple
 - CPF dos cinco membros da banca (Tasinaffo, Maximo, Dias, Bruno, Alberto), que são os mesmos do
   orientador e do coorientador nos formulários CAPES 1 e 2. Peça a cada um com o texto de
   `EMAIL_3_pedido_cpf.md`, e pergunte à Secretaria se ela já os tem do processo de nomeação da
-  banca — é o caminho mais rápido. **Não é motivo para segurar a entrega:** mande hoje com esses
-  campos em branco (o `EMAIL_2_secretaria.md` já avisa) e complete depois.
+  banca — é o caminho mais rápido (`EMAIL_4_elenice_cpf.md`). O Prof. Maximo levantou que o
+  formulário 2 talvez nem seja mais exigido nas Engenharias IV, e que antes esses dados eram
+  coletados na própria defesa; confirme isso antes de sair pedindo a todos.
+  **Não é motivo para segurar a entrega:** mande hoje com esses campos em branco (o
+  `EMAIL_2_secretaria.md` já avisa) e complete depois.
+
+  ⚠️ Os CPFs que você receber **não devem ser commitados**. Digite-os direto no PDF, ou me peça
+  para preencher e o arquivo fica fora do Git.
 
 **Códigos das tabelas CAPES** (os campos marcados "(*) Ver Tabela")
 - Linha de Pesquisa e Projeto de Pesquisa (CAPES 1)
