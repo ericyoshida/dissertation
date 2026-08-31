@@ -16,11 +16,17 @@ A Folha de Registro **não é preenchida por você sozinho**. O fluxo é:
    indexação)** preenchidos
 3. Essa folha devolvida vira a **última página** do PDF, sem paginação e fora do sumário
 
-⚠️ **Só falta o número de registro.** A folha dentro da dissertação já traz preenchidos a data
-(campo 2) e as palavras-chave de indexação (campo 9); o que está pendente é o campo 3, hoje impresso
-como `DCTA/ITA/DM - XXX/2026`. Quando a Biblioteca devolver o número, ou você substitui a última
-página pela folha devolvida, ou escreve o número no `tese.tex` e recompila — o segundo caminho
-mantém o PDF num arquivo só.
+⚠️ **Faltam o campo 2 e o campo 3, ambos da Biblioteca.** O manual é explícito: a data (campo 2) é
+a *data de registro*, não a da defesa, e tanto ela quanto o número (campo 3) são "preenchimento de
+responsabilidade do processo de registro". O campo 2 agora está em branco na dissertação e na folha;
+o campo 3 está como `DCTA/ITA/DM - XXX/2026`. Quando a Biblioteca responder, escreva os dois valores
+em `tese.tex` (`\FRDitadata` e `\FRDitadocnro`), recompile e rode
+`python3 revisao-banca/secretaria/gerar_folha_registro.py` — o script relê o `tese.tex` e regenera o
+`.docx`, garantindo que os dois continuem idênticos.
+
+Sobre o campo 9: o manual também o atribui à Biblioteca, mas a dissertação já o traz preenchido com
+as palavras-chave de indexação. Deixei como está, igual nos dois documentos; se a Biblioteca pedir
+para esvaziar, basta limpar `\FRDitapalavrasresult` e rodar o script de novo.
 
 ✅ **Idioma do resumo resolvido.** O manual pede o campo 11 no idioma do trabalho, que é o inglês.
 A dissertação foi ajustada para usar o abstract condensado (`PreTextuais/abstract_frd.tex`) na sua
