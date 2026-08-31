@@ -95,11 +95,11 @@ dado pessoal; use os de `COM_DADOS_PESSOAIS/` para enviar.
 - ✅ **Expectativa de Atuação (CAPES 2)** — "Empresa". As opções são: Ensino e Pesquisa, Pesquisa,
   Empresa, Profissional autônomo, Outras. Marquei também "Mesma Área da Titulação: sim".
   Se a ideia for seguir em pesquisa ou docência, troque para "Pesquisa" ou "Ensino e Pesquisa".
-- ⬜ **Projeto de Pesquisa (CAPES 1)** — deixado **em branco**, de propósito. O Portal Individual da
-  CAPES do autor mostra "Nenhum projeto de pesquisa encontrado" e "Nenhum trabalho de conclusão
-  ativo encontrado": não há projeto vinculado ao aluno, e a defesa ainda não foi registrada no
-  Sucupira. É o programa que registra o trabalho de conclusão na próxima Coleta e, nesse momento,
-  o vincula a um dos projetos que mantém cadastrados.
+- ✅ **Projeto de Pesquisa (CAPES 1)** — "FlyMov", indicado pelo autor como o projeto de pesquisa
+  do trabalho. Grafia conforme a dissertação (FlyMov Engineering Research Center), não "FlyMove".
+  Observação: o Portal Individual da CAPES do autor não mostra projeto vinculado a ele, e a defesa
+  ainda não está registrada no Sucupira — o programa faz esse vínculo na próxima Coleta e pode
+  ajustar o nome para o do projeto que mantém cadastrado.
 
 Fontes: Tabela de Áreas do Conhecimento do CNPq (Plataforma Lattes); Plataforma Sucupira,
 programa 33011010005P0; Manual do Coleta de Dados da CAPES, aba Atividade Futura.
