@@ -20,10 +20,12 @@ Texto pronto em `EMAIL_2_secretaria.md`. Anexar:
 | 3 | Folha da banca (editável) | `EDITAVEL_2_Folha_da_banca.docx` |
 | 4 | Resumo (editável) | `EDITAVEL_3_Resumo.docx` |
 | 5 | Abstract (editável) | `EDITAVEL_4_Abstract.docx` |
-| 6 | Termo de autorização | `COM_DADOS_PESSOAIS/Termo_de_Autorizacao.docx` |
+| 6 | Termo de autorização (assinado) | `COM_DADOS_PESSOAIS/Termo_de_Autorizacao.pdf` |
 | 7 | CAPES 1 — Identificação | `COM_DADOS_PESSOAIS/Capes1_Identificacao.pdf` |
 | 8 | CAPES 2 — Banca Examinadora | `COM_DADOS_PESSOAIS/Capes2_Banca.pdf` |
 | 9 | CAPES 3 — Área de Conhecimento | `COM_DADOS_PESSOAIS/Capes3_Area.pdf` |
+
+O Termo sai em `.pdf`, para assinatura, e também em `.docx`, caso a Secretaria prefira editável.
 
 ⚠️ **Mande os arquivos de `COM_DADOS_PESSOAIS/`, não os `PREENCHIDO_*`.** Os `PREENCHIDO_*` são as
 cópias sem dado pessoal, versionadas no Git; os de envio ficam fora do Git.

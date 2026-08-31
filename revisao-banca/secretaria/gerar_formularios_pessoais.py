@@ -165,6 +165,53 @@ par("____________________________________________", 12, align=AL.RIGHT)
 par("(Assinatura)", 10, align=AL.RIGHT)
 doc.save(SAI / "Termo_de_Autorizacao.docx"); print("   Termo_de_Autorizacao.docx")
 
+# ---- Termo de autorizacao, versao PDF para assinar ----
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import ParagraphStyle
+from reportlab.lib.enums import TA_JUSTIFY, TA_CENTER, TA_RIGHT
+from reportlab.lib.units import cm
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+
+corpo_txt = (
+    f"Eu, <b>{D['nome']}</b>, {nac}, {ec}, {pf}, residente e domiciliado na {end}, portador do "
+    f"documento de identidade n&uacute;mero {rg}, emitido por {org}, inscrito no Cadastro de Pessoas "
+    f"F&iacute;sicas do Minist&eacute;rio da Fazenda sob o n&uacute;mero {cpf}, na qualidade de "
+    "titular dos direitos morais e patrimoniais de autor que recaem sobre minha tese de Mestrado "
+    "apresentada ao Instituto Tecnol&oacute;gico de Aeron&aacute;utica, intitulada "
+    f"&ldquo;{TIT}&rdquo;, com base no disposto na Lei Federal n&ordm; 9.610 de 19 de fevereiro de "
+    "1998, autorizo o Instituto Tecnol&oacute;gico de Aeron&aacute;utica, a partir desta data, a "
+    "reproduzi-la para armazen&aacute;-la permanentemente no Instituto, coloc&aacute;-la ao alcance "
+    "do p&uacute;blico por meios eletr&ocirc;nicos, em particular mediante acesso on-line pela rede "
+    "mundial de computadores, permitir a quem a ela tiver acesso que a reproduza, dela extraindo "
+    "c&oacute;pia, de acordo com crit&eacute;rios estabelecidos pelo Instituto, desde que n&atilde;o "
+    "vise lucros, at&eacute; que manifesta&ccedil;&atilde;o em sentido contr&aacute;rio, de minha "
+    "parte, determine a cessa&ccedil;&atilde;o desta autoriza&ccedil;&atilde;o."
+)
+st_t = ParagraphStyle("t", fontName="Times-Bold", fontSize=13, alignment=TA_CENTER, leading=18)
+st_b = ParagraphStyle("b", fontName="Times-Roman", fontSize=12, alignment=TA_JUSTIFY, leading=19,
+                      firstLineIndent=1.2*cm)
+st_r = ParagraphStyle("r", fontName="Times-Roman", fontSize=12, alignment=TA_RIGHT, leading=16)
+st_c = ParagraphStyle("c", fontName="Times-Roman", fontSize=10, alignment=TA_CENTER, leading=14)
+
+pdf_out = SAI / "Termo_de_Autorizacao.pdf"
+SimpleDocTemplate(str(pdf_out), pagesize=A4, topMargin=3*cm, bottomMargin=2.5*cm,
+                  leftMargin=3*cm, rightMargin=2.5*cm,
+                  title="Termo de Autorizacao", author=D["nome"]).build([
+    Paragraph("TERMO DE AUTORIZA&Ccedil;&Atilde;O", st_t),
+    Paragraph("PARA DISPONIBILIZA&Ccedil;&Atilde;O DE PUBLICA&Ccedil;&Otilde;ES", st_t),
+    Spacer(1, 1.2*cm),
+    Paragraph("TERMO DE AUTORIZA&Ccedil;&Atilde;O &ndash; TESES/DISSERTA&Ccedil;&Otilde;ES", st_t),
+    Spacer(1, 1.0*cm),
+    Paragraph(corpo_txt, st_b),
+    Spacer(1, 2.0*cm),
+    Paragraph(f"{D['cidade']}, 31 de agosto de 2026.", st_r),
+    Spacer(1, 2.2*cm),
+    Paragraph("____________________________________________", st_r),
+    Paragraph(f"{D['nome']}", ParagraphStyle("n", parent=st_r, fontSize=11)),
+    Paragraph("(Assinatura)", ParagraphStyle("a", parent=st_r, fontSize=10)),
+])
+print("   Termo_de_Autorizacao.pdf")
+
 faltam = [k for k in ("rg_orgao","estado_civil","profissao","telefone",
                       "matricula_mes","matricula_ano") if not (D.get(k) or "").strip()]
 print("\nainda faltando no JSON:", ", ".join(faltam) if faltam else "nada")
