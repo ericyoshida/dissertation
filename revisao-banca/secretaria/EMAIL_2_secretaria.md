@@ -18,14 +18,6 @@ Anexo, conforme as instruções da página de Confecção de Dissertações e Te
 3. O Termo de autorização;
 4. Os formulários CAPES de Banco de Teses — Identificação, Banca Examinadora e Área de Conhecimento.
 
-Duas observações. Os formulários CAPES seguem com os campos de CPF dos membros da banca em branco:
-já solicitei os números a cada um deles e completo assim que responderem. Se a Secretaria já dispuser
-desses dados no processo de nomeação da banca, agradeço se puderem preencher ou me informar.
-
-Os campos que dependem das tabelas CAPES (Linha de Pesquisa, Projeto de Pesquisa, Vínculo Atual,
-Expectativa de Atuação e os códigos de Área de Conhecimento) também seguem em branco; agradeço a
-orientação sobre quais valores usar.
-
 Fico no aguardo da confirmação sobre a validade dos arquivos e do link do Stratus para o upload
 final.
 

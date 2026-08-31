@@ -27,7 +27,12 @@ H = 842.0
 def cpf_banca(nome):
     """CPF de um membro da banca, ou marcador vermelho se ainda nao informado."""
     x = (D.get("cpfs_banca", {}).get(nome) or "").strip()
-    return (x, False) if x else ("PREENCHER: CPF", True)
+    if x:
+        return (x, False)
+    # A Secretaria dispensou o CPF dos membros da banca; sem marcador vermelho.
+    if D.get("cpfs_banca_exigido") is False:
+        return ("", False)
+    return ("PREENCHER: CPF", True)
 
 def v(chave, rotulo=None):
     """Valor do JSON, ou marcador vermelho se ainda vazio."""
