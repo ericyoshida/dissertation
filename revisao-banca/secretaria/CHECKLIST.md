@@ -107,20 +107,13 @@ programa 33011010005P0; Manual do Coleta de Dados da CAPES, aba Atividade Futura
 Nota do manual: os campos de Atividade Futura **não são obrigatórios** — no registro do PG/EEC que
 consultei eles estão em branco.
 
-**Financiamento** (CAPES 1) — preenchido como **FAPESP**, natureza **B (Bolsa)**.
+**Financiamento** (CAPES 1) — ✅ preenchido: **Embraer**, natureza **B (Bolsa)**, **29 meses**.
 
-A agência é a FAPESP: o FlyMov é um Centro de Pesquisa em Engenharia mantido em parceria
-ITA–Embraer–FAPESP, como os próprios Agradecimentos e a Seção 1.1.1 da dissertação declaram. A
-Embraer é a parceira empresarial do centro, não a agência de fomento — por isso o dinheiro chegava
-por ela, mas o financiador declarado é a FAPESP. (Não é CNPq nem PIBIC: PIBIC é bolsa de iniciação
-científica de graduação.)
-
-Falta só o **número de meses** da bolsa, marcado como `??`. Preencha em
-`.dados_pessoais.json` (`financiador_meses`) e rode o gerador. Como referência, da matrícula
-(01/2024) até a defesa (07/2026) são 30 meses, mas a vigência da bolsa pode ter sido menor.
-
-Se a bolsa tiver sido paga formalmente pela Embraer, e não pela FAPESP, troque `financiador` para
-`Embraer` no JSON e regenere.
+A bolsa foi paga pela Embraer, de 03/2024 a 07/2026 — 29 parcelas contando março de 2024 e julho de
+2026 (28 meses de intervalo). O trabalho foi realizado dentro do FlyMov, Centro de Pesquisa em
+Engenharia mantido em parceria ITA–Embraer–FAPESP, como declaram os Agradecimentos e a Seção 1.1.1;
+a FAPESP financia o centro, mas quem custeou esta bolsa foi a Embraer, e é ela que consta como
+financiadora.
 
 ## Dados que já usei (conferidos na dissertação)
 
