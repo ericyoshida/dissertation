@@ -56,3 +56,7 @@ datasets/
 *.tar
 *.tar.gz
 *.7z
+
+# ---------- Dados pessoais: NUNCA versionar (CPF, RG, telefone) ----------
+revisao-banca/secretaria/.dados_pessoais.json
+revisao-banca/secretaria/COM_DADOS_PESSOAIS/

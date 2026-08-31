@@ -58,15 +58,15 @@ para o upload final.
 
 Tudo o que falta está marcado **em vermelho** dentro dos arquivos. Lista completa:
 
-**Seus dados**
-- CPF
-- RG (número e órgão emissor)
-- Estado civil
-- Profissão
-- Bairro
-- Telefone
-- Matrícula (mês/ano de ingresso no mestrado)
-- Confirmar nacionalidade (preenchi "brasileiro")
+**Seus dados** — já preenchidos: CPF, RG, endereço completo, CEP, nacionalidade.
+
+Ainda faltam: **órgão emissor do RG**, **estado civil**, **profissão**, **telefone** e a
+**matrícula** (mês/ano de ingresso). Coloque-os em `.dados_pessoais.json` e rode
+`python3 revisao-banca/secretaria/gerar_formularios_pessoais.py`.
+
+⚠️ Esses formulários saem em `COM_DADOS_PESSOAIS/`, que está no `.gitignore` junto com o JSON —
+CPF e RG não entram no repositório. Os arquivos `PREENCHIDO_*` que estão versionados seguem sem
+dado pessoal; use os de `COM_DADOS_PESSOAIS/` para enviar.
 
 **De terceiros**
 - CPF dos cinco membros da banca (Tasinaffo, Maximo, Dias, Bruno, Alberto), que são os mesmos do
@@ -106,5 +106,5 @@ Tudo o que falta está marcado **em vermelho** dentro dos arquivos. Lista comple
   Alberto Ferreira de Souza (Externo); suplentes Marcondes e Thiago Oliveira Santos
 - Páginas: 155 · Volumes: 1 · Idioma: Inglês
 - Biblioteca Depositária: Biblioteca Central do ITA
-- Endereço: Rua H8B, Ap. 216 — São José dos Campos/SP — CEP 12228-461
+- Endereço: Rua Francisco Ricci, 181, Apto. 194D, Dado — São José dos Campos/SP — CEP 12.243-261
 - E-mail: eric_lima20@yahoo.com
