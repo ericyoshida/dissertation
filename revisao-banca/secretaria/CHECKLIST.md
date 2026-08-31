@@ -95,11 +95,11 @@ dado pessoal; use os de `COM_DADOS_PESSOAIS/` para enviar.
 - ✅ **Expectativa de Atuação (CAPES 2)** — "Empresa". As opções são: Ensino e Pesquisa, Pesquisa,
   Empresa, Profissional autônomo, Outras. Marquei também "Mesma Área da Titulação: sim".
   Se a ideia for seguir em pesquisa ou docência, troque para "Pesquisa" ou "Ensino e Pesquisa".
-- ⚠️ **Projeto de Pesquisa (CAPES 1)** — este **não** é preenchido pelo aluno. É o projeto que o
-  programa mantém registrado no Sucupira e ao qual o discente é vinculado; nos registros públicos
-  ele varia por orientador (o de outro professor da mesma linha, por exemplo, é "Inteligência
-  Artificial Aplicada a Biotecnologia e Finanças"). O do Prof. Maximo não está publicado. O campo
-  está marcado como "(a preencher pelo PG/EEC)".
+- ⬜ **Projeto de Pesquisa (CAPES 1)** — deixado **em branco**, de propósito. O Portal Individual da
+  CAPES do autor mostra "Nenhum projeto de pesquisa encontrado" e "Nenhum trabalho de conclusão
+  ativo encontrado": não há projeto vinculado ao aluno, e a defesa ainda não foi registrada no
+  Sucupira. É o programa que registra o trabalho de conclusão na próxima Coleta e, nesse momento,
+  o vincula a um dos projetos que mantém cadastrados.
 
 Fontes: Tabela de Áreas do Conhecimento do CNPq (Plataforma Lattes); Plataforma Sucupira,
 programa 33011010005P0; Manual do Coleta de Dados da CAPES, aba Atividade Futura.

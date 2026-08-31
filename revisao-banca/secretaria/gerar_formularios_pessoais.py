@@ -66,7 +66,8 @@ overlay(ORIG / "Capes1_Identificacao.pdf", SAI / "Capes1_Identificacao.pdf", [
  (115, 213, "07/2026", 8), (369, 212, "X"),
  (115, 237, TIT, 9),
  (163, 289, "Sistemas Autonomos e Ciencia de Dados", 8),
- (163, 308, "(a preencher pelo PG/EEC: projeto registrado no Sucupira)", 7, True),
+ # Projeto de Pesquisa: deixado em branco -- o programa vincula o trabalho a um
+ # projeto proprio no Sucupira; nao ha projeto vinculado ao aluno.
  (163, 327, "Informatica"), (163, 378, "Biblioteca Central do ITA"),
  (160, 397, "1"), (262, 397, "155"), (380, 397, "Ingles"), (163, 416, kw, 6.5),
  (115, 468, "Marcos Ricardo Omena de Albuquerque Maximo"),
