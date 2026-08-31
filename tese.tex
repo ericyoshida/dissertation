@@ -108,8 +108,12 @@
 \coadvisor{Dr.}{Stiven Schwanz Dias}{Embraer S.A.}
 
 % Pró-reitor da Pós-graduação
-\bossgender{masc}                       % masc ou fem
-\boss{Prof.~Dr.}{André Valdetaro Gomes Cavalieri}   % Pró-Reitor de Pós-Graduação do ITA
+% O template novo do ITA não traz mais o nome do Pró-Reitor na folha de rosto
+% (confirmado pelo orientador). O bloco é suprimido esvaziando \@boss, que a
+% classe imprime na folha de rosto; \boss não é chamado.
+% Titular à época, caso volte a ser exigido: Prof. Dr. André Valdetaro Gomes Cavalieri.
+\bossgender{masc}
+\makeatletter\gdef\@boss{}\makeatother
 
 % Coordenador do curso -> somente TG (não se aplica a mestrado)
 %\bosscoursegender{masc}
